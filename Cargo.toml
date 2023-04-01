@@ -1,0 +1,12 @@
+[package]
+name = "bevy_panorbit_camera"
+version = "0.10.0"
+authors = ["Plonq"]
+edition = "2021"
+description = "A basic pan and orbit camera in Bevy"
+license = "MIT"
+repository = "https://github.com/Plonq/bevy_panorbit_camera"
+readme = "README.md"
+
+[dependencies]
+bevy = "0.10.0"
