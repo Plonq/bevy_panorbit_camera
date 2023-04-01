@@ -41,8 +41,8 @@ pub struct PanOrbitCamera {
     pub allow_upside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`
     pub enabled: bool,
-    /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`. If `false`,
-    /// the camera's position and rotation will be updated once even if there is no user input
+    /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`.
+    /// If set to `false`, the camera's position and rotation will be updated in the next tick even if there is no user input
     pub initialized: bool,
 }
 
@@ -60,8 +60,8 @@ impl Default for PanOrbitCamera {
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             enabled: true,
-            alpha: 0.1 * TAU,
-            beta: 0.1 * TAU,
+            alpha: 0.0,
+            beta: 0.0,
             initialized: false,
         }
     }
