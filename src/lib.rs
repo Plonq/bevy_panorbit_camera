@@ -15,7 +15,7 @@ impl Plugin for OrbitCameraPlugin {
 /// Tags an entity as capable of panning and orbiting.
 #[derive(Component)]
 pub struct PanOrbitCamera {
-    /// The "focus point" to orbit around. It is automatically updated when panning the camera
+    /// The point to orbit around. Automatically updated when panning the camera
     pub focus: Vec3,
     /// The radius of the orbit, or the distance from the `focus` point. Automatically updated when zooming in and out
     pub radius: f32,
@@ -28,7 +28,7 @@ pub struct PanOrbitCamera {
     /// The sensitivity of the panning motion. Defaults to `1.0`
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`
-    pub scroll_sensitivity: f32,
+    pub zoom_sensitivity: f32,
     /// The amount of deceleration to apply to the camera's rotation after you let go. Defaults to `1.0`
     pub damping: f32,
     /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>
@@ -41,6 +41,9 @@ pub struct PanOrbitCamera {
     pub allow_upside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`
     pub enabled: bool,
+    /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`. If `false`,
+    /// the camera's position and rotation will be updated once even if there is no user input
+    pub initialized: bool,
 }
 
 impl Default for PanOrbitCamera {
@@ -52,13 +55,14 @@ impl Default for PanOrbitCamera {
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
             pan_sensitivity: 1.0,
-            scroll_sensitivity: 1.0,
+            zoom_sensitivity: 1.0,
             damping: 1.0,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             enabled: true,
             alpha: 0.1 * TAU,
             beta: 0.1 * TAU,
+            initialized: false,
         }
     }
 }
@@ -97,7 +101,7 @@ fn pan_orbit_camera(
                 ev.y * match ev.unit {
                     MouseScrollUnit::Line => 1.0,
                     MouseScrollUnit::Pixel => 0.01,
-                } * pan_orbit.scroll_sensitivity;
+                } * pan_orbit.zoom_sensitivity;
         }
 
         if mouse_input.just_released(pan_orbit.button_orbit)
@@ -139,10 +143,6 @@ fn pan_orbit_camera(
                     pan_orbit.beta = PI / 2.0;
                 }
             }
-            let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
-            // Pitch is in local X, as opposed to yaw which is relative to global Y
-            rotation *= Quat::from_rotation_x(pan_orbit.beta);
-            transform.rotation = rotation;
         } else if pan.length_squared() > 0.0 {
             has_moved = true;
             // make panning distance independent of resolution and FOV,
@@ -164,13 +164,22 @@ fn pan_orbit_camera(
             pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
         }
 
-        if has_moved {
+        if has_moved || !pan_orbit.initialized {
+            let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
+            // Pitch is in local X, as opposed to yaw which is relative to global Y
+            rotation *= Quat::from_rotation_x(pan_orbit.beta);
+            transform.rotation = rotation;
+
             // emulating parent/child to make the yaw/y-axis rotation behave like a turntable
             // parent = x and y rotation
             // child = z-offset
             let rot_matrix = Mat3::from_quat(transform.rotation);
             transform.translation =
                 pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+
+            if !pan_orbit.initialized {
+                pan_orbit.initialized = true;
+            }
         }
     }
 }
