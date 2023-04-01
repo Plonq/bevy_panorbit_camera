@@ -1,5 +1,4 @@
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
-use bevy::prelude::Projection::Perspective;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use std::f32::consts::{PI, TAU};
@@ -73,9 +72,9 @@ fn pan_orbit_camera(
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mouse_input: Res<Input<MouseButton>>,
-    mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &Projection)>,
+    mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
-    for (mut pan_orbit, mut transform, projection) in camera_query.iter_mut() {
+    for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
         if !pan_orbit.enabled {
             return;
         }
@@ -147,21 +146,35 @@ fn pan_orbit_camera(
             has_moved = true;
             // make panning distance independent of resolution and FOV,
             let window = get_primary_window_size(&windows);
-            // TODO: Make it work for orthographic projection
-            if let Perspective(persp) = projection {
-                pan *= Vec2::new(persp.fov * persp.aspect_ratio, persp.fov) / window;
+            let mut multiplier = 1.0;
+            match *projection {
+                Projection::Perspective(ref p) => {
+                    pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / window;
+                    // make panning proportional to distance away from focus point
+                    multiplier = pan_orbit.radius;
+                }
+                Projection::Orthographic(ref p) => {
+                    pan *= Vec2::new(p.area.width(), p.area.height()) / window;
+                }
             }
             // translate by local axes
             let right = transform.rotation * Vec3::X * -pan.x;
             let up = transform.rotation * Vec3::Y * pan.y;
-            // make panning proportional to distance away from focus point
-            let translation = (right + up) * pan_orbit.radius;
+            let translation = (right + up) * multiplier;
             pan_orbit.focus += translation;
         } else if scroll.abs() > 0.0 {
             has_moved = true;
-            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
-            // dont allow zoom to reach zero or you get stuck
-            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+            match *projection {
+                Projection::Perspective(_) => {
+                    pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+                    // dont allow zoom to reach zero or you get stuck
+                    pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+                }
+                Projection::Orthographic(ref mut p) => {
+                    // Make min scale 0.1 since it doesn't make much sense to have a scale of 0
+                    p.scale = f32::max(p.scale - scroll, 0.1);
+                }
+            }
         }
 
         if has_moved || !pan_orbit.initialized {
