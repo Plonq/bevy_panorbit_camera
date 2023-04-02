@@ -7,9 +7,13 @@ pub struct OrbitCameraPlugin;
 
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(pan_orbit_camera);
+        app.insert_resource(RollingMouseMovement(vec![]))
+            .add_system(pan_orbit_camera);
     }
 }
+
+#[derive(Resource)]
+struct RollingMouseMovement(Vec<Vec2>);
 
 /// Tags an entity as capable of panning and orbiting.
 #[derive(Component)]
@@ -28,13 +32,15 @@ pub struct PanOrbitCamera {
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`
     pub zoom_sensitivity: f32,
-    /// The amount of deceleration to apply to the camera's rotation after you let go. Defaults to `1.0`
-    pub damping: f32,
+    /// The amount of deceleration to apply to the camera's rotation after you let go.
+    /// Should be a value from 0.0 to 1.0, where 0.0 is no damping, and 1.0 makes the camera stop instantly.
+    /// Defaults to `0.1`
+    pub orbit_damping: f32,
     /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>
     pub button_orbit: MouseButton,
     /// Button used to pan the camera. Defaults to <mouse>Right</mouse>
     pub button_pan: MouseButton,
-    /// Whether the camera is currently upside down. Automatically updated
+    /// Whether the camera is currently upside down. Updated automatically
     pub is_upside_down: bool,
     /// Whether to allow the camera to go upside down
     pub allow_upside_down: bool,
@@ -43,6 +49,8 @@ pub struct PanOrbitCamera {
     /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`.
     /// If set to `false`, the camera's position and rotation will be updated in the next tick even if there is no user input
     pub initialized: bool,
+    /// The velocity (in screen space) of the orbit. Will be Vec2::ZERO when `button_orbit` is pressed. Updated automatically
+    pub orbit_velocity: Vec2,
 }
 
 impl Default for PanOrbitCamera {
@@ -55,13 +63,14 @@ impl Default for PanOrbitCamera {
             orbit_sensitivity: 1.0,
             pan_sensitivity: 1.0,
             zoom_sensitivity: 1.0,
-            damping: 1.0,
+            orbit_damping: 0.1,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             enabled: true,
             alpha: 0.0,
             beta: 0.0,
             initialized: false,
+            orbit_velocity: Vec2::ZERO,
         }
     }
 }
@@ -73,23 +82,37 @@ fn pan_orbit_camera(
     mut scroll_events: EventReader<MouseWheel>,
     mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
+    mut rolling_movement: ResMut<RollingMouseMovement>,
 ) {
     for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
+        if mouse_input.just_pressed(pan_orbit.button_orbit) {
+            pan_orbit.orbit_velocity = Vec2::ZERO;
+        }
+
         let mut pan = Vec2::ZERO;
-        let mut rotation_move = Vec2::ZERO;
+        let mut rotation_move = pan_orbit.orbit_velocity;
         let mut scroll = 0.0;
         let mut orbit_button_changed = false;
 
         if pan_orbit.enabled {
             if mouse_input.pressed(pan_orbit.button_orbit) {
+                let mut motion = Vec2::ZERO;
                 for ev in mouse_motion_events.iter() {
-                    rotation_move += ev.delta * pan_orbit.orbit_sensitivity;
+                    motion += ev.delta * pan_orbit.orbit_sensitivity;
                 }
+                rotation_move += motion;
+                // Record last 3 motions so we can use for inertia
+                rolling_movement.0.insert(0, motion);
+                rolling_movement.0.truncate(3);
             } else if mouse_input.pressed(pan_orbit.button_pan) {
                 // Pan only if we're not rotating at the moment
                 for ev in mouse_motion_events.iter() {
                     pan += ev.delta * pan_orbit.pan_sensitivity;
                 }
+            } else if mouse_input.just_released(pan_orbit.button_orbit) {
+                // Set orbit velocity based on average mouse movement over the last 3 frames
+                pan_orbit.orbit_velocity =
+                    rolling_movement.0.iter().sum::<Vec2>() / rolling_movement.0.len() as f32;
             }
 
             for ev in scroll_events.iter() {
@@ -193,6 +216,10 @@ fn pan_orbit_camera(
                 pan_orbit.initialized = true;
             }
         }
+
+        // Apply damping
+        let damping = f32::max(f32::min(pan_orbit.orbit_damping, 1.0), 0.0);
+        pan_orbit.orbit_velocity *= 1.0 - damping;
     }
 }
 
