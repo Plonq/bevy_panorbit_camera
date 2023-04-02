@@ -12,44 +12,49 @@ impl Plugin for OrbitCameraPlugin {
     }
 }
 
+// Holds the last X mouse movement deltas
 #[derive(Resource)]
 struct RollingMouseMovement(Vec<Vec2>);
 
 /// Tags an entity as capable of panning and orbiting.
+/// The entity must have `Transform` and `Projection` components (these are added automatically if
+/// you use `Camera3dBundle`).
 #[derive(Component)]
 pub struct PanOrbitCamera {
     /// The point to orbit around. Automatically updated when panning the camera
     pub focus: Vec3,
-    /// The radius of the orbit, or the distance from the `focus` point. Automatically updated when zooming in and out
+    /// The radius of the orbit, or the distance from the `focus` point.
+    /// For orthographic projection, this is ignored, and the projection's scale is used instead.
+    /// Automatically updated when zooming in and out (for perspective projection).
     pub radius: f32,
-    /// Rotation in radians around the global Y axis. Updated automatically
+    /// Rotation in radians around the global Y axis. Updated automatically.
     pub alpha: f32,
-    /// Rotation in radians around the local X axis (i.e. applied after the alpha rotation is applied). Updated automatically
+    /// Rotation in radians around the local X axis (i.e. applied after the alpha rotation is applied). Updated automatically.
     pub beta: f32,
-    /// The sensitivity of the orbiting motion. Defaults to `1.0`
+    /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
-    /// The sensitivity of the panning motion. Defaults to `1.0`
+    /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
-    /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`
+    /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
     /// The amount of deceleration to apply to the camera's rotation after you let go.
     /// Should be a value from 0.0 to 1.0, where 0.0 is no damping, and 1.0 makes the camera stop instantly.
     /// Defaults to `0.1`
     pub orbit_damping: f32,
-    /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>
+    /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>.
     pub button_orbit: MouseButton,
-    /// Button used to pan the camera. Defaults to <mouse>Right</mouse>
+    /// Button used to pan the camera. Defaults to <mouse>Right</mouse>.
     pub button_pan: MouseButton,
-    /// Whether the camera is currently upside down. Updated automatically
+    /// Whether the camera is currently upside down. Updated automatically.
     pub is_upside_down: bool,
-    /// Whether to allow the camera to go upside down
+    /// Whether to allow the camera to go upside down.
     pub allow_upside_down: bool,
-    /// If `false`, disable control of the camera. Defaults to `true`
+    /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
     /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`.
-    /// If set to `false`, the camera's position and rotation will be updated in the next tick even if there is no user input
+    /// If set to `false`, the camera's transform will be updated in the next tick even if there is no user input.
     pub initialized: bool,
-    /// The velocity (in screen space) of the orbit. Will be Vec2::ZERO when `button_orbit` is pressed. Updated automatically
+    /// The velocity (in screen space) of the orbit. Will be `Vec2::ZERO` when `button_orbit` is pressed. Updated automatically.
     pub orbit_velocity: Vec2,
 }
 
