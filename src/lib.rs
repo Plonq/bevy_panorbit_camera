@@ -68,7 +68,7 @@ impl Default for PanOrbitCamera {
 
 /// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
 fn pan_orbit_camera(
-    windows: Query<&Window, With<PrimaryWindow>>,
+    windows_query: Query<&Window, With<PrimaryWindow>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mouse_input: Res<Input<MouseButton>>,
@@ -118,7 +118,7 @@ fn pan_orbit_camera(
         let mut has_moved = false;
         if rotation_move.length_squared() > 0.0 {
             has_moved = true;
-            let window = get_primary_window_size(&windows);
+            let window = get_primary_window_size(&windows_query);
             let delta_x = {
                 let delta = rotation_move.x / window.x * PI * 2.0;
                 if pan_orbit.is_upside_down {
@@ -145,7 +145,7 @@ fn pan_orbit_camera(
         } else if pan.length_squared() > 0.0 {
             has_moved = true;
             // Make panning distance independent of resolution and FOV,
-            let window = get_primary_window_size(&windows);
+            let window = get_primary_window_size(&windows_query);
             let mut multiplier = 1.0;
             match *projection {
                 Projection::Perspective(ref p) => {
@@ -198,8 +198,8 @@ fn pan_orbit_camera(
     }
 }
 
-fn get_primary_window_size(windows: &Query<&Window, With<PrimaryWindow>>) -> Vec2 {
-    let Ok(primary) = windows.get_single() else {
+fn get_primary_window_size(windows_query: &Query<&Window, With<PrimaryWindow>>) -> Vec2 {
+    let Ok(primary) = windows_query.get_single() else {
         // No primary window? Dunno how we can be controlling a camera, but let's return ONE
         // so when dividing by this value nothing explodes
         return Vec2::ONE;
