@@ -144,20 +144,20 @@ fn pan_orbit_camera(
             }
         } else if pan.length_squared() > 0.0 {
             has_moved = true;
-            // make panning distance independent of resolution and FOV,
+            // Make panning distance independent of resolution and FOV,
             let window = get_primary_window_size(&windows);
             let mut multiplier = 1.0;
             match *projection {
                 Projection::Perspective(ref p) => {
                     pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / window;
-                    // make panning proportional to distance away from focus point
+                    // Make panning proportional to distance away from focus point
                     multiplier = pan_orbit.radius;
                 }
                 Projection::Orthographic(ref p) => {
                     pan *= Vec2::new(p.area.width(), p.area.height()) / window;
                 }
             }
-            // translate by local axes
+            // Translate by local axes
             let right = transform.rotation * Vec3::X * -pan.x;
             let up = transform.rotation * Vec3::Y * pan.y;
             let translation = (right + up) * multiplier;
@@ -167,25 +167,26 @@ fn pan_orbit_camera(
             match *projection {
                 Projection::Perspective(_) => {
                     pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
-                    // dont allow zoom to reach zero or you get stuck
+                    // Prevent zoom to zero otherwise we can get stuck there
                     pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
                 }
                 Projection::Orthographic(ref mut p) => {
-                    // Make min scale 0.1 since it doesn't make much sense to have a scale of 0
-                    p.scale = f32::max(p.scale - scroll, 0.1);
+                    p.scale -= scroll * p.scale * 0.2;
+                    // Prevent zoom to zero otherwise we can get stuck there
+                    p.scale = f32::max(p.scale, 0.05);
                 }
             }
         }
 
         if has_moved || !pan_orbit.initialized {
+            // Yaw is in global space (rotate around global y-axis), but pitch is in
+            // local space (rotate around the camera's x-axis)
             let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
-            // Pitch is in local X, as opposed to yaw which is relative to global Y
             rotation *= Quat::from_rotation_x(pan_orbit.beta);
             transform.rotation = rotation;
 
-            // emulating parent/child to make the yaw/y-axis rotation behave like a turntable
-            // parent = x and y rotation
-            // child = z-offset
+            // Update the translation of the camera so we are always rotating 'around'
+            // (orbiting) rather than rotating in place
             let rot_matrix = Mat3::from_quat(transform.rotation);
             transform.translation =
                 pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
