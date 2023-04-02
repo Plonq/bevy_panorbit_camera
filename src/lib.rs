@@ -83,9 +83,9 @@ impl Default for PanOrbitCamera {
 /// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
 fn pan_orbit_camera(
     windows_query: Query<&Window, With<PrimaryWindow>>,
+    mouse_input: Res<Input<MouseButton>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
-    mouse_input: Res<Input<MouseButton>>,
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
     mut rolling_movement: ResMut<RollingMouseMovement>,
 ) {
