@@ -75,38 +75,36 @@ fn pan_orbit_camera(
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
     for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
-        if !pan_orbit.enabled {
-            return;
-        }
-
         let mut pan = Vec2::ZERO;
         let mut rotation_move = Vec2::ZERO;
         let mut scroll = 0.0;
         let mut orbit_button_changed = false;
 
-        if mouse_input.pressed(pan_orbit.button_orbit) {
-            for ev in mouse_motion_events.iter() {
-                rotation_move += ev.delta * pan_orbit.orbit_sensitivity;
+        if pan_orbit.enabled {
+            if mouse_input.pressed(pan_orbit.button_orbit) {
+                for ev in mouse_motion_events.iter() {
+                    rotation_move += ev.delta * pan_orbit.orbit_sensitivity;
+                }
+            } else if mouse_input.pressed(pan_orbit.button_pan) {
+                // Pan only if we're not rotating at the moment
+                for ev in mouse_motion_events.iter() {
+                    pan += ev.delta * pan_orbit.pan_sensitivity;
+                }
             }
-        } else if mouse_input.pressed(pan_orbit.button_pan) {
-            // Pan only if we're not rotating at the moment
-            for ev in mouse_motion_events.iter() {
-                pan += ev.delta * pan_orbit.pan_sensitivity;
+
+            for ev in scroll_events.iter() {
+                scroll +=
+                    ev.y * match ev.unit {
+                        MouseScrollUnit::Line => 1.0,
+                        MouseScrollUnit::Pixel => 0.01,
+                    } * pan_orbit.zoom_sensitivity;
             }
-        }
 
-        for ev in scroll_events.iter() {
-            scroll +=
-                ev.y * match ev.unit {
-                    MouseScrollUnit::Line => 1.0,
-                    MouseScrollUnit::Pixel => 0.01,
-                } * pan_orbit.zoom_sensitivity;
-        }
-
-        if mouse_input.just_released(pan_orbit.button_orbit)
-            || mouse_input.just_pressed(pan_orbit.button_orbit)
-        {
-            orbit_button_changed = true;
+            if mouse_input.just_released(pan_orbit.button_orbit)
+                || mouse_input.just_pressed(pan_orbit.button_orbit)
+            {
+                orbit_button_changed = true;
+            }
         }
 
         if orbit_button_changed {
