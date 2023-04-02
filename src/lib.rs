@@ -80,6 +80,31 @@ impl Default for PanOrbitCamera {
     }
 }
 
+impl PanOrbitCamera {
+    /// Creates a `PanOrbitCamera` from a translation and focus point. Values of `alpha`, `beta`,
+    /// and `radius` will be automatically calculated.
+    pub fn from_translation(translation: Vec3, focus: Vec3) -> Self {
+        let comp_vec = translation - focus;
+        let radius = comp_vec.length();
+        let mut alpha = if comp_vec.x == 0.0 && comp_vec.z == 0.0 {
+            PI / 2.0
+        } else {
+            (comp_vec.x / (comp_vec.x.powi(2) + comp_vec.z.powi(2)).sqrt()).acos()
+        };
+        if comp_vec.z > 0.0 {
+            alpha = 2.0 * PI - alpha;
+        }
+        let beta = (comp_vec.y / radius).acos();
+        PanOrbitCamera {
+            focus,
+            radius,
+            alpha,
+            beta,
+            ..default()
+        }
+    }
+}
+
 /// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
 fn pan_orbit_camera(
     windows_query: Query<&Window, With<PrimaryWindow>>,
@@ -155,7 +180,7 @@ fn pan_orbit_camera(
             };
             let delta_y = rotation_move.y / window.y * PI;
             pan_orbit.alpha -= delta_x;
-            pan_orbit.beta -= delta_y;
+            pan_orbit.beta += delta_y;
             // Ensure values between 0 and TAU (one full rotation)
             pan_orbit.alpha %= TAU;
             pan_orbit.beta %= TAU;
@@ -208,7 +233,7 @@ fn pan_orbit_camera(
             // Yaw is in global space (rotate around global y-axis), but pitch is in
             // local space (rotate around the camera's x-axis)
             let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
-            rotation *= Quat::from_rotation_x(pan_orbit.beta);
+            rotation *= Quat::from_rotation_x(-pan_orbit.beta);
             transform.rotation = rotation;
 
             // Update the translation of the camera so we are always rotating 'around'
