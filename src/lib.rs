@@ -45,6 +45,8 @@ pub struct PanOrbitCamera {
     pub button_orbit: MouseButton,
     /// Button used to pan the camera. Defaults to <mouse>Right</mouse>.
     pub button_pan: MouseButton,
+    pub modifier_orbit: Option<KeyCode>,
+    pub modifier_pan: Option<KeyCode>,
     /// Whether the camera is currently upside down. Updated automatically.
     pub is_upside_down: bool,
     /// Whether to allow the camera to go upside down.
@@ -69,6 +71,8 @@ impl Default for PanOrbitCamera {
             orbit_smoothness: 0.8,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
+            modifier_orbit: None,
+            modifier_pan: None,
             enabled: true,
             alpha: 0.0,
             beta: 0.0,
@@ -106,6 +110,7 @@ impl PanOrbitCamera {
 fn pan_orbit_camera(
     windows_query: Query<&Window, With<PrimaryWindow>>,
     mouse_input: Res<Input<MouseButton>>,
+    key_input: Res<Input<KeyCode>>,
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
@@ -118,7 +123,7 @@ fn pan_orbit_camera(
         let mut orbit_button_changed = false;
 
         if pan_orbit.enabled {
-            if mouse_input.pressed(pan_orbit.button_orbit) {
+            if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 let mut motion = Vec2::ZERO;
                 for ev in mouse_motion_events.iter() {
                     motion += ev.delta * pan_orbit.orbit_sensitivity;
@@ -127,7 +132,7 @@ fn pan_orbit_camera(
                 // Record last 3 motions so we can use for inertia
                 rolling_movement.0.insert(0, motion);
                 rolling_movement.0.truncate(3);
-            } else if mouse_input.pressed(pan_orbit.button_pan) {
+            } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 for ev in mouse_motion_events.iter() {
                     pan += ev.delta * pan_orbit.pan_sensitivity;
@@ -142,9 +147,7 @@ fn pan_orbit_camera(
                     } * pan_orbit.zoom_sensitivity;
             }
 
-            if mouse_input.just_released(pan_orbit.button_orbit)
-                || mouse_input.just_pressed(pan_orbit.button_orbit)
-            {
+            if orbit_just_pressed_or_released(&pan_orbit, &mouse_input, &key_input) {
                 orbit_button_changed = true;
             }
         }
@@ -246,6 +249,54 @@ fn pan_orbit_camera(
         // Prevent camera roll due to lerping the rotation
         transform.look_at(pan_orbit.focus, Vec3::Y);
     }
+}
+
+fn orbit_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_orbit);
+
+    is_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+fn orbit_just_pressed_or_released(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.just_pressed(pan_orbit.button_orbit);
+
+    just_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+fn pan_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_pan);
+
+    is_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
 }
 
 fn get_primary_window_size(windows_query: &Query<&Window, With<PrimaryWindow>>) -> Vec2 {
