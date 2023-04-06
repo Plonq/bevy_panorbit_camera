@@ -1,20 +1,19 @@
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
+use bevy::time::common_conditions::on_timer;
 use bevy::window::PrimaryWindow;
+use bevy_easings::Lerp;
 use std::f32::consts::{PI, TAU};
+use std::time::Duration;
 
 pub struct OrbitCameraPlugin;
 
 impl Plugin for OrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(RollingMouseMovement(vec![]))
-            .add_system(pan_orbit_camera);
+        app.add_system(pan_orbit_camera)
+            .add_system(reset_alpha_beta_system.run_if(on_timer(Duration::from_secs(1))));
     }
 }
-
-// Holds the last X mouse movement deltas
-#[derive(Resource)]
-struct RollingMouseMovement(Vec<Vec2>);
 
 /// Tags an entity as capable of panning and orbiting.
 /// The entity must have `Transform` and `Projection` components (these are added automatically if
@@ -31,16 +30,16 @@ pub struct PanOrbitCamera {
     pub alpha: f32,
     /// Rotation in radians around the local X axis (i.e. applied after the alpha rotation is applied). Updated automatically.
     pub beta: f32,
+    /// The target alpha value. This is used internally for smooth rotation, and typically shouldn't be set manually.
+    pub target_alpha: f32,
+    /// The target beta value. This is used internally for smooth rotation, and typically shouldn't be set manually.
+    pub target_beta: f32,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
-    /// How smooth the orbital movement is. Should be a value between `0.0` and `0.9`, where `0.0`
-    /// means no smoothness, and `0.9` is very smooth.
-    /// Defaults to `0.8`
-    pub orbit_smoothness: f32,
     /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>.
     pub button_orbit: MouseButton,
     /// Button used to pan the camera. Defaults to <mouse>Right</mouse>.
@@ -68,7 +67,6 @@ impl Default for PanOrbitCamera {
             orbit_sensitivity: 1.0,
             pan_sensitivity: 1.0,
             zoom_sensitivity: 1.0,
-            orbit_smoothness: 0.8,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             modifier_orbit: None,
@@ -76,6 +74,8 @@ impl Default for PanOrbitCamera {
             enabled: true,
             alpha: 0.0,
             beta: 0.0,
+            target_alpha: 0.0,
+            target_beta: 0.0,
             initialized: false,
         }
     }
@@ -114,9 +114,10 @@ fn pan_orbit_camera(
     mut mouse_motion_events: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
-    mut rolling_movement: ResMut<RollingMouseMovement>,
 ) {
     for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
+        // 1 - Get Input
+
         let mut pan = Vec2::ZERO;
         let mut rotation_move = Vec2::ZERO;
         let mut scroll = 0.0;
@@ -124,14 +125,9 @@ fn pan_orbit_camera(
 
         if pan_orbit.enabled {
             if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
-                let mut motion = Vec2::ZERO;
                 for ev in mouse_motion_events.iter() {
-                    motion += ev.delta * pan_orbit.orbit_sensitivity;
+                    rotation_move += ev.delta * pan_orbit.orbit_sensitivity;
                 }
-                rotation_move += motion;
-                // Record last 3 motions so we can use for inertia
-                rolling_movement.0.insert(0, motion);
-                rolling_movement.0.truncate(3);
             } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 for ev in mouse_motion_events.iter() {
@@ -152,12 +148,16 @@ fn pan_orbit_camera(
             }
         }
 
+        // 2 - Process input into target alpha/beta, or focus, radius
+
         if orbit_button_changed {
             // Only check for upside down when orbiting started or ended this frame,
             // so we don't reverse the horizontal direction while the user is still dragging
-            pan_orbit.is_upside_down = pan_orbit.beta < -PI / 2.0 || pan_orbit.beta > PI / 2.0;
+            let wrapped_beta = (pan_orbit.target_beta % TAU).abs();
+            pan_orbit.is_upside_down = wrapped_beta > TAU / 4.0 && wrapped_beta < 3.0 * TAU / 4.0;
         }
 
+        let mut has_moved = false;
         if rotation_move.length_squared() > 0.0 {
             let window = get_primary_window_size(&windows_query);
             let delta_x = {
@@ -169,20 +169,18 @@ fn pan_orbit_camera(
                 }
             };
             let delta_y = rotation_move.y / window.y * PI;
-            pan_orbit.alpha -= delta_x;
-            pan_orbit.beta += delta_y;
-            // Ensure values between 0 and TAU (one full rotation)
-            pan_orbit.alpha %= TAU;
-            pan_orbit.beta %= TAU;
+            pan_orbit.target_alpha -= delta_x;
+            pan_orbit.target_beta += delta_y;
 
             if !pan_orbit.allow_upside_down {
-                if pan_orbit.beta < -PI / 2.0 {
-                    pan_orbit.beta = -PI / 2.0;
+                if pan_orbit.target_beta < -PI / 2.0 {
+                    pan_orbit.target_beta = -PI / 2.0;
                 }
-                if pan_orbit.beta > PI / 2.0 {
-                    pan_orbit.beta = PI / 2.0;
+                if pan_orbit.target_beta > PI / 2.0 {
+                    pan_orbit.target_beta = PI / 2.0;
                 }
             }
+            has_moved = true;
         } else if pan.length_squared() > 0.0 {
             // Make panning distance independent of resolution and FOV,
             let window = get_primary_window_size(&windows_query);
@@ -202,6 +200,7 @@ fn pan_orbit_camera(
             let up = transform.rotation * Vec3::Y * pan.y;
             let translation = (right + up) * multiplier;
             pan_orbit.focus += translation;
+            has_moved = true;
         } else if scroll.abs() > 0.0 {
             match *projection {
                 Projection::Perspective(_) => {
@@ -215,39 +214,74 @@ fn pan_orbit_camera(
                     p.scale = f32::max(p.scale, 0.05);
                 }
             }
+            has_moved = true;
         }
 
-        // Calculate target location based on alpha/beta
-        let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
-        rotation *= Quat::from_rotation_x(-pan_orbit.beta);
+        // 3 - Apply orbit rotation based on target alpha/beta
 
-        // Return early if there's nothing to do
-        if transform.rotation == rotation {
-            return;
+        if has_moved
+            || pan_orbit.target_alpha != pan_orbit.alpha
+            || pan_orbit.target_beta != pan_orbit.beta
+        {
+            if !pan_orbit.initialized {
+                // If not initialized, snap to final target rotation
+                let mut rotation = Quat::from_rotation_y(pan_orbit.target_alpha);
+                rotation *= Quat::from_rotation_x(-pan_orbit.target_beta);
+                transform.rotation = rotation;
+                pan_orbit.initialized = true;
+
+                // Update current alpha and beta values
+                pan_orbit.alpha = pan_orbit.target_alpha;
+                pan_orbit.beta = pan_orbit.target_beta;
+            } else {
+                // Otherwise, interpolate our way there
+                let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &0.2);
+                let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &0.2);
+
+                // If we're super close, then just snap to target rotation to save cycles
+                if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
+                    target_alpha = pan_orbit.target_alpha;
+                }
+                if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
+                    target_beta = pan_orbit.target_beta;
+                }
+
+                // Calculate target (lerped) rotation
+                let mut rotation = Quat::from_rotation_y(target_alpha);
+                rotation *= Quat::from_rotation_x(-target_beta);
+
+                transform.rotation = rotation;
+
+                // Update current alpha and beta values
+                pan_orbit.alpha = target_alpha;
+                pan_orbit.beta = target_beta;
+            }
+
+            // Update the translation of the camera so we are always rotating 'around'
+            // (orbiting) rather than rotating in place
+            let rot_matrix = Mat3::from_quat(transform.rotation);
+            transform.translation =
+                pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
         }
+    }
+}
 
-        if !pan_orbit.initialized {
-            // If not initialized, snap to correct rotation
+/// Alpha and beta values can get arbitrarily small or big. This system resets them to within
+/// the range -TAU to TAU, if the camera is currently not moving, so that we don't end up
+/// with really small/large values which may cause jankiness.
+fn reset_alpha_beta_system(mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform)>) {
+    for (mut pan_orbit, mut transform) in camera_query.iter_mut() {
+        if pan_orbit.target_alpha == pan_orbit.alpha && pan_orbit.target_beta == pan_orbit.beta {
+            let reset_alpha = pan_orbit.alpha % TAU;
+            let reset_beta = pan_orbit.beta % TAU;
+            pan_orbit.alpha = reset_alpha;
+            pan_orbit.target_alpha = reset_alpha;
+            pan_orbit.beta = reset_beta;
+            pan_orbit.target_beta = reset_beta;
+            let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
+            rotation *= Quat::from_rotation_x(-pan_orbit.beta);
             transform.rotation = rotation;
-            pan_orbit.initialized = true;
-        } else if transform.rotation.angle_between(rotation) < 0.01 {
-            // If we're very close to the target rotation, snap to it so we aren't getting infinitely
-            // closer forever
-            transform.rotation = rotation;
-        } else {
-            // Otherwise, slerp there for smoothing effect, unless that's disabled
-            let smoothness = f32::max(f32::min(pan_orbit.orbit_smoothness, 0.9), 0.0);
-            transform.rotation = transform.rotation.lerp(rotation, 1.0 - smoothness);
         }
-
-        // Update the translation of the camera so we are always rotating 'around'
-        // (orbiting) rather than rotating in place
-        let rot_matrix = Mat3::from_quat(transform.rotation);
-        transform.translation =
-            pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
-
-        // Prevent camera roll due to lerping the rotation
-        transform.look_at(pan_orbit.focus, Vec3::Y);
     }
 }
 
@@ -275,7 +309,8 @@ fn orbit_just_pressed_or_released(
     let just_pressed = pan_orbit
         .modifier_orbit
         .map_or(true, |modifier| key_input.pressed(modifier))
-        && mouse_input.just_pressed(pan_orbit.button_orbit);
+        && (mouse_input.just_pressed(pan_orbit.button_orbit)
+            || mouse_input.just_released(pan_orbit.button_orbit));
 
     just_pressed
         && pan_orbit

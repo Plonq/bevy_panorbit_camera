@@ -10,3 +10,4 @@ readme = "README.md"
 
 [dependencies]
 bevy = "0.10.0"
+bevy_easings = "0.10.0"
