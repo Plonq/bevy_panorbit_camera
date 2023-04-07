@@ -7,6 +7,10 @@ Default controls:
 - Right Mouse - Pan
 - Scroll Wheel - Zoom
 
+## Demo
+
+![Screen Recording 2023-04-07 at 3 51 46 pm](https://user-images.githubusercontent.com/7709415/230550277-b2d7441c-2307-4491-9270-a3a46ee96c8b.gif)
+
 ## Quick Start
 
 Simply add the `PanOrbitCameraPlugin`, then add `PanOrbitCamera` to an entity
