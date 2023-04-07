@@ -163,6 +163,8 @@ pub struct PanOrbitCamera {
     pub modifier_orbit: Option<KeyCode>,
     /// Key that must be pressed for `button_pan` to work. Defaults to `None` (no modifier).
     pub modifier_pan: Option<KeyCode>,
+    /// Whether to reverse the zoom direction. Defaults to `false`.
+    pub reversed_zoom: bool,
     /// Whether the camera is currently upside down. Updated automatically. Should not be set manually.
     pub is_upside_down: bool,
     /// Whether to allow the camera to go upside down. Defaults to `false`.
@@ -189,6 +191,7 @@ impl Default for PanOrbitCamera {
             button_pan: MouseButton::Right,
             modifier_orbit: None,
             modifier_pan: None,
+            reversed_zoom: false,
             enabled: true,
             alpha: 0.0,
             beta: 0.0,
@@ -262,11 +265,15 @@ fn pan_orbit_camera(
             }
 
             for ev in scroll_events.iter() {
-                scroll +=
-                    ev.y * match ev.unit {
-                        MouseScrollUnit::Line => 1.0,
-                        MouseScrollUnit::Pixel => 0.005,
-                    } * pan_orbit.zoom_sensitivity;
+                let direction = match pan_orbit.reversed_zoom {
+                    true => -1.0,
+                    false => 1.0,
+                };
+                let multiplier = match ev.unit {
+                    MouseScrollUnit::Line => 1.0,
+                    MouseScrollUnit::Pixel => 0.005,
+                };
+                scroll += ev.y * multiplier * direction * pan_orbit.zoom_sensitivity;
             }
 
             if orbit_just_pressed_or_released(&pan_orbit, &mouse_input, &key_input) {
