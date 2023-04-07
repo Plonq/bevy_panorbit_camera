@@ -2,7 +2,11 @@
 
 Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
 
+This is meant for quickly getting some camera controls for debugging or testing purposes, but it could theoretically
+be used for something like a model/mesh viewer.
+
 Default controls:
+
 - Left Mouse - Orbit
 - Right Mouse - Pan
 - Scroll Wheel - Zoom
@@ -42,16 +46,23 @@ Check out the examples folder for full examples.
 ## Version Matching
 
 | Bevy Version | `bevy_panorbit_camera` Version |
-| ------------ |--------------------------------|
+|--------------|--------------------------------|
 | `0.10.0`     | `0.10.0`                       |
+
+## Credits
+
+- [Bevy Cheat Book](https://bevy-cheatbook.github.io): For providing an example that I started from
+- [babylon.js](https://www.babylonjs.com): I referenced their arc rotate camera for some of this
 
 ## License
 
 All code in this repository is dual-licensed under either:
 
 * MIT License ([LICENSE-MIT](LICENSE-MIT) or [http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
-* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE)
+  or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
 
 at your option.
 This means you can select the license you prefer!
-This dual-licensing approach is the de-facto standard in the Rust ecosystem and there are [very good reasons](https://github.com/bevyengine/bevy/issues/2373) to include both.
+This dual-licensing approach is the de-facto standard in the Rust ecosystem and there
+are [very good reasons](https://github.com/bevyengine/bevy/issues/2373) to include both.
