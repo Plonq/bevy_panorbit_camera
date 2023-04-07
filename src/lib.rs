@@ -1,3 +1,76 @@
+//! # Bevy Pan/Orbit Camera
+//!
+//! Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
+//!
+//! Default controls:
+//! - Left Mouse - Orbit
+//! - Right Mouse - Pan
+//! - Scroll Wheel - Zoom
+//!
+//! ## Quick Start
+//!
+//! First add the plugin:
+//! ```rust
+//! # use bevy::prelude::*;
+//! # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+//! fn main() {
+//!     App::new()
+//!         // ...
+//!         .add_plugin(PanOrbitCameraPlugin)
+//!         // ...
+//!         .run();
+//! }
+//! ```
+//!
+//! Then add the `PanOrbitCamera` component to a camera:
+//! ```rust
+//! # use bevy::prelude::*;
+//! # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+//! # fn main() {
+//! #     App::new()
+//! #         .add_plugins(DefaultPlugins)
+//! #         .add_plugin(PanOrbitCameraPlugin)
+//! #         .add_startup_system(setup)
+//! #         .run();
+//! # }
+//! fn setup(mut commands: Commands) {
+//!     commands
+//!         .spawn((
+//!             Camera3dBundle::default(),
+//!             PanOrbitCamera::default(),
+//!             // ...
+//!         ));
+//! }
+//! ```
+//!
+//! ## Complete Example
+//!
+//! If you run this, you won't see anything! You'll probably want to add some other entities,
+//! like meshes and lights.
+//!
+//! ```rust
+//! use bevy::prelude::*;
+//! use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+//!
+//! fn main() {
+//!     App::new()
+//!         .add_plugins(DefaultPlugins)
+//!         .add_plugin(PanOrbitCameraPlugin)
+//!         .add_startup_system(setup)
+//!         .run();
+//! }
+//!
+//! fn setup(mut commands: Commands) {
+//!     commands
+//!         .spawn((
+//!             Camera3dBundle::default(),
+//!             PanOrbitCamera::default(),
+//!         ));
+//! }
+//! ```
+//!
+//! Check out the examples folder for full examples.
+
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::time::common_conditions::on_timer;
@@ -6,19 +79,51 @@ use bevy_easings::Lerp;
 use std::f32::consts::{PI, TAU};
 use std::time::Duration;
 
-pub struct OrbitCameraPlugin;
+/// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
+/// # Example
+/// ```rust
+/// # use bevy::prelude::*;
+/// # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+/// fn main() {
+///     App::new()
+///         .add_plugins(DefaultPlugins)
+///         .add_plugin(PanOrbitCameraPlugin)
+///         .run();
+/// }
+/// ```
+pub struct PanOrbitCameraPlugin;
 
-impl Plugin for OrbitCameraPlugin {
+impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(pan_orbit_camera)
             .add_system(reset_alpha_beta_system.run_if(on_timer(Duration::from_secs(1))));
     }
 }
 
-/// Tags an entity as capable of panning and orbiting.
-/// The entity must have `Transform` and `Projection` components (these are added automatically if
-/// you use `Camera3dBundle`).
-#[derive(Component)]
+/// Tags an entity as capable of panning and orbiting, and provides a way to configure the
+/// camera's behaviour and controls.
+/// The entity must have `Transform` and `Projection` components. Typically you would add a
+/// `Camera3dBundle` which already contains these.
+/// # Example
+/// ```rust
+/// # use bevy::prelude::*;
+/// # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+/// # fn main() {
+/// #     App::new()
+/// #         .add_plugins(DefaultPlugins)
+/// #         .add_plugin(PanOrbitCameraPlugin)
+/// #         .add_startup_system(setup)
+/// #         .run();
+/// # }
+/// fn setup(mut commands: Commands) {
+///      commands
+///          .spawn((
+///              Camera3dBundle::default(),
+///              PanOrbitCamera::default(),
+///          ));
+///  }
+/// ```
+#[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct PanOrbitCamera {
     /// The point to orbit around. Automatically updated when panning the camera.
     /// Defaults to `Vec3::ZERO`.
@@ -29,10 +134,14 @@ pub struct PanOrbitCamera {
     /// Defaults to `5.0`.
     pub radius: f32,
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
+    /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
+    /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
     /// Defaults to `0.0`.
     pub alpha: f32,
     /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
-    /// Defaults to `TAU / 8.0` (`PI / 4.0`).
+    /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
+    /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// Defaults to `0.0`.
     pub beta: f32,
     /// The target alpha value. The camera will smoothly transition to this value. Used internally
     /// and typically you won't set this manually.
@@ -82,7 +191,7 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             enabled: true,
             alpha: 0.0,
-            beta: TAU / 8.0,
+            beta: 0.0,
             target_alpha: 0.0,
             target_beta: 0.0,
             initialized: false,
