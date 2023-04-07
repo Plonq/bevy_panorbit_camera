@@ -116,11 +116,11 @@ impl Plugin for PanOrbitCameraPlugin {
 /// #         .run();
 /// # }
 /// fn setup(mut commands: Commands) {
-///      commands
-///          .spawn((
-///              Camera3dBundle::default(),
-///              PanOrbitCamera::default(),
-///          ));
+///     commands
+///         .spawn((
+///             Camera3dBundle::default(),
+///             PanOrbitCamera::default(),
+///         ));
 ///  }
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
@@ -205,7 +205,28 @@ impl Default for PanOrbitCamera {
 impl PanOrbitCamera {
     /// Creates a `PanOrbitCamera` from a translation and focus point. Values of `alpha`, `beta`,
     /// and `radius` will be automatically calculated.
-    pub fn from_translation(translation: Vec3, focus: Vec3) -> Self {
+    /// # Example
+    /// ```rust
+    /// # use bevy::prelude::*;
+    /// # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
+    /// # fn main() {
+    /// #     App::new()
+    /// #         .add_plugins(DefaultPlugins)
+    /// #         .add_plugin(PanOrbitCameraPlugin)
+    /// #         .add_startup_system(setup)
+    /// #         .run();
+    /// # }
+    /// fn setup(mut commands: Commands) {
+    ///     let position = Vec3::new(4.0, 2.0, 3.0);
+    ///     let focus = Vec3::new(1.0, 1.0, 1.0);
+    ///     commands
+    ///         .spawn((
+    ///             Camera3dBundle::default(),
+    ///             PanOrbitCamera::from_translation_and_focus(position, focus),
+    ///         ));
+    ///  }
+    /// ```
+    pub fn from_translation_and_focus(translation: Vec3, focus: Vec3) -> Self {
         let comp_vec = translation - focus;
         let radius = comp_vec.length();
         let mut alpha = if comp_vec.x == 0.0 && comp_vec.z == 0.0 {
