@@ -20,19 +20,25 @@ impl Plugin for OrbitCameraPlugin {
 /// you use `Camera3dBundle`).
 #[derive(Component)]
 pub struct PanOrbitCamera {
-    /// The point to orbit around. Automatically updated when panning the camera
+    /// The point to orbit around. Automatically updated when panning the camera.
+    /// Defaults to `Vec3::ZERO`.
     pub focus: Vec3,
     /// The radius of the orbit, or the distance from the `focus` point.
     /// For orthographic projection, this is ignored, and the projection's scale is used instead.
-    /// Automatically updated when zooming in and out (for perspective projection).
+    /// Automatically updated (only for cameras with perspective projection).
+    /// Defaults to `5.0`.
     pub radius: f32,
-    /// Rotation in radians around the global Y axis. Updated automatically.
+    /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
+    /// Defaults to `0.0`.
     pub alpha: f32,
-    /// Rotation in radians around the local X axis (i.e. applied after the alpha rotation is applied). Updated automatically.
+    /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
+    /// Defaults to `TAU / 8.0` (`PI / 4.0`).
     pub beta: f32,
-    /// The target alpha value. This is used internally for smooth rotation, and typically shouldn't be set manually.
+    /// The target alpha value. The camera will smoothly transition to this value. Used internally
+    /// and typically you won't set this manually.
     pub target_alpha: f32,
-    /// The target beta value. This is used internally for smooth rotation, and typically shouldn't be set manually.
+    /// The target beta value. The camera will smoothly transition to this value. Used internally
+    /// and typically you won't set this manually.
     pub target_beta: f32,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
@@ -40,20 +46,23 @@ pub struct PanOrbitCamera {
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
-    /// Button used to orbit the camera. Defaults to <mouse>Left</mouse>.
+    /// Button used to orbit the camera. Defaults to `Button::Left`.
     pub button_orbit: MouseButton,
-    /// Button used to pan the camera. Defaults to <mouse>Right</mouse>.
+    /// Button used to pan the camera. Defaults to `Button::Right`.
     pub button_pan: MouseButton,
+    /// Key that must be pressed for `button_orbit` to work. Defaults to `None` (no modifier).
     pub modifier_orbit: Option<KeyCode>,
+    /// Key that must be pressed for `button_pan` to work. Defaults to `None` (no modifier).
     pub modifier_pan: Option<KeyCode>,
-    /// Whether the camera is currently upside down. Updated automatically.
+    /// Whether the camera is currently upside down. Updated automatically. Should not be set manually.
     pub is_upside_down: bool,
-    /// Whether to allow the camera to go upside down.
+    /// Whether to allow the camera to go upside down. Defaults to `false`.
     pub allow_upside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
-    /// Whether the initial camera translation has been set based on `focus`, `alpha`, `beta`, and `radius`.
-    /// If set to `false`, the camera's transform will be updated in the next tick even if there is no user input.
+    /// Whether `PanOrbitCamera` has been initialized with the initial config.
+    /// Set to `true` if you want the camera to smoothly animate to its initial position.
+    /// Defaults to `false`.
     pub initialized: bool,
 }
 
@@ -73,7 +82,7 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             enabled: true,
             alpha: 0.0,
-            beta: 0.0,
+            beta: TAU / 8.0,
             target_alpha: 0.0,
             target_beta: 0.0,
             initialized: false,
