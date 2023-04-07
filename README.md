@@ -1,3 +1,5 @@
+[![Crates.io](https://img.shields.io/crates/v/bevy_panorbit_camera)](https://crates.io/crates/bevy_panorbit_camera)
+
 # Bevy Pan/Orbit Camera
 
 Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
