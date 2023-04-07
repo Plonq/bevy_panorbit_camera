@@ -71,7 +71,7 @@ fn toggle_camera_controls_system(
     key_input: Res<Input<KeyCode>>,
     mut pan_orbit_query: Query<&mut PanOrbitCamera>,
 ) {
-    if key_input.pressed(KeyCode::T) {
+    if key_input.just_pressed(KeyCode::T) {
         for mut pan_orbit in pan_orbit_query.iter_mut() {
             pan_orbit.enabled = !pan_orbit.enabled;
         }
