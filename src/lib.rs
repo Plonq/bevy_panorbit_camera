@@ -116,6 +116,14 @@ fn pan_orbit_camera(
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
     for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
+        if !pan_orbit.initialized {
+            update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
+            pan_orbit.target_alpha = pan_orbit.alpha;
+            pan_orbit.target_beta = pan_orbit.beta;
+            pan_orbit.initialized = true;
+            return;
+        }
+
         // 1 - Get Input
 
         let mut pan = Vec2::ZERO;
@@ -223,45 +231,23 @@ fn pan_orbit_camera(
             || pan_orbit.target_alpha != pan_orbit.alpha
             || pan_orbit.target_beta != pan_orbit.beta
         {
-            if !pan_orbit.initialized {
-                // If not initialized, snap to final target rotation
-                let mut rotation = Quat::from_rotation_y(pan_orbit.target_alpha);
-                rotation *= Quat::from_rotation_x(-pan_orbit.target_beta);
-                transform.rotation = rotation;
-                pan_orbit.initialized = true;
+            // Otherwise, interpolate our way there
+            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &0.2);
+            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &0.2);
 
-                // Update current alpha and beta values
-                pan_orbit.alpha = pan_orbit.target_alpha;
-                pan_orbit.beta = pan_orbit.target_beta;
-            } else {
-                // Otherwise, interpolate our way there
-                let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &0.2);
-                let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &0.2);
-
-                // If we're super close, then just snap to target rotation to save cycles
-                if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
-                    target_alpha = pan_orbit.target_alpha;
-                }
-                if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
-                    target_beta = pan_orbit.target_beta;
-                }
-
-                // Calculate target (lerped) rotation
-                let mut rotation = Quat::from_rotation_y(target_alpha);
-                rotation *= Quat::from_rotation_x(-target_beta);
-
-                transform.rotation = rotation;
-
-                // Update current alpha and beta values
-                pan_orbit.alpha = target_alpha;
-                pan_orbit.beta = target_beta;
+            // If we're super close, then just snap to target rotation to save cycles
+            if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
+                target_alpha = pan_orbit.target_alpha;
+            }
+            if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
+                target_beta = pan_orbit.target_beta;
             }
 
-            // Update the translation of the camera so we are always rotating 'around'
-            // (orbiting) rather than rotating in place
-            let rot_matrix = Mat3::from_quat(transform.rotation);
-            transform.translation =
-                pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+            update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
+
+            // Update current alpha and beta values
+            pan_orbit.alpha = target_alpha;
+            pan_orbit.beta = target_beta;
         }
     }
 }
@@ -341,4 +327,23 @@ fn get_primary_window_size(windows_query: &Query<&Window, With<PrimaryWindow>>) 
         return Vec2::ONE;
     };
     Vec2::new(primary.width(), primary.height())
+}
+
+/// Update `transform` based on alpha, beta, and the camera's focus and radius
+fn update_orbit_transform(
+    alpha: f32,
+    beta: f32,
+    pan_orbit: &PanOrbitCamera,
+    transform: &mut Transform,
+) {
+    let mut rotation = Quat::from_rotation_y(alpha);
+    rotation *= Quat::from_rotation_x(-beta);
+
+    transform.rotation = rotation;
+
+    // Update the translation of the camera so we are always rotating 'around'
+    // (orbiting) rather than rotating in place
+    let rot_matrix = Mat3::from_quat(transform.rotation);
+    transform.translation =
+        pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
 }
