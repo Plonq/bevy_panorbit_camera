@@ -4,8 +4,11 @@ version = "0.10.0"
 authors = ["Plonq"]
 edition = "2021"
 description = "A basic pan and orbit camera in Bevy"
-license = "MIT"
+keywords = ["gamedev", "bevy", "orbit", "camera"]
+categories = ["game-development"]
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/Plonq/bevy_panorbit_camera"
+homepage = "https://github.com/Plonq/bevy_panorbit_camera"
 readme = "README.md"
 
 [dependencies]
