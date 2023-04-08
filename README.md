@@ -49,7 +49,7 @@ Check out the examples folder for full examples.
 
 | Bevy Version | `bevy_panorbit_camera` Version |
 |--------------|--------------------------------|
-| `0.10.0`     | `0.1.0`                        |
+| `0.10.X`     | `0.1.X`                        |
 
 ## Credits
 
