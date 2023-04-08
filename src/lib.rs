@@ -248,7 +248,7 @@ impl PanOrbitCamera {
     }
 }
 
-/// Pan the camera with middle mouse click, zoom with scroll wheel, orbit with right mouse click.
+/// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
     windows_query: Query<&Window, With<PrimaryWindow>>,
     mouse_input: Res<Input<MouseButton>>,
