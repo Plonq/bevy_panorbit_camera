@@ -1,11 +1,11 @@
-[![Crates.io](https://img.shields.io/crates/v/bevy_panorbit_camera)](https://crates.io/crates/bevy_panorbit_camera)
+[![Crates.io](https://img.shields.io/crates/v/bevy_panorbit_camera)](https://crates.io/crates/bevy_panorbit_camera) [![docs.rs](https://docs.rs/bevy_panorbit_camera/badge.svg)](https://docs.rs/bevy_panorbit_camera)
 
 # Bevy Pan/Orbit Camera
 
 Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
 
-This is meant for quickly getting some camera controls for debugging or testing purposes, but it could theoretically
-be used for something like a model/mesh viewer.
+It was designed as a plug and play camera to get up and running quickly, with good defaults, but also the ability to
+customise some aspects to your liking.
 
 Default controls:
 
@@ -15,7 +15,14 @@ Default controls:
 
 ## Demo
 
-![Screen Recording 2023-04-07 at 3 51 46 pm](https://user-images.githubusercontent.com/7709415/230550277-b2d7441c-2307-4491-9270-a3a46ee96c8b.gif)
+![A screen recording showing camera movement](https://user-images.githubusercontent.com/7709415/230715348-eb19d9a8-4826-4a73-a039-02cacdcb3dc9.gif "Demo of bevy_panorbit_camera")
+
+## Features
+
+- Smooth orbiting motion
+- Line-by-line and pixel scrolling
+- Orthographic camera projection in addition to perspective
+- Customisable controls and sensitivity
 
 ## Quick Start
 
@@ -43,7 +50,7 @@ fn setup(mut commands: Commands) {
 }
 ```
 
-Check out the examples folder for full examples.
+Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples).
 
 ## Version Matching
 
