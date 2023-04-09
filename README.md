@@ -52,11 +52,11 @@ fn setup(mut commands: Commands) {
 
 Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples).
 
-## Version Matching
+## Version Compatibility
 
-| Bevy Version | `bevy_panorbit_camera` Version |
-|--------------|--------------------------------|
-| `0.10.X`     | `0.1.X`                        |
+| bevy     | bevy_panorbit_camera |
+|----------|----------------------|
+| `0.10.X` | `0.1.X`              |
 
 ## Credits
 
