@@ -12,5 +12,5 @@ homepage = "https://github.com/Plonq/bevy_panorbit_camera"
 readme = "README.md"
 
 [dependencies]
-bevy = "0.10.0"
+bevy = { version = "0.10.0", default-features = false }
 bevy_easings = "0.10.0"
