@@ -15,6 +15,7 @@
 //! # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
 //! fn main() {
 //!     App::new()
+//! #       .add_plugins(DefaultPlugins)
 //!         // ...
 //!         .add_plugin(PanOrbitCameraPlugin)
 //!         // ...
