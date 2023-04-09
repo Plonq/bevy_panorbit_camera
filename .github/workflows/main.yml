@@ -6,17 +6,12 @@ jobs:
   build:
     strategy:
       matrix:
-        toolchain: [ stable, nightly ]
-        os: [ windows-latest, ubuntu-latest, macos-latest ]
-        exclude:
-          - os: macos-latest
-            toolchain: nightly
-          - os: windows-latest
-            toolchain: nightly
+        os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/bin/
@@ -24,16 +19,14 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-build-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          override: true
+          key: ${{ runner.os }}-cargo-build-stable-${{ hashFiles('**/Cargo.toml') }}
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'
       - name: Build & run tests
-        run: cargo test --workspace
+        # See tools/ci/src/main.rs for the commands this runs
+        run: cargo test
         env:
           CARGO_INCREMENTAL: 0
           RUSTFLAGS: "-C debuginfo=0 -D warnings"
