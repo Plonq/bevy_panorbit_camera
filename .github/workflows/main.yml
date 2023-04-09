@@ -1,8 +1,43 @@
-on: [push, pull_request]
+on: [pull_request]
 
 name: Continuous integration
 
 jobs:
+  build:
+    strategy:
+      matrix:
+        toolchain: [ stable, nightly ]
+        os: [ windows-latest, ubuntu-latest, macos-latest ]
+        exclude:
+          - os: macos-latest
+            toolchain: nightly
+          - os: windows-latest
+            toolchain: nightly
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.toml') }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          override: true
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
+      - name: Build & run tests
+        run: cargo test --workspace
+        env:
+          CARGO_INCREMENTAL: 0
+          RUSTFLAGS: "-C debuginfo=0 -D warnings"
+
   check:
     name: Check
     runs-on: ubuntu-latest
@@ -48,29 +83,3 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
-
-  test_windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-
-  test_ubuntu:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-  test_macos:
-      runs-on: macos-latest
-      steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
