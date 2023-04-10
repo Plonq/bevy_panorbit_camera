@@ -96,8 +96,7 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(pan_orbit_camera)
-            .add_system(reset_alpha_beta_system.run_if(on_timer(Duration::from_secs(1))));
+        app.add_system(pan_orbit_camera);
     }
 }
 
@@ -150,6 +149,18 @@ pub struct PanOrbitCamera {
     /// The target beta value. The camera will smoothly transition to this value. Used internally
     /// and typically you won't set this manually.
     pub target_beta: f32,
+    /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
+    /// around the global Y axis.
+    pub alpha_upper_limit: Option<f32>,
+    /// Lower limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
+    /// around the global Y axis.
+    pub alpha_lower_limit: Option<f32>,
+    /// Upper limit on the `beta` value, in radians. Use this to restrict the maximum rotation
+    /// around the local X axis.
+    pub beta_upper_limit: Option<f32>,
+    /// Lower limit on the `beta` value, in radians. Use this to restrict the maximum rotation
+    /// around the local X axis.
+    pub beta_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
@@ -199,6 +210,10 @@ impl Default for PanOrbitCamera {
             target_alpha: 0.0,
             target_beta: 0.0,
             initialized: false,
+            alpha_upper_limit: None,
+            alpha_lower_limit: None,
+            beta_upper_limit: None,
+            beta_lower_limit: None,
         }
     }
 }
@@ -260,9 +275,30 @@ fn pan_orbit_camera(
 ) {
     for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
         if !pan_orbit.initialized {
+            if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
+                if pan_orbit.alpha > upper_alpha {
+                    pan_orbit.alpha = upper_alpha;
+                }
+            }
+            if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
+                if pan_orbit.alpha < lower_alpha {
+                    pan_orbit.alpha = lower_alpha;
+                }
+            }
+            if let Some(upper_beta) = pan_orbit.beta_upper_limit {
+                if pan_orbit.beta > upper_beta {
+                    pan_orbit.beta = upper_beta;
+                }
+            }
+            if let Some(lower_beta) = pan_orbit.beta_lower_limit {
+                if pan_orbit.beta < lower_beta {
+                    pan_orbit.beta = lower_beta;
+                }
+            }
             update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
             pan_orbit.target_alpha = pan_orbit.alpha;
             pan_orbit.target_beta = pan_orbit.beta;
+
             pan_orbit.initialized = true;
             return;
         }
@@ -326,6 +362,27 @@ fn pan_orbit_camera(
             let delta_y = rotation_move.y / window.y * PI;
             pan_orbit.target_alpha -= delta_x;
             pan_orbit.target_beta += delta_y;
+
+            if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
+                if pan_orbit.target_alpha > upper_alpha {
+                    pan_orbit.target_alpha = upper_alpha;
+                }
+            }
+            if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
+                if pan_orbit.target_alpha < lower_alpha {
+                    pan_orbit.target_alpha = lower_alpha;
+                }
+            }
+            if let Some(upper_beta) = pan_orbit.beta_upper_limit {
+                if pan_orbit.target_beta > upper_beta {
+                    pan_orbit.target_beta = upper_beta;
+                }
+            }
+            if let Some(lower_beta) = pan_orbit.beta_lower_limit {
+                if pan_orbit.target_beta < lower_beta {
+                    pan_orbit.target_beta = lower_beta;
+                }
+            }
 
             if !pan_orbit.allow_upside_down {
                 if pan_orbit.target_beta < -PI / 2.0 {
@@ -395,25 +452,6 @@ fn pan_orbit_camera(
             // Update current alpha and beta values
             pan_orbit.alpha = target_alpha;
             pan_orbit.beta = target_beta;
-        }
-    }
-}
-
-/// Alpha and beta values can get arbitrarily small or big. This system resets them to within
-/// the range -TAU to TAU, if the camera is currently not moving, so that we don't end up
-/// with really small/large values which may cause jankiness.
-fn reset_alpha_beta_system(mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform)>) {
-    for (mut pan_orbit, mut transform) in camera_query.iter_mut() {
-        if pan_orbit.target_alpha == pan_orbit.alpha && pan_orbit.target_beta == pan_orbit.beta {
-            let reset_alpha = pan_orbit.alpha % TAU;
-            let reset_beta = pan_orbit.beta % TAU;
-            pan_orbit.alpha = reset_alpha;
-            pan_orbit.target_alpha = reset_alpha;
-            pan_orbit.beta = reset_beta;
-            pan_orbit.target_beta = reset_beta;
-            let mut rotation = Quat::from_rotation_y(pan_orbit.alpha);
-            rotation *= Quat::from_rotation_x(-pan_orbit.beta);
-            transform.rotation = rotation;
         }
     }
 }
