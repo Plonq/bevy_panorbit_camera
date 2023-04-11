@@ -74,11 +74,9 @@
 
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
-use bevy::time::common_conditions::on_timer;
 use bevy::window::PrimaryWindow;
 use bevy_easings::Lerp;
 use std::f32::consts::{PI, TAU};
-use std::time::Duration;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
