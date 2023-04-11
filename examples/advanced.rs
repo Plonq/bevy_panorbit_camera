@@ -52,8 +52,8 @@ fn setup(
             // Set limits on the position
             alpha_upper_limit: Some(TAU / 4.0),
             alpha_lower_limit: Some(-TAU / 4.0),
-            beta_upper_limit: Some(TAU / 4.0),
-            beta_lower_limit: Some(-TAU / 4.0),
+            beta_upper_limit: Some(TAU / 3.0),
+            beta_lower_limit: Some(-TAU / 3.0),
             // Adjust sensitivity of controls
             orbit_sensitivity: 1.5,
             pan_sensitivity: 0.5,
