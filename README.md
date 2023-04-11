@@ -54,9 +54,9 @@ Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camer
 
 ## Version Compatibility
 
-| bevy     | bevy_panorbit_camera |
-|----------|----------------------|
-| `0.10.X` | `0.1.X`              |
+| bevy | bevy_panorbit_camera |
+|------|----------------------|
+| 0.10 | 0.1, 0.2             |
 
 ## Credits
 
