@@ -35,7 +35,10 @@ impl Plugin for PanOrbitCameraPlugin {
             app.init_resource::<EguiWantsFocus>()
                 .add_system(egui::check_egui_wants_focus.before(PanOrbitCameraSystemSet))
                 .configure_set(
-                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus(false))),
+                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
+                        prev: false,
+                        curr: false,
+                    })),
                 );
         }
     }
