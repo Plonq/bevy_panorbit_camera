@@ -4,8 +4,8 @@
 
 Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
 
-It was designed as a plug and play camera to get up and running quickly, with good defaults, but also the ability to
-customise some aspects to your liking.
+It was designed as a plug and play camera to get up and running quickly, with good defaults. Best suited for quick
+prototyping and 3D experimentation.
 
 Default controls:
 
@@ -20,37 +20,55 @@ Default controls:
 ## Features
 
 - Smooth orbiting motion
-- Line-by-line and pixel scrolling
 - Orthographic camera projection in addition to perspective
 - Customisable controls and sensitivity
 
 ## Quick Start
 
-Simply add the `PanOrbitCameraPlugin`, then add `PanOrbitCamera` to an entity
-with a `Camera3dBundle`:
+Add the plugin:
 
-```rust
-use bevy::prelude::*;
-use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
-
-fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_startup_system(setup)
-        .run();
-}
-
-fn setup(mut commands: Commands) {
-    commands
-        .spawn((
-            Camera3dBundle::default(),
-            PanOrbitCamera::default(),
-        ));
-}
+```rust ignore
+.add_plugin(PanOrbitCameraPlugin)
 ```
 
-Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples).
+Add `PanOrbitCamera` to a camera:
+
+```rust ignore
+commands
+    .spawn((
+        Camera3dBundle::default(),
+        PanOrbitCamera::default(),
+    ));
+```
+
+This will set up a camera with good defaults.
+
+Optionally configure settings:
+
+```rust ignore
+commands
+    .spawn((
+        Camera3dBundle::default(),
+        PanOrbitCamera {
+            beta: TAU * 0.1,
+            radius: 5.0,
+        },
+    ));
+```
+
+Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
+all the possible options.
+
+## What are `alpha` and `beta`?
+
+Think of this camera as rotating around a point, and always pointing at that point (the `focus`). The sideways rotation,
+i.e. the longitudinal rotation, is `alpha`, and the latitudinal rotation is `beta`. Both are measured in radians.
+If `alpha` and `beta` are both `0.0`, then the camera will be pointing directly forwards (-Z direction). Increasing
+`alpha` will rotate around the `focus` to the right, and increasing `beta` will move the camera up and over the `focus`.
+
+## Cargo Features
+
+- `bevy_egui`: makes PanOrbitCamera ignore input when interacting with egui widgets/windows
 
 ## Version Compatibility
 
@@ -62,6 +80,7 @@ Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camer
 
 - [Bevy Cheat Book](https://bevy-cheatbook.github.io): For providing an example that I started from
 - [babylon.js](https://www.babylonjs.com): I referenced their arc rotate camera for some of this
+- [bevy_pancam](https://github.com/johanhelsing/bevy_pancam): For the egui-related code
 
 ## License
 
@@ -75,3 +94,8 @@ at your option.
 This means you can select the license you prefer!
 This dual-licensing approach is the de-facto standard in the Rust ecosystem and there
 are [very good reasons](https://github.com/bevyengine/bevy/issues/2373) to include both.
+
+## Contributing
+
+Pull requests are welcome! By contributing code to this repository you agree to license it under the dual MIT+Apache
+license as detailed above.

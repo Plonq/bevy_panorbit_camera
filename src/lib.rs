@@ -1,82 +1,16 @@
-//! # Bevy Pan/Orbit Camera
-//!
-//! Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
-//!
-//! Default controls:
-//! - Left Mouse - Orbit
-//! - Right Mouse - Pan
-//! - Scroll Wheel - Zoom
-//!
-//! ## Quick Start
-//!
-//! First add the plugin:
-//! ```no_run
-//! # use bevy::prelude::*;
-//! # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
-//! fn main() {
-//!     App::new()
-//! #       .add_plugins(DefaultPlugins)
-//!         // ...
-//!         .add_plugin(PanOrbitCameraPlugin)
-//!         // ...
-//!         .run();
-//! }
-//! ```
-//!
-//! Then add the `PanOrbitCamera` component to a camera:
-//! ```no_run
-//! # use bevy::prelude::*;
-//! # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
-//! # fn main() {
-//! #     App::new()
-//! #         .add_plugins(DefaultPlugins)
-//! #         .add_plugin(PanOrbitCameraPlugin)
-//! #         .add_startup_system(setup)
-//! #         .run();
-//! # }
-//! fn setup(mut commands: Commands) {
-//!     commands
-//!         .spawn((
-//!             Camera3dBundle::default(),
-//!             PanOrbitCamera::default(),
-//!             // ...
-//!         ));
-//! }
-//! ```
-//!
-//! ## Complete Example
-//!
-//! If you run this, you won't see anything! You'll probably want to add some other entities,
-//! like meshes and lights.
-//!
-//! ```no_run
-//! use bevy::prelude::*;
-//! use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
-//!
-//! fn main() {
-//!     App::new()
-//!         .add_plugins(DefaultPlugins)
-//!         .add_plugin(PanOrbitCameraPlugin)
-//!         .add_startup_system(setup)
-//!         .run();
-//! }
-//!
-//! fn setup(mut commands: Commands) {
-//!     commands
-//!         .spawn((
-//!             Camera3dBundle::default(),
-//!             PanOrbitCamera::default(),
-//!         ));
-//! }
-//! ```
-//!
-//! Check out the examples folder for full examples.
+#![warn(missing_docs)]
+#![doc = include_str!("../README.md")]
 
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_easings::Lerp;
+#[cfg(feature = "bevy_egui")]
+use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
+
+#[cfg(feature = "bevy_egui")]
+mod egui;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
@@ -94,9 +28,25 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(pan_orbit_camera);
+        app.add_system(pan_orbit_camera.in_set(PanOrbitCameraSystemSet));
+
+        #[cfg(feature = "bevy_egui")]
+        {
+            app.init_resource::<EguiWantsFocus>()
+                .add_system(egui::check_egui_wants_focus.before(PanOrbitCameraSystemSet))
+                .configure_set(
+                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
+                        prev: false,
+                        curr: false,
+                    })),
+                );
+        }
     }
 }
+
+/// System set to allow ordering of `PanOrbitCamera`
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PanOrbitCameraSystemSet;
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
 /// camera's behaviour and controls.
