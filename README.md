@@ -27,13 +27,13 @@ Default controls:
 
 Add the plugin:
 
-```rust
+```rust ignore
 .add_plugin(PanOrbitCameraPlugin)
 ```
 
 Add `PanOrbitCamera` to a camera:
 
-```rust
+```rust ignore
 commands
     .spawn((
         Camera3dBundle::default(),
@@ -45,7 +45,7 @@ This will set up a camera with good defaults.
 
 Optionally configure settings:
 
-```rust
+```rust ignore
 commands
     .spawn((
         Camera3dBundle::default(),
