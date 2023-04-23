@@ -76,9 +76,11 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_easings::Lerp;
+#[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
 
+#[cfg(feature = "bevy_egui")]
 mod egui;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
