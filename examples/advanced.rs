@@ -1,3 +1,4 @@
+/// An example showing all configuration options
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use std::f32::consts::TAU;
@@ -66,6 +67,8 @@ fn setup(
             modifier_pan: Some(KeyCode::LShift),
             // Reverse the zoom direction
             reversed_zoom: true,
+            // Makes sure it's enabled (this is default)
+            enabled: true,
             ..default()
         },
     ));

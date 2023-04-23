@@ -1,3 +1,4 @@
+/// An example showing how to set up PanOrbitCamera with default configuration
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
