@@ -4,8 +4,8 @@
 
 Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
 
-It was designed as a plug and play camera to get up and running quickly, with good defaults, but also the ability to
-customise some aspects to your liking.
+It was designed as a plug and play camera to get up and running quickly, with good defaults. Best suited for quick
+prototyping and 3D experimentation.
 
 Default controls:
 
