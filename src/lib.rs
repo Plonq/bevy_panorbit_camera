@@ -1,3 +1,4 @@
+#![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
