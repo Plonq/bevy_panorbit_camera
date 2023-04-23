@@ -20,7 +20,6 @@ Default controls:
 ## Features
 
 - Smooth orbiting motion
-- Line-by-line and pixel scrolling
 - Orthographic camera projection in addition to perspective
 - Customisable controls and sensitivity
 
@@ -52,6 +51,10 @@ fn setup(mut commands: Commands) {
 
 Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples).
 
+## Cargo Features
+
+- `bevy_egui`: makes PanOrbitCamera ignore input when interacting with egui widgets/windows
+
 ## Version Compatibility
 
 | bevy | bevy_panorbit_camera |
@@ -62,6 +65,7 @@ Be sure to check out the [examples](https://github.com/Plonq/bevy_panorbit_camer
 
 - [Bevy Cheat Book](https://bevy-cheatbook.github.io): For providing an example that I started from
 - [babylon.js](https://www.babylonjs.com): I referenced their arc rotate camera for some of this
+- [bevy_pancam](https://github.com/johanhelsing/bevy_pancam): For the egui-related code
 
 ## License
 
@@ -75,3 +79,8 @@ at your option.
 This means you can select the license you prefer!
 This dual-licensing approach is the de-facto standard in the Rust ecosystem and there
 are [very good reasons](https://github.com/bevyengine/bevy/issues/2373) to include both.
+
+## Contributing
+
+Pull requests are welcome! By contributing code to this repository you agree to license it under the dual MIT+Apache
+license as detailed above.
