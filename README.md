@@ -64,7 +64,7 @@ all the possible options.
 Think of this camera as rotating around a point, and always pointing at that point (the `focus`). The sideways rotation,
 i.e. the longitudinal rotation, is `alpha`, and the latitudinal rotation is `beta`. Both are measured in radians.
 If `alpha` and `beta` are both `0.0`, then the camera will be pointing directly forwards (-Z direction). Increasing
-`alpha` will rotate around the `focus` to the right, and increasing beta will move the camera up and over the `focus`.
+`alpha` will rotate around the `focus` to the right, and increasing `beta` will move the camera up and over the `focus`.
 
 ## Cargo Features
 
