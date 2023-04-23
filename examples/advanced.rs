@@ -49,7 +49,7 @@ fn setup(
             // Set the starting position
             alpha: TAU / 8.0,
             beta: TAU / 8.0,
-            radius: 5.0,
+            radius: Some(5.0),
             // Set limits on the position
             alpha_upper_limit: Some(TAU / 4.0),
             alpha_lower_limit: Some(-TAU / 4.0),

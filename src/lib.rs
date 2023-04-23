@@ -80,7 +80,7 @@ pub struct PanOrbitCamera {
     /// For orthographic projection, this is ignored, and the projection's scale is used instead.
     /// Automatically updated (only for cameras with perspective projection).
     /// Defaults to `5.0`.
-    pub radius: f32,
+    pub radius: Option<f32>,
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
@@ -141,7 +141,7 @@ impl Default for PanOrbitCamera {
     fn default() -> Self {
         PanOrbitCamera {
             focus: Vec3::ZERO,
-            radius: 5.0,
+            radius: Some(5.0),
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
@@ -204,7 +204,7 @@ impl PanOrbitCamera {
         let beta = (comp_vec.y / radius).acos();
         PanOrbitCamera {
             focus,
-            radius,
+            radius: Some(radius),
             alpha,
             beta,
             ..default()
@@ -243,7 +243,7 @@ fn pan_orbit_camera(
                     pan_orbit.beta = lower_beta;
                 }
             }
-            update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
+            update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &mut pan_orbit, &mut transform);
             pan_orbit.target_alpha = pan_orbit.alpha;
             pan_orbit.target_beta = pan_orbit.beta;
 
@@ -349,7 +349,9 @@ fn pan_orbit_camera(
                 Projection::Perspective(ref p) => {
                     pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / window;
                     // Make panning proportional to distance away from focus point
-                    multiplier = pan_orbit.radius;
+                    if let Some(r) = pan_orbit.radius {
+                        multiplier = r;
+                    }
                 }
                 Projection::Orthographic(ref p) => {
                     pan *= Vec2::new(p.area.width(), p.area.height()) / window;
@@ -364,9 +366,8 @@ fn pan_orbit_camera(
         } else if scroll.abs() > 0.0 {
             match *projection {
                 Projection::Perspective(_) => {
-                    pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+                    pan_orbit.radius = pan_orbit.radius.map(|r| f32::max(r - scroll * r * 0.2, 0.05));
                     // Prevent zoom to zero otherwise we can get stuck there
-                    pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
                 }
                 Projection::Orthographic(ref mut p) => {
                     p.scale -= scroll * p.scale * 0.2;
@@ -395,7 +396,7 @@ fn pan_orbit_camera(
                 target_beta = pan_orbit.target_beta;
             }
 
-            update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
+            update_orbit_transform(target_alpha, target_beta, &mut pan_orbit, &mut transform);
 
             // Update current alpha and beta values
             pan_orbit.alpha = target_alpha;
@@ -466,7 +467,7 @@ fn get_primary_window_size(windows_query: &Query<&Window, With<PrimaryWindow>>) 
 fn update_orbit_transform(
     alpha: f32,
     beta: f32,
-    pan_orbit: &PanOrbitCamera,
+    pan_orbit: &mut PanOrbitCamera,
     transform: &mut Transform,
 ) {
     let mut rotation = Quat::from_rotation_y(alpha);
@@ -477,6 +478,8 @@ fn update_orbit_transform(
     // Update the translation of the camera so we are always rotating 'around'
     // (orbiting) rather than rotating in place
     let rot_matrix = Mat3::from_quat(transform.rotation);
+    let radius = pan_orbit.radius.get_or_insert_with(|| (transform.translation - pan_orbit.focus).length());
+
     transform.translation =
-        pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+        pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, *radius));
 }
