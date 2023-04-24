@@ -3,7 +3,8 @@
 
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
-use bevy::window::PrimaryWindow;
+use bevy::render::camera::RenderTarget;
+use bevy::window::{PrimaryWindow, WindowRef};
 use bevy_easings::Lerp;
 #[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
@@ -28,7 +29,12 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(pan_orbit_camera.in_set(PanOrbitCameraSystemSet));
+        app.insert_resource(ActivePanOrbitEntity::default())
+            .add_systems(
+                (active_viewport_system, pan_orbit_camera)
+                    .chain()
+                    .in_set(PanOrbitCameraSystemSet),
+            );
 
         #[cfg(feature = "bevy_egui")]
         {
@@ -212,16 +218,79 @@ impl PanOrbitCamera {
     }
 }
 
-/// Main system for processing input and converting to transformations
-fn pan_orbit_camera(
-    windows_query: Query<&Window, With<PrimaryWindow>>,
+// Tracks the camera entity that should be handling input events.
+// This enables having multiple cameras with different viewports or windows.
+#[derive(Resource, Default, Debug, PartialEq, Eq)]
+struct ActivePanOrbitEntity(Option<Entity>);
+
+// Sets the active camera entity when the user starts interacting with it. We only check if buttons
+// were 'just' pressed, to ensure that you can start orbiting one camera and drag your cursor
+// across a different viewport without the second viewport stealing the input (like standard OS
+// behaviour).
+fn active_viewport_system(
+    mut active_entity: ResMut<ActivePanOrbitEntity>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
-    mut mouse_motion_events: EventReader<MouseMotion>,
-    mut scroll_events: EventReader<MouseWheel>,
-    mut camera_query: Query<(&mut PanOrbitCamera, &mut Transform, &mut Projection)>,
+    scroll_events: EventReader<MouseWheel>,
+    primary_windows: Query<&Window, With<PrimaryWindow>>,
+    other_windows: Query<&Window, Without<PrimaryWindow>>,
+    orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
-    for (mut pan_orbit, mut transform, mut projection) in camera_query.iter_mut() {
+    for (entity, camera, pan_orbit) in orbit_cameras.iter() {
+        let input_just_activated = orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || !scroll_events.is_empty();
+
+        if input_just_activated {
+            // First check if cursor is in the same window as this camera
+            if let RenderTarget::Window(win_ref) = camera.target {
+                let window = match win_ref {
+                    WindowRef::Primary => primary_windows
+                        .get_single()
+                        .expect("Must exist, since the camera is referencing it"),
+                    WindowRef::Entity(entity) => other_windows
+                        .get(entity)
+                        .expect("Must exist, since the camera is referencing it"),
+                };
+                if let Some(cursor_pos) = window.cursor_position() {
+                    // Now check if cursor is within this camera's viewport
+                    if let Some(vp_rect) = camera.logical_viewport_rect() {
+                        let cursor_in_vp = cursor_pos.x > vp_rect.0.x
+                            && cursor_pos.x < vp_rect.1.x
+                            && cursor_pos.y > vp_rect.0.y
+                            && cursor_pos.y < vp_rect.1.y;
+                        if cursor_in_vp {
+                            active_entity.set_if_neq(ActivePanOrbitEntity(Some(entity)));
+                            // Can skip the rest, only one can be active at a time
+                            return;
+                        } else {
+                            active_entity.set_if_neq(ActivePanOrbitEntity(None));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Main system for processing input and converting to transformations
+fn pan_orbit_camera(
+    active_entity: Res<ActivePanOrbitEntity>,
+    mouse_input: Res<Input<MouseButton>>,
+    key_input: Res<Input<KeyCode>>,
+    mut mouse_motion: EventReader<MouseMotion>,
+    mut scroll_events: EventReader<MouseWheel>,
+    mut orbit_cameras: Query<(
+        Entity,
+        &mut PanOrbitCamera,
+        &mut Transform,
+        &mut Projection,
+        &Camera,
+    )>,
+) {
+    let mouse_delta = mouse_motion.iter().map(|event| event.delta).sum::<Vec2>();
+
+    for (entity, mut pan_orbit, mut transform, mut projection, camera) in orbit_cameras.iter_mut() {
         if !pan_orbit.initialized {
             if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
                 if pan_orbit.alpha > upper_alpha {
@@ -248,7 +317,13 @@ fn pan_orbit_camera(
             pan_orbit.target_beta = pan_orbit.beta;
 
             pan_orbit.initialized = true;
-            return;
+            continue;
+        }
+
+        // Abort early if this camera not active. Do this after initializing so cameras are always
+        // initialized.
+        if active_entity.0 != Some(entity) {
+            continue;
         }
 
         // 1 - Get Input
@@ -260,14 +335,10 @@ fn pan_orbit_camera(
 
         if pan_orbit.enabled {
             if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
-                for ev in mouse_motion_events.iter() {
-                    rotation_move += ev.delta * pan_orbit.orbit_sensitivity;
-                }
+                rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
-                for ev in mouse_motion_events.iter() {
-                    pan += ev.delta * pan_orbit.pan_sensitivity;
-                }
+                pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
 
             for ev in scroll_events.iter() {
@@ -282,7 +353,9 @@ fn pan_orbit_camera(
                 scroll += ev.y * multiplier * direction * pan_orbit.zoom_sensitivity;
             }
 
-            if orbit_just_pressed_or_released(&pan_orbit, &mouse_input, &key_input) {
+            if orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
+                || orbit_just_released(&pan_orbit, &mouse_input, &key_input)
+            {
                 orbit_button_changed = true;
             }
         }
@@ -298,69 +371,71 @@ fn pan_orbit_camera(
 
         let mut has_moved = false;
         if rotation_move.length_squared() > 0.0 {
-            let window = get_primary_window_size(&windows_query);
-            let delta_x = {
-                let delta = rotation_move.x / window.x * PI * 2.0;
-                if pan_orbit.is_upside_down {
-                    -delta
-                } else {
-                    delta
-                }
-            };
-            let delta_y = rotation_move.y / window.y * PI;
-            pan_orbit.target_alpha -= delta_x;
-            pan_orbit.target_beta += delta_y;
+            if let Some(vp_size) = camera.logical_viewport_size() {
+                let delta_x = {
+                    let delta = rotation_move.x / vp_size.x * PI * 2.0;
+                    if pan_orbit.is_upside_down {
+                        -delta
+                    } else {
+                        delta
+                    }
+                };
+                let delta_y = rotation_move.y / vp_size.y * PI;
+                pan_orbit.target_alpha -= delta_x;
+                pan_orbit.target_beta += delta_y;
 
-            if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-                if pan_orbit.target_alpha > upper_alpha {
-                    pan_orbit.target_alpha = upper_alpha;
+                if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
+                    if pan_orbit.target_alpha > upper_alpha {
+                        pan_orbit.target_alpha = upper_alpha;
+                    }
                 }
-            }
-            if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-                if pan_orbit.target_alpha < lower_alpha {
-                    pan_orbit.target_alpha = lower_alpha;
+                if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
+                    if pan_orbit.target_alpha < lower_alpha {
+                        pan_orbit.target_alpha = lower_alpha;
+                    }
                 }
-            }
-            if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-                if pan_orbit.target_beta > upper_beta {
-                    pan_orbit.target_beta = upper_beta;
+                if let Some(upper_beta) = pan_orbit.beta_upper_limit {
+                    if pan_orbit.target_beta > upper_beta {
+                        pan_orbit.target_beta = upper_beta;
+                    }
                 }
-            }
-            if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-                if pan_orbit.target_beta < lower_beta {
-                    pan_orbit.target_beta = lower_beta;
+                if let Some(lower_beta) = pan_orbit.beta_lower_limit {
+                    if pan_orbit.target_beta < lower_beta {
+                        pan_orbit.target_beta = lower_beta;
+                    }
                 }
-            }
 
-            if !pan_orbit.allow_upside_down {
-                if pan_orbit.target_beta < -PI / 2.0 {
-                    pan_orbit.target_beta = -PI / 2.0;
+                if !pan_orbit.allow_upside_down {
+                    if pan_orbit.target_beta < -PI / 2.0 {
+                        pan_orbit.target_beta = -PI / 2.0;
+                    }
+                    if pan_orbit.target_beta > PI / 2.0 {
+                        pan_orbit.target_beta = PI / 2.0;
+                    }
                 }
-                if pan_orbit.target_beta > PI / 2.0 {
-                    pan_orbit.target_beta = PI / 2.0;
-                }
+                has_moved = true;
             }
-            has_moved = true;
         } else if pan.length_squared() > 0.0 {
             // Make panning distance independent of resolution and FOV,
-            let window = get_primary_window_size(&windows_query);
-            let mut multiplier = 1.0;
-            match *projection {
-                Projection::Perspective(ref p) => {
-                    pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / window;
-                    // Make panning proportional to distance away from focus point
-                    multiplier = pan_orbit.radius;
+            if let Some(vp_size) = camera.logical_viewport_size() {
+                let mut multiplier = 1.0;
+                match *projection {
+                    Projection::Perspective(ref p) => {
+                        pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / vp_size;
+                        // Make panning proportional to distance away from focus point
+                        multiplier = pan_orbit.radius;
+                    }
+                    Projection::Orthographic(ref p) => {
+                        pan *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
+                    }
                 }
-                Projection::Orthographic(ref p) => {
-                    pan *= Vec2::new(p.area.width(), p.area.height()) / window;
-                }
+                // Translate by local axes
+                let right = transform.rotation * Vec3::X * -pan.x;
+                let up = transform.rotation * Vec3::Y * pan.y;
+                let translation = (right + up) * multiplier;
+                pan_orbit.focus += translation;
+                has_moved = true;
             }
-            // Translate by local axes
-            let right = transform.rotation * Vec3::X * -pan.x;
-            let up = transform.rotation * Vec3::Y * pan.y;
-            let translation = (right + up) * multiplier;
-            pan_orbit.focus += translation;
-            has_moved = true;
         } else if scroll.abs() > 0.0 {
             match *projection {
                 Projection::Perspective(_) => {
@@ -420,7 +495,7 @@ fn orbit_pressed(
             .map_or(true, |modifier| !key_input.pressed(modifier))
 }
 
-fn orbit_just_pressed_or_released(
+fn orbit_just_pressed(
     pan_orbit: &PanOrbitCamera,
     mouse_input: &Res<Input<MouseButton>>,
     key_input: &Res<Input<KeyCode>>,
@@ -428,10 +503,25 @@ fn orbit_just_pressed_or_released(
     let just_pressed = pan_orbit
         .modifier_orbit
         .map_or(true, |modifier| key_input.pressed(modifier))
-        && (mouse_input.just_pressed(pan_orbit.button_orbit)
-            || mouse_input.just_released(pan_orbit.button_orbit));
+        && (mouse_input.just_pressed(pan_orbit.button_orbit));
 
     just_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+fn orbit_just_released(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_released = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_released(pan_orbit.button_orbit));
+
+    just_released
         && pan_orbit
             .modifier_pan
             .map_or(true, |modifier| !key_input.pressed(modifier))
@@ -453,13 +543,20 @@ fn pan_pressed(
             .map_or(true, |modifier| !key_input.pressed(modifier))
 }
 
-fn get_primary_window_size(windows_query: &Query<&Window, With<PrimaryWindow>>) -> Vec2 {
-    let Ok(primary) = windows_query.get_single() else {
-        // No primary window? Dunno how we can be controlling a camera, but let's return ONE
-        // so when dividing by this value nothing explodes
-        return Vec2::ONE;
-    };
-    Vec2::new(primary.width(), primary.height())
+fn pan_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_pressed(pan_orbit.button_pan));
+
+    just_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
 }
 
 /// Update `transform` based on alpha, beta, and the camera's focus and radius
