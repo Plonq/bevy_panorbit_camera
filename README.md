@@ -20,8 +20,9 @@ Default controls:
 ## Features
 
 - Smooth orbiting motion
-- Orthographic camera projection in addition to perspective
+- Works with orthographic camera projection in addition to perspective
 - Customisable controls and sensitivity
+- Works with multiple viewports and/or windows
 
 ## Quick Start
 

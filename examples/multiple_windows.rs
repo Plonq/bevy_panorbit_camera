@@ -1,7 +1,11 @@
-//! Demonstrates the simplest usage
+//! Demonstrates usage with multiple windows
 
+use bevy::core_pipeline::clear_color::ClearColorConfig;
 use bevy::prelude::*;
+use bevy::render::camera::{RenderTarget, Viewport};
+use bevy::window::{WindowRef, WindowResized};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use std::f32::consts::TAU;
 
 fn main() {
     App::new()
@@ -40,5 +44,35 @@ fn setup(
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), PanOrbitCamera::default()));
+    commands.spawn((
+        Camera3dBundle { ..default() },
+        PanOrbitCamera {
+            beta: TAU * 0.1,
+            ..default()
+        },
+    ));
+
+    // Spawn a second window
+    let second_window = commands
+        .spawn(Window {
+            title: "Second window".to_owned(),
+            ..default()
+        })
+        .id();
+
+    // second window camera
+    commands.spawn((
+        Camera3dBundle {
+            camera: Camera {
+                target: RenderTarget::Window(WindowRef::Entity(second_window)),
+                ..default()
+            },
+            ..default()
+        },
+        PanOrbitCamera {
+            beta: TAU * 0.05,
+            radius: 8.0,
+            ..default()
+        },
+    ));
 }

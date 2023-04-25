@@ -1,4 +1,5 @@
-/// An example showing all configuration options
+//! Demonstrates all common configuration options
+
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use std::f32::consts::TAU;
