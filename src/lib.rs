@@ -238,6 +238,9 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
+    let mut new_resource: Option<ActiveViewportData> = None;
+    let mut max_cam_order = 0;
+
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
             || pan_just_pressed(pan_orbit, &mouse_input, &key_input)
@@ -265,21 +268,24 @@ fn active_viewport_data(
                             && cursor_pos.y > vp_rect.0.y
                             && cursor_pos.y < vp_rect.1.y;
 
-                        if cursor_in_vp {
-                            let new_resource = ActiveViewportData {
+                        // Only set if camera order is higher. This may overwrite a previous value
+                        // in the case the viewport overlapping another viewport.
+                        if cursor_in_vp && camera.order >= max_cam_order {
+                            new_resource = Some(ActiveViewportData {
                                 entity: Some(entity),
                                 viewport_size: camera.logical_viewport_size(),
                                 window_size: Some(Vec2::new(window.width(), window.height())),
-                            };
-                            active_entity.set_if_neq(new_resource);
-                            break;
-                        } else {
-                            active_entity.set_if_neq(ActiveViewportData::default());
+                            });
+                            max_cam_order = camera.order;
                         }
                     }
                 }
             }
         }
+    }
+
+    if let Some(new_resource) = new_resource {
+        active_entity.set_if_neq(new_resource);
     }
 }
 
