@@ -1,5 +1,4 @@
-//! Demonstrates usage with multiple viewports and windows
-//! Adapted from the official bevy examples, split_screen and multiple_windows
+//! Demonstrates usage with multiple viewports
 
 use bevy::core_pipeline::clear_color::ClearColorConfig;
 use bevy::prelude::*;
@@ -45,25 +44,24 @@ fn setup(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..default()
     });
-    // Left Camera
+    // Main Camera
     commands.spawn((
         Camera3dBundle { ..default() },
         PanOrbitCamera {
             beta: TAU * 0.1,
             ..default()
         },
-        LeftCamera,
     ));
-    // Right Camera
+    // Minimap Camera
     commands.spawn((
         Camera3dBundle {
             camera: Camera {
-                // Renders the right camera after the left camera, which has a default priority of 0
+                // Renders the minimap camera after the main camera, so it is rendered on top
                 order: 1,
                 ..default()
             },
             camera_3d: Camera3d {
-                // don't clear on the second camera because the first camera already cleared the window
+                // Don't clear on the second camera because the first camera already cleared the window
                 clear_color: ClearColorConfig::None,
                 ..default()
             },
@@ -74,68 +72,25 @@ fn setup(
             alpha: TAU * 0.1,
             ..default()
         },
-        RightCamera,
-    ));
-
-    // Spawn a second window
-    let second_window = commands
-        .spawn(Window {
-            title: "Second window".to_owned(),
-            ..default()
-        })
-        .id();
-
-    // second window camera
-    commands.spawn((
-        Camera3dBundle {
-            camera: Camera {
-                target: RenderTarget::Window(WindowRef::Entity(second_window)),
-                ..default()
-            },
-            ..default()
-        },
-        PanOrbitCamera {
-            beta: TAU * 0.05,
-            radius: 8.0,
-            ..default()
-        },
+        MinimapCamera,
     ));
 }
 
 #[derive(Component)]
-struct LeftCamera;
-
-#[derive(Component)]
-struct RightCamera;
+struct MinimapCamera;
 
 fn set_camera_viewports(
     windows: Query<&Window>,
     mut resize_events: EventReader<WindowResized>,
-    mut left_camera: Query<&mut Camera, (With<LeftCamera>, Without<RightCamera>)>,
-    mut right_camera: Query<&mut Camera, With<RightCamera>>,
+    mut right_camera: Query<&mut Camera, With<MinimapCamera>>,
 ) {
-    // We need to dynamically resize the camera's viewports whenever the window size changes
-    // so then each camera always takes up half the screen.
-    // A resize_event is sent when the window is first created, allowing us to reuse this system for initial setup.
     for resize_event in resize_events.iter() {
         let window = windows.get(resize_event.window).unwrap();
-        let mut left_camera = left_camera.single_mut();
-        left_camera.viewport = Some(Viewport {
-            physical_position: UVec2::new(0, 0),
-            physical_size: UVec2::new(
-                window.resolution.physical_width() / 2,
-                window.resolution.physical_height(),
-            ),
-            ..default()
-        });
-
         let mut right_camera = right_camera.single_mut();
+        let size = window.resolution.physical_width() / 5;
         right_camera.viewport = Some(Viewport {
-            physical_position: UVec2::new(window.resolution.physical_width() / 2, 0),
-            physical_size: UVec2::new(
-                window.resolution.physical_width() / 2,
-                window.resolution.physical_height(),
-            ),
+            physical_position: UVec2::new(window.resolution.physical_width() - size, 0),
+            physical_size: UVec2::new(size, size),
             ..default()
         });
     }
