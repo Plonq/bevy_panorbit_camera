@@ -1,11 +1,17 @@
-[![Crates.io](https://img.shields.io/crates/v/bevy_panorbit_camera)](https://crates.io/crates/bevy_panorbit_camera) [![docs.rs](https://docs.rs/bevy_panorbit_camera/badge.svg)](https://docs.rs/bevy_panorbit_camera) [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
+[![Crates.io](https://img.shields.io/crates/v/bevy_panorbit_camera)](https://crates.io/crates/bevy_panorbit_camera)
+[![docs.rs](https://docs.rs/bevy_panorbit_camera/badge.svg)](https://docs.rs/bevy_panorbit_camera)
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-# Bevy Pan/Orbit Camera
+<div align="center">
+  <h1>Bevy Pan/Orbit Camera</h1>
+</div>
 
-Basic orbit camera controls for Bevy. Supports orbiting, panning, and zooming.
+![A screen recording showing camera movement](https://user-images.githubusercontent.com/7709415/230715348-eb19d9a8-4826-4a73-a039-02cacdcb3dc9.gif "Demo of bevy_panorbit_camera")
 
-It was designed as a plug and play camera to get up and running quickly, with good defaults. Best suited for quick
-prototyping and 3D experimentation.
+## What Is This?
+
+Bevy Pan/Orbit Camera provides orbit camera controls for Bevy Engine, designed with simplicity and flexibility in mind.
+Use it to quickly prototype, experiment, for model viewers, and more!
 
 Default controls:
 
@@ -13,15 +19,12 @@ Default controls:
 - Right Mouse - Pan
 - Scroll Wheel - Zoom
 
-## Demo
+## Features:
 
-![A screen recording showing camera movement](https://user-images.githubusercontent.com/7709415/230715348-eb19d9a8-4826-4a73-a039-02cacdcb3dc9.gif "Demo of bevy_panorbit_camera")
-
-## Features
-
+- Orbiting, panning and zooming
 - Smooth orbiting motion
 - Works with orthographic camera projection in addition to perspective
-- Customisable controls and sensitivity
+- Customisable controls, sensitivity, and more
 - Works with multiple viewports and/or windows
 
 ## Quick Start
