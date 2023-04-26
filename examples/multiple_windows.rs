@@ -1,9 +1,8 @@
 //! Demonstrates usage with multiple windows
 
-use bevy::core_pipeline::clear_color::ClearColorConfig;
 use bevy::prelude::*;
-use bevy::render::camera::{RenderTarget, Viewport};
-use bevy::window::{WindowRef, WindowResized};
+use bevy::render::camera::RenderTarget;
+use bevy::window::WindowRef;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use std::f32::consts::TAU;
 
