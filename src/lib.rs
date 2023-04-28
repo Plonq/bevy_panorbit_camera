@@ -469,7 +469,7 @@ fn pan_orbit_camera(
             || pan_orbit.target_alpha != pan_orbit.alpha
             || pan_orbit.target_beta != pan_orbit.beta
         {
-            // Otherwise, interpolate our way there
+            // Interpolate towards the target value
             let t = 1.0 - pan_orbit.orbit_smoothness;
             let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
             let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &t);
