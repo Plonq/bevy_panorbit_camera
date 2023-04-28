@@ -118,8 +118,8 @@ pub struct PanOrbitCamera {
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
-    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite,
-    /// smoothing, which you probably don't want. Defaults to `0.8`.
+    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
+    /// smoothing. Defaults to `0.8`.
     pub orbit_smoothness: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
