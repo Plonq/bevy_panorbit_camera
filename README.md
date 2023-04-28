@@ -26,6 +26,7 @@ Default controls:
 - Works with orthographic camera projection in addition to perspective
 - Customisable controls, sensitivity, and more
 - Works with multiple viewports and/or windows
+- Easy to animate, e.g. to slowly rotate around an object
 
 ## Quick Start
 

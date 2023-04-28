@@ -29,7 +29,7 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ActiveViewportData::default())
+        app.insert_resource(ActiveCameraData::default())
             .add_systems(
                 (active_viewport_data, pan_orbit_camera)
                     .chain()
@@ -117,6 +117,10 @@ pub struct PanOrbitCamera {
     pub beta_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
+    /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
+    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
+    /// smoothing. Defaults to `0.8`.
+    pub orbit_smoothness: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
@@ -151,6 +155,7 @@ impl Default for PanOrbitCamera {
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
+            orbit_smoothness: 0.8,
             pan_sensitivity: 1.0,
             zoom_sensitivity: 1.0,
             button_orbit: MouseButton::Left,
@@ -221,7 +226,7 @@ impl PanOrbitCamera {
 // Tracks the camera entity that should be handling input events.
 // This enables having multiple cameras with different viewports or windows.
 #[derive(Resource, Default, Debug, PartialEq)]
-struct ActiveViewportData {
+struct ActiveCameraData {
     entity: Option<Entity>,
     viewport_size: Option<Vec2>,
     window_size: Option<Vec2>,
@@ -230,7 +235,7 @@ struct ActiveViewportData {
 // Gathers data about the active viewport, i.e. the viewport the user is interacting with. This
 // enables multiple viewports/windows.
 fn active_viewport_data(
-    mut active_entity: ResMut<ActiveViewportData>,
+    mut active_cam: ResMut<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
@@ -238,7 +243,7 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
-    let mut new_resource: Option<ActiveViewportData> = None;
+    let mut new_resource: Option<ActiveCameraData> = None;
     let mut max_cam_order = 0;
 
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
@@ -271,7 +276,7 @@ fn active_viewport_data(
                         // Only set if camera order is higher. This may overwrite a previous value
                         // in the case the viewport overlapping another viewport.
                         if cursor_in_vp && camera.order >= max_cam_order {
-                            new_resource = Some(ActiveViewportData {
+                            new_resource = Some(ActiveCameraData {
                                 entity: Some(entity),
                                 viewport_size: camera.logical_viewport_size(),
                                 window_size: Some(Vec2::new(window.width(), window.height())),
@@ -285,13 +290,13 @@ fn active_viewport_data(
     }
 
     if let Some(new_resource) = new_resource {
-        active_entity.set_if_neq(new_resource);
+        active_cam.set_if_neq(new_resource);
     }
 }
 
 /// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
-    active_viewport_data: Res<ActiveViewportData>,
+    active_cam: Res<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
@@ -330,12 +335,6 @@ fn pan_orbit_camera(
             continue;
         }
 
-        // Abort early if this camera not active. Do this after initializing so cameras are always
-        // initialized.
-        if active_viewport_data.entity != Some(entity) {
-            continue;
-        }
-
         // 1 - Get Input
 
         let mut pan = Vec2::ZERO;
@@ -343,7 +342,7 @@ fn pan_orbit_camera(
         let mut scroll = 0.0;
         let mut orbit_button_changed = false;
 
-        if pan_orbit.enabled {
+        if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
@@ -383,7 +382,7 @@ fn pan_orbit_camera(
         if rotation_move.length_squared() > 0.0 {
             // Use window size for rotation otherwise the sensitivity
             // is far too high for small viewports
-            if let Some(win_size) = active_viewport_data.window_size {
+            if let Some(win_size) = active_cam.window_size {
                 let delta_x = {
                     let delta = rotation_move.x / win_size.x * PI * 2.0;
                     if pan_orbit.is_upside_down {
@@ -429,7 +428,7 @@ fn pan_orbit_camera(
             }
         } else if pan.length_squared() > 0.0 {
             // Make panning distance independent of resolution and FOV,
-            if let Some(vp_size) = active_viewport_data.viewport_size {
+            if let Some(vp_size) = active_cam.viewport_size {
                 let mut multiplier = 1.0;
                 match *projection {
                     Projection::Perspective(ref p) => {
@@ -470,9 +469,10 @@ fn pan_orbit_camera(
             || pan_orbit.target_alpha != pan_orbit.alpha
             || pan_orbit.target_beta != pan_orbit.beta
         {
-            // Otherwise, interpolate our way there
-            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &0.2);
-            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &0.2);
+            // Interpolate towards the target value
+            let t = 1.0 - pan_orbit.orbit_smoothness;
+            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
+            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &t);
 
             // If we're super close, then just snap to target rotation to save cycles
             if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
