@@ -335,12 +335,6 @@ fn pan_orbit_camera(
             continue;
         }
 
-        // Abort early if this camera not active. Do this after initializing so cameras are always
-        // initialized.
-        if active_viewport_data.entity != Some(entity) {
-            continue;
-        }
-
         // 1 - Get Input
 
         let mut pan = Vec2::ZERO;
@@ -348,7 +342,7 @@ fn pan_orbit_camera(
         let mut scroll = 0.0;
         let mut orbit_button_changed = false;
 
-        if pan_orbit.enabled {
+        if pan_orbit.enabled && active_viewport_data.entity == Some(entity) {
             if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
