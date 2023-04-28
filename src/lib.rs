@@ -226,7 +226,7 @@ impl PanOrbitCamera {
 // Tracks the camera entity that should be handling input events.
 // This enables having multiple cameras with different viewports or windows.
 #[derive(Resource, Default, Debug, PartialEq)]
-struct ActiveViewportData {
+struct ActiveCameraData {
     entity: Option<Entity>,
     viewport_size: Option<Vec2>,
     window_size: Option<Vec2>,
@@ -235,7 +235,7 @@ struct ActiveViewportData {
 // Gathers data about the active viewport, i.e. the viewport the user is interacting with. This
 // enables multiple viewports/windows.
 fn active_viewport_data(
-    mut active_entity: ResMut<ActiveViewportData>,
+    mut active_cam: ResMut<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
@@ -243,7 +243,7 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
-    let mut new_resource: Option<ActiveViewportData> = None;
+    let mut new_resource: Option<ActiveCameraData> = None;
     let mut max_cam_order = 0;
 
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
@@ -276,7 +276,7 @@ fn active_viewport_data(
                         // Only set if camera order is higher. This may overwrite a previous value
                         // in the case the viewport overlapping another viewport.
                         if cursor_in_vp && camera.order >= max_cam_order {
-                            new_resource = Some(ActiveViewportData {
+                            new_resource = Some(ActiveCameraData {
                                 entity: Some(entity),
                                 viewport_size: camera.logical_viewport_size(),
                                 window_size: Some(Vec2::new(window.width(), window.height())),
@@ -290,13 +290,13 @@ fn active_viewport_data(
     }
 
     if let Some(new_resource) = new_resource {
-        active_entity.set_if_neq(new_resource);
+        active_cam.set_if_neq(new_resource);
     }
 }
 
 /// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
-    active_viewport_data: Res<ActiveViewportData>,
+    active_cam: Res<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
@@ -342,7 +342,7 @@ fn pan_orbit_camera(
         let mut scroll = 0.0;
         let mut orbit_button_changed = false;
 
-        if pan_orbit.enabled && active_viewport_data.entity == Some(entity) {
+        if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
@@ -382,7 +382,7 @@ fn pan_orbit_camera(
         if rotation_move.length_squared() > 0.0 {
             // Use window size for rotation otherwise the sensitivity
             // is far too high for small viewports
-            if let Some(win_size) = active_viewport_data.window_size {
+            if let Some(win_size) = active_cam.window_size {
                 let delta_x = {
                     let delta = rotation_move.x / win_size.x * PI * 2.0;
                     if pan_orbit.is_upside_down {
@@ -428,7 +428,7 @@ fn pan_orbit_camera(
             }
         } else if pan.length_squared() > 0.0 {
             // Make panning distance independent of resolution and FOV,
-            if let Some(vp_size) = active_viewport_data.viewport_size {
+            if let Some(vp_size) = active_cam.viewport_size {
                 let mut multiplier = 1.0;
                 match *projection {
                     Projection::Perspective(ref p) => {
