@@ -29,7 +29,7 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ActiveViewportData::default())
+        app.insert_resource(ActiveCameraData::default())
             .add_systems(
                 (active_viewport_data, pan_orbit_camera)
                     .chain()
@@ -117,6 +117,10 @@ pub struct PanOrbitCamera {
     pub beta_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
+    /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
+    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite,
+    /// smoothing, which you probably don't want. Defaults to `0.8`.
+    pub orbit_smoothness: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
@@ -151,6 +155,7 @@ impl Default for PanOrbitCamera {
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
+            orbit_smoothness: 0.8,
             pan_sensitivity: 1.0,
             zoom_sensitivity: 1.0,
             button_orbit: MouseButton::Left,
@@ -471,8 +476,9 @@ fn pan_orbit_camera(
             || pan_orbit.target_beta != pan_orbit.beta
         {
             // Otherwise, interpolate our way there
-            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &0.2);
-            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &0.2);
+            let t = 1.0 - pan_orbit.orbit_smoothness;
+            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
+            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &t);
 
             // If we're super close, then just snap to target rotation to save cycles
             if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
