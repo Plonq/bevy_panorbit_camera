@@ -100,7 +100,6 @@ fn keyboard_controls(
             }
 
             // Zoom with Z and X
-            // Note: currently does not work with orthographic cameras
             if key_input.pressed(KeyCode::Z) {
                 pan_orbit.radius -= 5.0 * time.delta_seconds();
             }
