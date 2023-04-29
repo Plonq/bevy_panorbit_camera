@@ -90,30 +90,40 @@ pub struct PanOrbitCamera {
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// You should not update this manually - use `target_alpha` instead.
     /// Defaults to `0.0`.
     pub alpha: f32,
     /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// You should not update this manually - use `target_beta` instead.
     /// Defaults to `0.0`.
     pub beta: f32,
-    /// The target alpha value. The camera will smoothly transition to this value. Used internally
-    /// and typically you won't set this manually.
+    /// The target alpha value. The camera will smoothly transition to this value. Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `0.0`.
     pub target_alpha: f32,
-    /// The target beta value. The camera will smoothly transition to this value. Used internally
-    /// and typically you won't set this manually.
+    /// The target beta value. The camera will smoothly transition to this value Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `0.0`.
     pub target_beta: f32,
     /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
+    /// Defaults to `None`.
     pub alpha_upper_limit: Option<f32>,
     /// Lower limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
+    /// Defaults to `None`.
     pub alpha_lower_limit: Option<f32>,
     /// Upper limit on the `beta` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
+    /// Defaults to `None`.
     pub beta_upper_limit: Option<f32>,
     /// Lower limit on the `beta` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
+    /// Defaults to `None`.
     pub beta_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
@@ -145,6 +155,11 @@ pub struct PanOrbitCamera {
     /// Set to `true` if you want the camera to smoothly animate to its initial position.
     /// Defaults to `false`.
     pub initialized: bool,
+    /// Whether to update the camera's transform regardless of whether there are any changes/input.
+    /// Set this to `true` if you want to modify values directly.
+    /// This will be automatically set back to `false` after one frame.
+    /// Defaults to `false`.
+    pub force_update: bool,
 }
 
 impl Default for PanOrbitCamera {
@@ -173,6 +188,7 @@ impl Default for PanOrbitCamera {
             alpha_lower_limit: None,
             beta_upper_limit: None,
             beta_lower_limit: None,
+            force_update: false,
         }
     }
 }
@@ -327,6 +343,11 @@ fn pan_orbit_camera(
                     pan_orbit.beta = lower_beta;
                 }
             }
+
+            if let Projection::Orthographic(ref mut p) = *projection {
+                p.scale = pan_orbit.radius;
+            }
+
             update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
             pan_orbit.target_alpha = pan_orbit.alpha;
             pan_orbit.target_beta = pan_orbit.beta;
@@ -395,35 +416,6 @@ fn pan_orbit_camera(
                 pan_orbit.target_alpha -= delta_x;
                 pan_orbit.target_beta += delta_y;
 
-                if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-                    if pan_orbit.target_alpha > upper_alpha {
-                        pan_orbit.target_alpha = upper_alpha;
-                    }
-                }
-                if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-                    if pan_orbit.target_alpha < lower_alpha {
-                        pan_orbit.target_alpha = lower_alpha;
-                    }
-                }
-                if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-                    if pan_orbit.target_beta > upper_beta {
-                        pan_orbit.target_beta = upper_beta;
-                    }
-                }
-                if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-                    if pan_orbit.target_beta < lower_beta {
-                        pan_orbit.target_beta = lower_beta;
-                    }
-                }
-
-                if !pan_orbit.allow_upside_down {
-                    if pan_orbit.target_beta < -PI / 2.0 {
-                        pan_orbit.target_beta = -PI / 2.0;
-                    }
-                    if pan_orbit.target_beta > PI / 2.0 {
-                        pan_orbit.target_beta = PI / 2.0;
-                    }
-                }
                 has_moved = true;
             }
         } else if pan.length_squared() > 0.0 {
@@ -448,27 +440,49 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
-            match *projection {
-                Projection::Perspective(_) => {
-                    pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
-                    // Prevent zoom to zero otherwise we can get stuck there
-                    pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
-                }
-                Projection::Orthographic(ref mut p) => {
-                    p.scale -= scroll * p.scale * 0.2;
-                    // Prevent zoom to zero otherwise we can get stuck there
-                    p.scale = f32::max(p.scale, 0.05);
-                }
+            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+            // Prevent zoom to zero otherwise we can get stuck there
+            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+            if let Projection::Orthographic(ref mut p) = *projection {
+                p.scale = pan_orbit.radius;
             }
             has_moved = true;
         }
 
-        // 3 - Apply orbit rotation based on target alpha/beta
+        // 3 - Apply rotation constraints
 
-        if has_moved
-            || pan_orbit.target_alpha != pan_orbit.alpha
-            || pan_orbit.target_beta != pan_orbit.beta
-        {
+        if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
+            if pan_orbit.target_alpha > upper_alpha {
+                pan_orbit.target_alpha = upper_alpha;
+            }
+        }
+        if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
+            if pan_orbit.target_alpha < lower_alpha {
+                pan_orbit.target_alpha = lower_alpha;
+            }
+        }
+        if let Some(upper_beta) = pan_orbit.beta_upper_limit {
+            if pan_orbit.target_beta > upper_beta {
+                pan_orbit.target_beta = upper_beta;
+            }
+        }
+        if let Some(lower_beta) = pan_orbit.beta_lower_limit {
+            if pan_orbit.target_beta < lower_beta {
+                pan_orbit.target_beta = lower_beta;
+            }
+        }
+        if !pan_orbit.allow_upside_down {
+            if pan_orbit.target_beta < -PI / 2.0 {
+                pan_orbit.target_beta = -PI / 2.0;
+            }
+            if pan_orbit.target_beta > PI / 2.0 {
+                pan_orbit.target_beta = PI / 2.0;
+            }
+        }
+
+        // 4 - Apply orbit rotation based on target alpha/beta
+
+        if has_moved || pan_orbit.force_update {
             // Interpolate towards the target value
             let t = 1.0 - pan_orbit.orbit_smoothness;
             let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
@@ -487,6 +501,10 @@ fn pan_orbit_camera(
             // Update current alpha and beta values
             pan_orbit.alpha = target_alpha;
             pan_orbit.beta = target_beta;
+
+            if pan_orbit.force_update {
+                pan_orbit.force_update = false;
+            }
         }
     }
 }

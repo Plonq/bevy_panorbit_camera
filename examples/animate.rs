@@ -45,8 +45,8 @@ fn setup(
     commands.spawn((
         Camera3dBundle::default(),
         PanOrbitCamera {
-            // Optionally disable smoothing to have full control over the camera's position
-            // orbit_smoothness: 0.0,
+            // Disable smoothing, since the animation takes care of that
+            orbit_smoothness: 0.0,
             // Might want to disable the controls
             enabled: false,
             ..default()
@@ -61,5 +61,8 @@ fn animate(time: Res<Time>, mut pan_orbit_query: Query<&mut PanOrbitCamera>) {
         pan_orbit.target_alpha += 15f32.to_radians() * time.delta_seconds();
         pan_orbit.target_beta = time.elapsed_seconds_wrapped().sin() * TAU * 0.1;
         pan_orbit.radius = (((time.elapsed_seconds_wrapped() * 2.0).cos() + 1.0) * 0.5) * 2.0 + 4.0;
+
+        // Force camera to update its transform
+        pan_orbit.force_update = true;
     }
 }
