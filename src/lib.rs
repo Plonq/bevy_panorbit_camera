@@ -90,30 +90,40 @@ pub struct PanOrbitCamera {
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// You should not update this manually - use `target_alpha` instead.
     /// Defaults to `0.0`.
     pub alpha: f32,
     /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// You should not update this manually - use `target_beta` instead.
     /// Defaults to `0.0`.
     pub beta: f32,
-    /// The target alpha value. The camera will smoothly transition to this value. Used internally
-    /// and typically you won't set this manually.
+    /// The target alpha value. The camera will smoothly transition to this value. Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `0.0`.
     pub target_alpha: f32,
-    /// The target beta value. The camera will smoothly transition to this value. Used internally
-    /// and typically you won't set this manually.
+    /// The target beta value. The camera will smoothly transition to this value Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `0.0`.
     pub target_beta: f32,
     /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
+    /// Defaults to `None`.
     pub alpha_upper_limit: Option<f32>,
     /// Lower limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
+    /// Defaults to `None`.
     pub alpha_lower_limit: Option<f32>,
     /// Upper limit on the `beta` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
+    /// Defaults to `None`.
     pub beta_upper_limit: Option<f32>,
     /// Lower limit on the `beta` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
+    /// Defaults to `None`.
     pub beta_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
@@ -146,7 +156,7 @@ pub struct PanOrbitCamera {
     /// Defaults to `false`.
     pub initialized: bool,
     /// Whether to update the camera's transform regardless of whether there are any changes/input.
-    /// Set this to `true` if you want to modify alpha/beta/radius/focus directly.
+    /// Set this to `true` if you want to modify values directly.
     /// This will be automatically set back to `false` after one frame.
     /// Defaults to `false`.
     pub force_update: bool,
