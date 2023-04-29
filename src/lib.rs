@@ -395,35 +395,6 @@ fn pan_orbit_camera(
                 pan_orbit.target_alpha -= delta_x;
                 pan_orbit.target_beta += delta_y;
 
-                if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-                    if pan_orbit.target_alpha > upper_alpha {
-                        pan_orbit.target_alpha = upper_alpha;
-                    }
-                }
-                if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-                    if pan_orbit.target_alpha < lower_alpha {
-                        pan_orbit.target_alpha = lower_alpha;
-                    }
-                }
-                if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-                    if pan_orbit.target_beta > upper_beta {
-                        pan_orbit.target_beta = upper_beta;
-                    }
-                }
-                if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-                    if pan_orbit.target_beta < lower_beta {
-                        pan_orbit.target_beta = lower_beta;
-                    }
-                }
-
-                if !pan_orbit.allow_upside_down {
-                    if pan_orbit.target_beta < -PI / 2.0 {
-                        pan_orbit.target_beta = -PI / 2.0;
-                    }
-                    if pan_orbit.target_beta > PI / 2.0 {
-                        pan_orbit.target_beta = PI / 2.0;
-                    }
-                }
                 has_moved = true;
             }
         } else if pan.length_squared() > 0.0 {
@@ -463,7 +434,38 @@ fn pan_orbit_camera(
             has_moved = true;
         }
 
-        // 3 - Apply orbit rotation based on target alpha/beta
+        // 3 - Apply rotation constraints
+
+        if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
+            if pan_orbit.target_alpha > upper_alpha {
+                pan_orbit.target_alpha = upper_alpha;
+            }
+        }
+        if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
+            if pan_orbit.target_alpha < lower_alpha {
+                pan_orbit.target_alpha = lower_alpha;
+            }
+        }
+        if let Some(upper_beta) = pan_orbit.beta_upper_limit {
+            if pan_orbit.target_beta > upper_beta {
+                pan_orbit.target_beta = upper_beta;
+            }
+        }
+        if let Some(lower_beta) = pan_orbit.beta_lower_limit {
+            if pan_orbit.target_beta < lower_beta {
+                pan_orbit.target_beta = lower_beta;
+            }
+        }
+        if !pan_orbit.allow_upside_down {
+            if pan_orbit.target_beta < -PI / 2.0 {
+                pan_orbit.target_beta = -PI / 2.0;
+            }
+            if pan_orbit.target_beta > PI / 2.0 {
+                pan_orbit.target_beta = PI / 2.0;
+            }
+        }
+
+        // 4 - Apply orbit rotation based on target alpha/beta
 
         if has_moved
             || pan_orbit.target_alpha != pan_orbit.alpha
