@@ -435,16 +435,24 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
+            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+            // Prevent zoom to zero otherwise we can get stuck there
+            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+
             match *projection {
                 Projection::Perspective(_) => {
-                    pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
+                    // pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
                     // Prevent zoom to zero otherwise we can get stuck there
-                    pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+                    // pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
                 }
                 Projection::Orthographic(ref mut p) => {
-                    p.scale -= scroll * p.scale * 0.2;
+                    // Calculate scale based on radius, so that one can manually update radius and
+                    // have that work with orthographic cameras
+                    p.scale = pan_orbit.radius;
+
+                    // p.scale -= scroll * p.scale * 0.2;
                     // Prevent zoom to zero otherwise we can get stuck there
-                    p.scale = f32::max(p.scale, 0.05);
+                    // p.scale = f32::max(p.scale, 0.05);
                 }
             }
             has_moved = true;
@@ -504,7 +512,7 @@ fn pan_orbit_camera(
             pan_orbit.beta = target_beta;
 
             if pan_orbit.force_update {
-                pan_orbit.forc_update = false;
+                pan_orbit.force_update = false;
             }
         }
     }
