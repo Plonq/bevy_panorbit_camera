@@ -492,6 +492,10 @@ fn pan_orbit_camera(
             // Update current alpha and beta values
             pan_orbit.alpha = target_alpha;
             pan_orbit.beta = target_beta;
+
+            if pan_orbit.force_update {
+                pan_orbit.forc_update = false;
+            }
         }
     }
 }
