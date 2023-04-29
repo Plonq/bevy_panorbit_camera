@@ -482,7 +482,11 @@ fn pan_orbit_camera(
 
         // 4 - Apply orbit rotation based on target alpha/beta
 
-        if has_moved || pan_orbit.force_update {
+        if has_moved
+            || pan_orbit.target_alpha != pan_orbit.alpha
+            || pan_orbit.target_beta != pan_orbit.beta
+            || pan_orbit.force_update
+        {
             // Interpolate towards the target value
             let t = 1.0 - pan_orbit.orbit_smoothness;
             let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
