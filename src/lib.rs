@@ -343,6 +343,11 @@ fn pan_orbit_camera(
                     pan_orbit.beta = lower_beta;
                 }
             }
+
+            if let Projection::Orthographic(ref mut p) = *projection {
+                p.scale = pan_orbit.radius;
+            }
+
             update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
             pan_orbit.target_alpha = pan_orbit.alpha;
             pan_orbit.target_beta = pan_orbit.beta;
@@ -438,22 +443,8 @@ fn pan_orbit_camera(
             pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
             // Prevent zoom to zero otherwise we can get stuck there
             pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
-
-            match *projection {
-                Projection::Perspective(_) => {
-                    // pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
-                    // Prevent zoom to zero otherwise we can get stuck there
-                    // pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
-                }
-                Projection::Orthographic(ref mut p) => {
-                    // Calculate scale based on radius, so that one can manually update radius and
-                    // have that work with orthographic cameras
-                    p.scale = pan_orbit.radius;
-
-                    // p.scale -= scroll * p.scale * 0.2;
-                    // Prevent zoom to zero otherwise we can get stuck there
-                    // p.scale = f32::max(p.scale, 0.05);
-                }
+            if let Projection::Orthographic(ref mut p) = *projection {
+                p.scale = pan_orbit.radius;
             }
             has_moved = true;
         }
