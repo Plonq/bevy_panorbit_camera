@@ -33,7 +33,7 @@ impl Plugin for PanOrbitCameraPlugin {
             .add_systems(
                 (active_viewport_data, pan_orbit_camera)
                     .chain()
-                    .in_set(PanOrbitCameraSystemSet),
+                    .in_base_set(PanOrbitCameraSystemSet),
             );
 
         #[cfg(feature = "bevy_egui")]
@@ -50,8 +50,9 @@ impl Plugin for PanOrbitCameraPlugin {
     }
 }
 
-/// System set to allow ordering of `PanOrbitCamera`
+/// Base system set to allow ordering of `PanOrbitCamera`
 #[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[system_set(base)]
 pub struct PanOrbitCameraSystemSet;
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
