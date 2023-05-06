@@ -41,8 +41,11 @@ impl Plugin for PanOrbitCameraPlugin {
         #[cfg(feature = "bevy_egui")]
         {
             app.init_resource::<EguiWantsFocus>()
-                .add_system(egui::check_egui_wants_focus.before(PanOrbitCameraSystemSet))
-                .configure_set(PanOrbitCameraSystemSet.after(EguiSet::InitContexts))
+                .add_system(
+                    egui::check_egui_wants_focus
+                        .after(EguiSet::InitContexts)
+                        .before(PanOrbitCameraSystemSet),
+                )
                 .configure_set(
                     PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
                         prev: false,
