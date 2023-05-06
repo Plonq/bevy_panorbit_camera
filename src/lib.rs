@@ -7,6 +7,8 @@ use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
 use bevy_easings::Lerp;
 #[cfg(feature = "bevy_egui")]
+use bevy_egui::EguiSet;
+#[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
 
@@ -40,6 +42,7 @@ impl Plugin for PanOrbitCameraPlugin {
         {
             app.init_resource::<EguiWantsFocus>()
                 .add_system(egui::check_egui_wants_focus.before(PanOrbitCameraSystemSet))
+                .configure_set(PanOrbitCameraSystemSet.after(EguiSet::InitContexts))
                 .configure_set(
                     PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
                         prev: false,
