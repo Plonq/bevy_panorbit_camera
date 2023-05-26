@@ -41,7 +41,13 @@ fn setup(
         ..default()
     });
     // Camera
-    commands.spawn((Camera3dBundle::default(), PanOrbitCamera::default()));
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
+            ..default()
+        },
+        PanOrbitCamera::default(),
+    ));
 }
 
 fn keyboard_controls(
@@ -100,10 +106,14 @@ fn keyboard_controls(
 
             // Zoom with Z and X
             if key_input.pressed(KeyCode::Z) {
-                pan_orbit.radius -= 5.0 * time.delta_seconds();
+                pan_orbit.radius = pan_orbit
+                    .radius
+                    .map(|radius| radius - 5.0 * time.delta_seconds());
             }
             if key_input.pressed(KeyCode::X) {
-                pan_orbit.radius += 5.0 * time.delta_seconds();
+                pan_orbit.radius = pan_orbit
+                    .radius
+                    .map(|radius| radius + 5.0 * time.delta_seconds());
             }
         }
 
