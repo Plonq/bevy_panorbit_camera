@@ -44,11 +44,11 @@ fn setup(
     });
     // Camera
     commands.spawn((
-        Camera3dBundle { ..default() },
-        PanOrbitCamera {
-            beta: TAU * 0.1,
+        Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
             ..default()
         },
+        PanOrbitCamera::default(),
     ));
 
     // Spawn a second window
@@ -62,16 +62,13 @@ fn setup(
     // second window camera
     commands.spawn((
         Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
             camera: Camera {
                 target: RenderTarget::Window(WindowRef::Entity(second_window)),
                 ..default()
             },
             ..default()
         },
-        PanOrbitCamera {
-            beta: TAU * 0.05,
-            radius: 8.0,
-            ..default()
-        },
+        PanOrbitCamera::default(),
     ));
 }

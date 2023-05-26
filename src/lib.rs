@@ -14,6 +14,7 @@ use std::f32::consts::{PI, TAU};
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
+mod util;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
@@ -79,33 +80,43 @@ pub struct PanOrbitCameraSystemSet;
 /// fn setup(mut commands: Commands) {
 ///     commands
 ///         .spawn((
-///             Camera3dBundle::default(),
+///             Camera3dBundle {
+///                 transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
+///                 ..default()
+///             },
 ///             PanOrbitCamera::default(),
 ///         ));
 ///  }
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct PanOrbitCamera {
-    /// The point to orbit around. Automatically updated when panning the camera.
+    /// The point to orbit around, and what the camera looks at. Automatically updated when
+    /// panning the camera.
     /// Defaults to `Vec3::ZERO`.
     pub focus: Vec3,
     /// The radius of the orbit, or the distance from the `focus` point.
-    /// For orthographic projection, this is ignored, and the projection's scale is used instead.
-    /// Automatically updated (only for cameras with perspective projection).
-    /// Defaults to `5.0`.
-    pub radius: f32,
+    /// For orthographic projection, this is converted the the scale factor of the projection.
+    /// If set to `None`, it will be calculated from the camera's current position during
+    /// initialization.
+    /// Automatically updated.
+    /// Defaults to `None`.
+    pub radius: Option<f32>,
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
-    /// You should not update this manually - use `target_alpha` instead.
-    /// Defaults to `0.0`.
-    pub alpha: f32,
+    /// If set to `None`, it will be calculated from the camera's current position during
+    /// initialization.
+    /// You should not update this after initialization - use `target_alpha` instead.
+    /// Defaults to `None`.
+    pub alpha: Option<f32>,
     /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
-    /// You should not update this manually - use `target_beta` instead.
-    /// Defaults to `0.0`.
-    pub beta: f32,
+    /// If set to `None`, it will be calculated from the camera's current position during
+    /// initialization.
+    /// You should not update this after initialization - use `target_beta` instead.
+    /// Defaults to `None`.
+    pub beta: Option<f32>,
     /// The target alpha value. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
@@ -173,7 +184,7 @@ impl Default for PanOrbitCamera {
     fn default() -> Self {
         PanOrbitCamera {
             focus: Vec3::ZERO,
-            radius: 5.0,
+            radius: None,
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
@@ -186,8 +197,8 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             reversed_zoom: false,
             enabled: true,
-            alpha: 0.0,
-            beta: 0.0,
+            alpha: None,
+            beta: None,
             target_alpha: 0.0,
             target_beta: 0.0,
             initialized: false,
@@ -196,52 +207,6 @@ impl Default for PanOrbitCamera {
             beta_upper_limit: None,
             beta_lower_limit: None,
             force_update: false,
-        }
-    }
-}
-
-impl PanOrbitCamera {
-    /// Creates a `PanOrbitCamera` from a translation and focus point. Values of `alpha`, `beta`,
-    /// and `radius` will be automatically calculated.
-    /// # Example
-    /// ```no_run
-    /// # use bevy::prelude::*;
-    /// # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
-    /// # fn main() {
-    /// #     App::new()
-    /// #         .add_plugins(DefaultPlugins)
-    /// #         .add_plugin(PanOrbitCameraPlugin)
-    /// #         .add_startup_system(setup)
-    /// #         .run();
-    /// # }
-    /// fn setup(mut commands: Commands) {
-    ///     let position = Vec3::new(4.0, 2.0, 3.0);
-    ///     let focus = Vec3::new(1.0, 1.0, 1.0);
-    ///     commands
-    ///         .spawn((
-    ///             Camera3dBundle::default(),
-    ///             PanOrbitCamera::from_translation_and_focus(position, focus),
-    ///         ));
-    ///  }
-    /// ```
-    pub fn from_translation_and_focus(translation: Vec3, focus: Vec3) -> Self {
-        let comp_vec = translation - focus;
-        let radius = comp_vec.length();
-        let mut alpha = if comp_vec.x == 0.0 && comp_vec.z == 0.0 {
-            PI / 2.0
-        } else {
-            (comp_vec.x / (comp_vec.x.powi(2) + comp_vec.z.powi(2)).sqrt()).acos()
-        };
-        if comp_vec.z > 0.0 {
-            alpha = 2.0 * PI - alpha;
-        }
-        let beta = (comp_vec.y / radius).acos();
-        PanOrbitCamera {
-            focus,
-            radius,
-            alpha,
-            beta,
-            ..default()
         }
     }
 }
@@ -330,37 +295,48 @@ fn pan_orbit_camera(
 
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         if !pan_orbit.initialized {
+            // Calculate alpha, beta, and radius from the camera's position. If user sets all
+            // these explicitly, this calculation is wasted, but that's okay since it will only run
+            // once on init.
+            let (alpha, beta, radius) =
+                util::calculate_from_translation_and_focus(transform.translation, pan_orbit.focus);
+            let &mut mut alpha = pan_orbit.alpha.get_or_insert(alpha);
+            let &mut mut beta = pan_orbit.beta.get_or_insert(beta);
+            let &mut radius = pan_orbit.radius.get_or_insert(radius);
+
             if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-                if pan_orbit.alpha > upper_alpha {
-                    pan_orbit.alpha = upper_alpha;
+                if alpha > upper_alpha {
+                    alpha = upper_alpha;
                 }
             }
             if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-                if pan_orbit.alpha < lower_alpha {
-                    pan_orbit.alpha = lower_alpha;
+                if alpha < lower_alpha {
+                    alpha = lower_alpha;
                 }
             }
             if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-                if pan_orbit.beta > upper_beta {
-                    pan_orbit.beta = upper_beta;
+                if beta > upper_beta {
+                    beta = upper_beta;
                 }
             }
             if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-                if pan_orbit.beta < lower_beta {
-                    pan_orbit.beta = lower_beta;
+                if beta < lower_beta {
+                    beta = lower_beta;
                 }
             }
 
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = pan_orbit.radius;
+                p.scale = radius;
             }
 
-            update_orbit_transform(pan_orbit.alpha, pan_orbit.beta, &pan_orbit, &mut transform);
-            pan_orbit.target_alpha = pan_orbit.alpha;
-            pan_orbit.target_beta = pan_orbit.beta;
+            update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
+            pan_orbit.alpha = Some(alpha);
+            pan_orbit.beta = Some(beta);
+            pan_orbit.radius = Some(radius);
+            pan_orbit.target_alpha = alpha;
+            pan_orbit.target_beta = beta;
 
             pan_orbit.initialized = true;
-            continue;
         }
 
         // 1 - Get Input
@@ -433,7 +409,9 @@ fn pan_orbit_camera(
                     Projection::Perspective(ref p) => {
                         pan *= Vec2::new(p.fov * p.aspect_ratio, p.fov) / vp_size;
                         // Make panning proportional to distance away from focus point
-                        multiplier = pan_orbit.radius;
+                        if let Some(radius) = pan_orbit.radius {
+                            multiplier = radius;
+                        }
                     }
                     Projection::Orthographic(ref p) => {
                         pan *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
@@ -447,11 +425,14 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
-            pan_orbit.radius -= scroll * pan_orbit.radius * 0.2;
-            // Prevent zoom to zero otherwise we can get stuck there
-            pan_orbit.radius = f32::max(pan_orbit.radius, 0.05);
+            pan_orbit.radius = pan_orbit
+                .radius
+                // Prevent zoom to zero otherwise we can get stuck there
+                .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = pan_orbit.radius;
+                if let Some(radius) = pan_orbit.radius {
+                    p.scale = radius;
+                }
             }
             has_moved = true;
         }
@@ -489,32 +470,34 @@ fn pan_orbit_camera(
 
         // 4 - Apply orbit rotation based on target alpha/beta
 
-        if has_moved
-            || pan_orbit.target_alpha != pan_orbit.alpha
-            || pan_orbit.target_beta != pan_orbit.beta
-            || pan_orbit.force_update
-        {
-            // Interpolate towards the target value
-            let t = 1.0 - pan_orbit.orbit_smoothness;
-            let mut target_alpha = pan_orbit.alpha.lerp(&pan_orbit.target_alpha, &t);
-            let mut target_beta = pan_orbit.beta.lerp(&pan_orbit.target_beta, &t);
+        if let (Some(alpha), Some(beta)) = (pan_orbit.alpha, pan_orbit.beta) {
+            if has_moved
+                || pan_orbit.target_alpha != alpha
+                || pan_orbit.target_beta != beta
+                || pan_orbit.force_update
+            {
+                // Interpolate towards the target value
+                let t = 1.0 - pan_orbit.orbit_smoothness;
+                let mut target_alpha = alpha.lerp(&pan_orbit.target_alpha, &t);
+                let mut target_beta = beta.lerp(&pan_orbit.target_beta, &t);
 
-            // If we're super close, then just snap to target rotation to save cycles
-            if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
-                target_alpha = pan_orbit.target_alpha;
-            }
-            if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
-                target_beta = pan_orbit.target_beta;
-            }
+                // If we're super close, then just snap to target rotation to save cycles
+                if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
+                    target_alpha = pan_orbit.target_alpha;
+                }
+                if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
+                    target_beta = pan_orbit.target_beta;
+                }
 
-            update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
+                update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
 
-            // Update current alpha and beta values
-            pan_orbit.alpha = target_alpha;
-            pan_orbit.beta = target_beta;
+                // Update current alpha and beta values
+                pan_orbit.alpha = Some(target_alpha);
+                pan_orbit.beta = Some(target_beta);
 
-            if pan_orbit.force_update {
-                pan_orbit.force_update = false;
+                if pan_orbit.force_update {
+                    pan_orbit.force_update = false;
+                }
             }
         }
     }
@@ -607,14 +590,15 @@ fn update_orbit_transform(
     pan_orbit: &PanOrbitCamera,
     transform: &mut Transform,
 ) {
-    let mut rotation = Quat::from_rotation_y(alpha);
-    rotation *= Quat::from_rotation_x(-beta);
+    if let Some(radius) = pan_orbit.radius {
+        let mut rotation = Quat::from_rotation_y(alpha);
+        rotation *= Quat::from_rotation_x(-beta);
 
-    transform.rotation = rotation;
+        transform.rotation = rotation;
 
-    // Update the translation of the camera so we are always rotating 'around'
-    // (orbiting) rather than rotating in place
-    let rot_matrix = Mat3::from_quat(transform.rotation);
-    transform.translation =
-        pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+        // Update the translation of the camera so we are always rotating 'around'
+        // (orbiting) rather than rotating in place
+        let rot_matrix = Mat3::from_quat(transform.rotation);
+        transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
+    }
 }

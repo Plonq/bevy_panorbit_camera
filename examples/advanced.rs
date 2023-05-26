@@ -1,4 +1,5 @@
-//! Demonstrates all common configuration options
+//! Demonstrates all common configuration options,
+//! and how to modify them at runtime
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -43,15 +44,17 @@ fn setup(
     });
     // Camera
     commands.spawn((
+        // Note we're setting the initial position below with alpha, beta, and radius, hence
+        // we don't set transform on the camera.
         Camera3dBundle::default(),
         PanOrbitCamera {
-            // Set focal point
+            // Set focal point (what the camera should look at)
             focus: Vec3::new(0.0, 1.0, 0.0),
-            // Set the starting position
-            alpha: TAU / 8.0,
-            beta: TAU / 8.0,
-            radius: 5.0,
-            // Set limits on the position
+            // Set the starting position, relative to focus (overrides camera's transform).
+            alpha: Some(TAU / 8.0),
+            beta: Some(TAU / 8.0),
+            radius: Some(5.0),
+            // Set limits on how far in will rotate
             alpha_upper_limit: Some(TAU / 4.0),
             alpha_lower_limit: Some(-TAU / 4.0),
             beta_upper_limit: Some(TAU / 3.0),
@@ -62,14 +65,12 @@ fn setup(
             zoom_sensitivity: 0.5,
             // Allow the camera to go upside down
             allow_upside_down: true,
-            // Blender-like key bindings
+            // Change the controls (these match Blender)
             button_orbit: MouseButton::Middle,
             button_pan: MouseButton::Middle,
             modifier_pan: Some(KeyCode::LShift),
             // Reverse the zoom direction
             reversed_zoom: true,
-            // Makes sure it's enabled (this is default)
-            enabled: true,
             ..default()
         },
     ));

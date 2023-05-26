@@ -39,36 +39,25 @@ Add the plugin:
 Add `PanOrbitCamera` to a camera:
 
 ```rust ignore
-commands
-    .spawn((
-        Camera3dBundle::default(),
-        PanOrbitCamera::default(),
-    ));
+commands.spawn((
+    Camera3dBundle {
+        transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
+        ..default()
+    },
+    PanOrbitCamera::default(),
+));
 ```
 
 This will set up a camera with good defaults.
 
-Optionally configure settings:
-
-```rust ignore
-commands
-    .spawn((
-        Camera3dBundle::default(),
-        PanOrbitCamera {
-            beta: TAU * 0.1,
-            radius: 5.0,
-        },
-    ));
-```
-
 Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
-all the possible options.
+all the possible configuration options.
 
 ## What are `alpha` and `beta`?
 
 Think of this camera as rotating around a point, and always pointing at that point (the `focus`). The sideways rotation,
 i.e. the longitudinal rotation, is `alpha`, and the latitudinal rotation is `beta`. Both are measured in radians.
-If `alpha` and `beta` are both `0.0`, then the camera will be pointing directly forwards (-Z direction). Increasing
+If `alpha` and `beta` are both `0.0`, then the camera will be looking directly forwards (-Z direction). Increasing
 `alpha` will rotate around the `focus` to the right, and increasing `beta` will move the camera up and over the `focus`.
 
 ## Cargo Features

@@ -46,15 +46,16 @@ fn setup(
     });
     // Main Camera
     commands.spawn((
-        Camera3dBundle { ..default() },
-        PanOrbitCamera {
-            beta: TAU * 0.1,
+        Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.5, 5.0)),
             ..default()
         },
+        PanOrbitCamera::default(),
     ));
     // Minimap Camera
     commands.spawn((
         Camera3dBundle {
+            transform: Transform::from_translation(Vec3::new(1.0, 1.5, 4.0)),
             camera: Camera {
                 // Renders the minimap camera after the main camera, so it is rendered on top
                 order: 1,
@@ -67,11 +68,7 @@ fn setup(
             },
             ..default()
         },
-        PanOrbitCamera {
-            beta: TAU * 0.1,
-            alpha: TAU * 0.1,
-            ..default()
-        },
+        PanOrbitCamera::default(),
         MinimapCamera,
     ));
 }
