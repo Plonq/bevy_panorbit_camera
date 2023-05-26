@@ -95,7 +95,7 @@ pub struct PanOrbitCamera {
     /// Defaults to `Vec3::ZERO`.
     pub focus: Vec3,
     /// The radius of the orbit, or the distance from the `focus` point.
-    /// For orthographic projection, this is converted the the scale factor of the projection.
+    /// For orthographic projection, this is ignored, and the projection's `scale` is used instead.
     /// If set to `None`, it will be calculated from the camera's current position during
     /// initialization.
     /// Automatically updated.
@@ -425,14 +425,13 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
-            pan_orbit.radius = pan_orbit
-                .radius
-                // Prevent zoom to zero otherwise we can get stuck there
-                .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
             if let Projection::Orthographic(ref mut p) = *projection {
-                if let Some(radius) = pan_orbit.radius {
-                    p.scale = radius;
-                }
+                p.scale = f32::max(p.scale - scroll * p.scale * 0.2, 0.05);
+            } else {
+                pan_orbit.radius = pan_orbit
+                    .radius
+                    // Prevent zoom to zero otherwise we can get stuck there
+                    .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
             }
             has_moved = true;
         }
