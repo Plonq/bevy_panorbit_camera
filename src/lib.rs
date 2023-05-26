@@ -235,8 +235,8 @@ fn active_viewport_data(
     let mut max_cam_order = 0;
 
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
-        let input_just_activated = orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
-            || pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+        let input_just_activated = util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !scroll_events.is_empty();
 
         if input_just_activated {
@@ -329,7 +329,7 @@ fn pan_orbit_camera(
                 p.scale = radius;
             }
 
-            update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
+            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
@@ -347,9 +347,9 @@ fn pan_orbit_camera(
         let mut orbit_button_changed = false;
 
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
-            if orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
+            if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
-            } else if pan_pressed(&pan_orbit, &mouse_input, &key_input) {
+            } else if util::pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
@@ -366,8 +366,8 @@ fn pan_orbit_camera(
                 scroll += ev.y * multiplier * direction * pan_orbit.zoom_sensitivity;
             }
 
-            if orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
-                || orbit_just_released(&pan_orbit, &mouse_input, &key_input)
+            if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
+                || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
             {
                 orbit_button_changed = true;
             }
@@ -489,7 +489,7 @@ fn pan_orbit_camera(
                     target_beta = pan_orbit.target_beta;
                 }
 
-                update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
+                util::update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
 
                 // Update current alpha and beta values
                 pan_orbit.alpha = Some(target_alpha);
@@ -500,105 +500,5 @@ fn pan_orbit_camera(
                 }
             }
         }
-    }
-}
-
-fn orbit_pressed(
-    pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
-) -> bool {
-    let is_pressed = pan_orbit
-        .modifier_orbit
-        .map_or(true, |modifier| key_input.pressed(modifier))
-        && mouse_input.pressed(pan_orbit.button_orbit);
-
-    is_pressed
-        && pan_orbit
-            .modifier_pan
-            .map_or(true, |modifier| !key_input.pressed(modifier))
-}
-
-fn orbit_just_pressed(
-    pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
-) -> bool {
-    let just_pressed = pan_orbit
-        .modifier_orbit
-        .map_or(true, |modifier| key_input.pressed(modifier))
-        && (mouse_input.just_pressed(pan_orbit.button_orbit));
-
-    just_pressed
-        && pan_orbit
-            .modifier_pan
-            .map_or(true, |modifier| !key_input.pressed(modifier))
-}
-
-fn orbit_just_released(
-    pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
-) -> bool {
-    let just_released = pan_orbit
-        .modifier_orbit
-        .map_or(true, |modifier| key_input.pressed(modifier))
-        && (mouse_input.just_released(pan_orbit.button_orbit));
-
-    just_released
-        && pan_orbit
-            .modifier_pan
-            .map_or(true, |modifier| !key_input.pressed(modifier))
-}
-
-fn pan_pressed(
-    pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
-) -> bool {
-    let is_pressed = pan_orbit
-        .modifier_pan
-        .map_or(true, |modifier| key_input.pressed(modifier))
-        && mouse_input.pressed(pan_orbit.button_pan);
-
-    is_pressed
-        && pan_orbit
-            .modifier_orbit
-            .map_or(true, |modifier| !key_input.pressed(modifier))
-}
-
-fn pan_just_pressed(
-    pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
-) -> bool {
-    let just_pressed = pan_orbit
-        .modifier_pan
-        .map_or(true, |modifier| key_input.pressed(modifier))
-        && (mouse_input.just_pressed(pan_orbit.button_pan));
-
-    just_pressed
-        && pan_orbit
-            .modifier_orbit
-            .map_or(true, |modifier| !key_input.pressed(modifier))
-}
-
-/// Update `transform` based on alpha, beta, and the camera's focus and radius
-fn update_orbit_transform(
-    alpha: f32,
-    beta: f32,
-    pan_orbit: &PanOrbitCamera,
-    transform: &mut Transform,
-) {
-    if let Some(radius) = pan_orbit.radius {
-        let mut rotation = Quat::from_rotation_y(alpha);
-        rotation *= Quat::from_rotation_x(-beta);
-
-        transform.rotation = rotation;
-
-        // Update the translation of the camera so we are always rotating 'around'
-        // (orbiting) rather than rotating in place
-        let rot_matrix = Mat3::from_quat(transform.rotation);
-        transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
     }
 }

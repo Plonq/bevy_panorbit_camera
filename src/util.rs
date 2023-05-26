@@ -1,4 +1,7 @@
-use bevy::math::Vec3;
+use crate::PanOrbitCamera;
+use bevy::input::Input;
+use bevy::math::{Mat3, Quat, Vec3};
+use bevy::prelude::{KeyCode, MouseButton, Res, Transform};
 
 pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (f32, f32, f32) {
     let comp_vec = translation - focus;
@@ -15,8 +18,108 @@ pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (
     (alpha, beta, radius)
 }
 
+pub fn orbit_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_orbit);
+
+    is_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn orbit_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_pressed(pan_orbit.button_orbit));
+
+    just_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn orbit_just_released(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_released = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_released(pan_orbit.button_orbit));
+
+    just_released
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn pan_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_pan);
+
+    is_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn pan_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_pressed(pan_orbit.button_pan));
+
+    just_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+/// Update `transform` based on alpha, beta, and the camera's focus and radius
+pub fn update_orbit_transform(
+    alpha: f32,
+    beta: f32,
+    pan_orbit: &PanOrbitCamera,
+    transform: &mut Transform,
+) {
+    if let Some(radius) = pan_orbit.radius {
+        let mut rotation = Quat::from_rotation_y(alpha);
+        rotation *= Quat::from_rotation_x(-beta);
+
+        transform.rotation = rotation;
+
+        // Update the translation of the camera so we are always rotating 'around'
+        // (orbiting) rather than rotating in place
+        let rot_matrix = Mat3::from_quat(transform.rotation);
+        transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
+    }
+}
+
 #[cfg(test)]
-mod tests {
+mod calculate_from_translation_and_focus_tests {
     use super::*;
     use float_cmp::approx_eq;
     use std::f32::consts::PI;
