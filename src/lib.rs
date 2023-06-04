@@ -231,15 +231,22 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
-    let mut new_resource: Option<ActiveCameraData> = None;
+    // let mut new_resource: Option<ActiveCameraData> = None;
+    let mut new_resource = ActiveCameraData {
+        entity: None,
+        viewport_size: None,
+        window_size: None,
+    };
     let mut max_cam_order = 0;
 
+    let mut has_input = false;
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
             || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !scroll_events.is_empty();
 
         if input_just_activated {
+            has_input = true;
             // First check if cursor is in the same window as this camera
             if let RenderTarget::Window(win_ref) = camera.target {
                 let window = match win_ref {
@@ -262,13 +269,13 @@ fn active_viewport_data(
                             && cursor_pos.y < vp_rect.1.y;
 
                         // Only set if camera order is higher. This may overwrite a previous value
-                        // in the case the viewport overlapping another viewport.
+                        // in the case the viewport is overlapping another viewport.
                         if cursor_in_vp && camera.order >= max_cam_order {
-                            new_resource = Some(ActiveCameraData {
+                            new_resource = ActiveCameraData {
                                 entity: Some(entity),
                                 viewport_size: camera.logical_viewport_size(),
                                 window_size: Some(Vec2::new(window.width(), window.height())),
-                            });
+                            };
                             max_cam_order = camera.order;
                         }
                     }
@@ -277,7 +284,7 @@ fn active_viewport_data(
         }
     }
 
-    if let Some(new_resource) = new_resource {
+    if has_input {
         active_cam.set_if_neq(new_resource);
     }
 }
