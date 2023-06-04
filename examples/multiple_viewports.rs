@@ -5,7 +5,6 @@ use bevy::prelude::*;
 use bevy::render::camera::Viewport;
 use bevy::window::WindowResized;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use std::f32::consts::TAU;
 
 fn main() {
     App::new()
