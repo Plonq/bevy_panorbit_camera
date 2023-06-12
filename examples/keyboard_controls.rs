@@ -1,4 +1,10 @@
 //! Demonstrates how to control the camera using the keyboard
+//! Controls:
+//!     Orbit/rotate smoothly: Arrows
+//!     Orbit/rotate in 45deg increments: Ctrl+Arrows
+//!     Pan smoothly: Shift+Arrows
+//!     Pan in 1m increments: Ctrl+Shift+Arrows
+//!     Zoom in/out: Z/X
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -56,19 +62,35 @@ fn keyboard_controls(
     mut pan_orbit_query: Query<(&mut PanOrbitCamera, &mut Transform)>,
 ) {
     for (mut pan_orbit, mut transform) in pan_orbit_query.iter_mut() {
-        // Jump by 45 degrees using Left Ctrl + Arrows
         if key_input.pressed(KeyCode::LControl) {
-            if key_input.just_pressed(KeyCode::Right) {
-                pan_orbit.target_alpha += 45f32.to_radians();
-            }
-            if key_input.just_pressed(KeyCode::Left) {
-                pan_orbit.target_alpha -= 45f32.to_radians();
-            }
-            if key_input.just_pressed(KeyCode::Up) {
-                pan_orbit.target_beta += 45f32.to_radians();
-            }
-            if key_input.just_pressed(KeyCode::Down) {
-                pan_orbit.target_beta -= 45f32.to_radians();
+            // Jump focus point 1m using Ctrl+Shift + Arrows
+            if key_input.pressed(KeyCode::LShift) {
+                if key_input.just_pressed(KeyCode::Right) {
+                    pan_orbit.target_focus += Vec3::X;
+                }
+                if key_input.just_pressed(KeyCode::Left) {
+                    pan_orbit.target_focus -= Vec3::X;
+                }
+                if key_input.just_pressed(KeyCode::Up) {
+                    pan_orbit.target_focus += Vec3::Y;
+                }
+                if key_input.just_pressed(KeyCode::Down) {
+                    pan_orbit.target_focus -= Vec3::Y;
+                }
+            } else {
+                // Jump by 45 degrees using Left Ctrl + Arrows
+                if key_input.just_pressed(KeyCode::Right) {
+                    pan_orbit.target_alpha += 45f32.to_radians();
+                }
+                if key_input.just_pressed(KeyCode::Left) {
+                    pan_orbit.target_alpha -= 45f32.to_radians();
+                }
+                if key_input.just_pressed(KeyCode::Up) {
+                    pan_orbit.target_beta += 45f32.to_radians();
+                }
+                if key_input.just_pressed(KeyCode::Down) {
+                    pan_orbit.target_beta -= 45f32.to_radians();
+                }
             }
         }
         // Pan using Left Shift + Arrows
@@ -87,7 +109,7 @@ fn keyboard_controls(
                 delta_translation += transform.rotation * Vec3::NEG_Y * time.delta_seconds();
             }
             transform.translation += delta_translation;
-            pan_orbit.focus += delta_translation;
+            pan_orbit.target_focus += delta_translation;
         }
         // Smooth rotation using arrow keys without modifier
         else {
