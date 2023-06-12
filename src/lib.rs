@@ -90,8 +90,9 @@ pub struct PanOrbitCameraSystemSet;
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
 pub struct PanOrbitCamera {
-    /// The point to orbit around, and what the camera looks at. Automatically updated when
-    /// panning the camera.
+    /// The point to orbit around, and what the camera looks at. Updated automatically.
+    /// If you want to change the focus programmatically after initialization, set `target_focus`
+    /// instead.
     /// Defaults to `Vec3::ZERO`.
     pub focus: Vec3,
     /// The radius of the orbit, or the distance from the `focus` point.
@@ -117,6 +118,11 @@ pub struct PanOrbitCamera {
     /// You should not update this after initialization - use `target_beta` instead.
     /// Defaults to `None`.
     pub beta: Option<f32>,
+    /// The target focus point. The camera will smoothly transition to this value. Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `Vec3::ZERO`.
+    pub target_focus: Vec3,
     /// The target alpha value. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
@@ -151,6 +157,10 @@ pub struct PanOrbitCamera {
     pub orbit_smoothness: f32,
     /// The sensitivity of the panning motion. Defaults to `1.0`.
     pub pan_sensitivity: f32,
+    /// How much smoothing is applied to the panning motion. A value of `0.0` disables smoothing,
+    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
+    /// smoothing. Defaults to `0.6`.
+    pub pan_smoothness: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
     /// Button used to orbit the camera. Defaults to `Button::Left`.
@@ -184,12 +194,14 @@ impl Default for PanOrbitCamera {
     fn default() -> Self {
         PanOrbitCamera {
             focus: Vec3::ZERO,
+            target_focus: Vec3::ZERO,
             radius: None,
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
             orbit_smoothness: 0.8,
             pan_sensitivity: 1.0,
+            pan_smoothness: 0.6,
             zoom_sensitivity: 1.0,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
@@ -342,6 +354,7 @@ fn pan_orbit_camera(
             pan_orbit.radius = Some(radius);
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
+            pan_orbit.target_focus = pan_orbit.focus;
 
             pan_orbit.initialized = true;
         }
@@ -384,7 +397,7 @@ fn pan_orbit_camera(
 
         if orbit_button_changed {
             // Only check for upside down when orbiting started or ended this frame,
-            // so we don't reverse the horizontal direction while the user is still dragging
+            // so we don't reverse the alpha direction while the user is still dragging
             let wrapped_beta = (pan_orbit.target_beta % TAU).abs();
             pan_orbit.is_upside_down = wrapped_beta > TAU / 4.0 && wrapped_beta < 3.0 * TAU / 4.0;
         }
@@ -428,7 +441,7 @@ fn pan_orbit_camera(
                 let right = transform.rotation * Vec3::X * -pan.x;
                 let up = transform.rotation * Vec3::Y * pan.y;
                 let translation = (right + up) * multiplier;
-                pan_orbit.focus += translation;
+                pan_orbit.target_focus += translation;
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
@@ -474,32 +487,37 @@ fn pan_orbit_camera(
             }
         }
 
-        // 4 - Apply orbit rotation based on target alpha/beta
+        // 4 - Update the camera's transform based on current values
 
         if let (Some(alpha), Some(beta)) = (pan_orbit.alpha, pan_orbit.beta) {
             if has_moved
                 || pan_orbit.target_alpha != alpha
                 || pan_orbit.target_beta != beta
+                || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
-                // Interpolate towards the target value
+                // Interpolate towards the target focus
+                let t = 1.0 - pan_orbit.pan_smoothness;
+                pan_orbit.focus = pan_orbit.focus.lerp(pan_orbit.target_focus, t);
+
+                // Interpolate towards the target rotation
                 let t = 1.0 - pan_orbit.orbit_smoothness;
-                let mut target_alpha = alpha.lerp(&pan_orbit.target_alpha, &t);
-                let mut target_beta = beta.lerp(&pan_orbit.target_beta, &t);
+                let mut new_alpha = alpha.lerp(&pan_orbit.target_alpha, &t);
+                let mut new_beta = beta.lerp(&pan_orbit.target_beta, &t);
 
                 // If we're super close, then just snap to target rotation to save cycles
-                if (target_alpha - pan_orbit.target_alpha).abs() < 0.001 {
-                    target_alpha = pan_orbit.target_alpha;
+                if (new_alpha - pan_orbit.target_alpha).abs() < 0.001 {
+                    new_alpha = pan_orbit.target_alpha;
                 }
-                if (target_beta - pan_orbit.target_beta).abs() < 0.001 {
-                    target_beta = pan_orbit.target_beta;
+                if (new_beta - pan_orbit.target_beta).abs() < 0.001 {
+                    new_beta = pan_orbit.target_beta;
                 }
 
-                util::update_orbit_transform(target_alpha, target_beta, &pan_orbit, &mut transform);
+                util::update_orbit_transform(new_alpha, new_beta, &pan_orbit, &mut transform);
 
                 // Update current alpha and beta values
-                pan_orbit.alpha = Some(target_alpha);
-                pan_orbit.beta = Some(target_beta);
+                pan_orbit.alpha = Some(new_alpha);
+                pan_orbit.beta = Some(new_beta);
 
                 if pan_orbit.force_update {
                     pan_orbit.force_update = false;
