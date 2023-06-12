@@ -22,7 +22,7 @@ Default controls:
 ## Features:
 
 - Orbiting, panning and zooming
-- Smooth orbiting motion
+- Smooth motion
 - Works with orthographic camera projection in addition to perspective
 - Customisable controls, sensitivity, and more
 - Works with multiple viewports and/or windows
