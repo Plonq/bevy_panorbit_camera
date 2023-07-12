@@ -33,7 +33,7 @@ Default controls:
 Add the plugin:
 
 ```rust ignore
-.add_plugin(PanOrbitCameraPlugin)
+.add_plugins(PanOrbitCameraPlugin)
 ```
 
 Add `PanOrbitCamera` to a camera:

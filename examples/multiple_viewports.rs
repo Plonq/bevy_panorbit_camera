@@ -9,9 +9,9 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_startup_system(setup)
-        .add_system(set_camera_viewports)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Update, set_camera_viewports)
         .run();
 }
 

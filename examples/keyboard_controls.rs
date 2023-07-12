@@ -12,9 +12,9 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_startup_system(setup)
-        .add_system(keyboard_controls)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Update, keyboard_controls)
         .run();
 }
 
@@ -62,9 +62,9 @@ fn keyboard_controls(
     mut pan_orbit_query: Query<(&mut PanOrbitCamera, &mut Transform)>,
 ) {
     for (mut pan_orbit, mut transform) in pan_orbit_query.iter_mut() {
-        if key_input.pressed(KeyCode::LControl) {
+        if key_input.pressed(KeyCode::ControlLeft) {
             // Jump focus point 1m using Ctrl+Shift + Arrows
-            if key_input.pressed(KeyCode::LShift) {
+            if key_input.pressed(KeyCode::ShiftLeft) {
                 if key_input.just_pressed(KeyCode::Right) {
                     pan_orbit.target_focus += Vec3::X;
                 }
@@ -94,7 +94,7 @@ fn keyboard_controls(
             }
         }
         // Pan using Left Shift + Arrows
-        else if key_input.pressed(KeyCode::LShift) {
+        else if key_input.pressed(KeyCode::ShiftLeft) {
             let mut delta_translation = Vec3::ZERO;
             if key_input.pressed(KeyCode::Right) {
                 delta_translation += transform.rotation * Vec3::X * time.delta_seconds();
