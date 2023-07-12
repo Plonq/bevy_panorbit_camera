@@ -49,7 +49,7 @@ impl Plugin for PanOrbitCameraPlugin {
                         .after(EguiSet::InitContexts)
                         .before(PanOrbitCameraSystemSet),
                 )
-                .configure_sets(
+                .configure_set(
                     Update,
                     PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
                         prev: false,
