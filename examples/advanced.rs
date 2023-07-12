@@ -8,9 +8,9 @@ use std::f32::consts::TAU;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_startup_system(setup)
-        .add_system(toggle_camera_controls_system)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Update, toggle_camera_controls_system)
         .run();
 }
 
@@ -68,7 +68,7 @@ fn setup(
             // Change the controls (these match Blender)
             button_orbit: MouseButton::Middle,
             button_pan: MouseButton::Middle,
-            modifier_pan: Some(KeyCode::LShift),
+            modifier_pan: Some(KeyCode::ShiftLeft),
             // Reverse the zoom direction
             reversed_zoom: true,
             ..default()

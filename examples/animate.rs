@@ -7,9 +7,9 @@ use std::f32::consts::TAU;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_startup_system(setup)
-        .add_system(animate)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Update, animate)
         .run();
 }
 

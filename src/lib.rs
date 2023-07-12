@@ -75,8 +75,8 @@ pub struct PanOrbitCameraSystemSet;
 /// # fn main() {
 /// #     App::new()
 /// #         .add_plugins(DefaultPlugins)
-/// #         .add_plugin(PanOrbitCameraPlugin)
-/// #         .add_startup_system(setup)
+/// #         .add_plugins(PanOrbitCameraPlugin)
+/// #         .add_systems(Startup, setup)
 /// #         .run();
 /// # }
 /// fn setup(mut commands: Commands) {
@@ -276,7 +276,6 @@ fn active_viewport_data(
                     if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
                         // Window coordinates have Y starting at the bottom, so we need to reverse
                         // the y component before comparing with the viewport rect
-                        cursor_pos.y = window.height() - cursor_pos.y;
                         let cursor_in_vp = cursor_pos.x > min.x
                             && cursor_pos.x < max.x
                             && cursor_pos.y > min.y
