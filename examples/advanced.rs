@@ -59,6 +59,9 @@ fn setup(
             alpha_lower_limit: Some(-TAU / 4.0),
             beta_upper_limit: Some(TAU / 3.0),
             beta_lower_limit: Some(-TAU / 3.0),
+            // Set zoom limits
+            scale_upper_limit: Some(50.0),
+            scale_lower_limit: Some(10.0),
             // Adjust sensitivity of controls
             orbit_sensitivity: 1.5,
             pan_sensitivity: 0.5,

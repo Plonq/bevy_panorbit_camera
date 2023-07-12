@@ -149,6 +149,14 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub beta_lower_limit: Option<f32>,
+    /// Upper limit on the 'scale' value, i.e. the distance from the `focus` point. Use this to
+    /// restrict the maximum distance from the `focus` point for orthographic projection.
+    /// Defaults to `None`.
+    pub scale_upper_limit: Option<f32>,
+    /// Lower limit on the 'scale' value, i.e. the distance from the `focus` point. Use this to
+    /// restrict the minimum distance from the `focus` point for orthographic projection.
+    /// Defaults to `None`.
+    pub scale_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
@@ -218,6 +226,8 @@ impl Default for PanOrbitCamera {
             alpha_lower_limit: None,
             beta_upper_limit: None,
             beta_lower_limit: None,
+            scale_upper_limit: None,
+            scale_lower_limit: None,
             force_update: false,
         }
     }
@@ -346,15 +356,25 @@ fn pan_orbit_camera(
 
             if let Projection::Orthographic(ref mut p) = *projection {
                 p.scale = radius;
+                if let Some(upper_scale) = pan_orbit.scale_upper_limit {
+                    if p.scale > upper_scale {
+                        p.scale = upper_scale;
+                    }
+                }
+                if let Some(lower_scale) = pan_orbit.scale_lower_limit {
+                    if p.scale < lower_scale {
+                        p.scale = lower_scale;
+                    }
+                }
             }
-
-            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
             pan_orbit.target_focus = pan_orbit.focus;
+
+            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
 
             pan_orbit.initialized = true;
         }
@@ -446,11 +466,21 @@ fn pan_orbit_camera(
             }
         } else if scroll.abs() > 0.0 {
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = f32::max(p.scale - scroll * p.scale * 0.2, 0.05);
+                let mut new = f32::max(p.scale - scroll * p.scale * 0.2, 0.05);
+                if let Some(upper_scale) = pan_orbit.scale_upper_limit {
+                    if new > upper_scale {
+                        new = upper_scale;
+                    }
+                }
+                if let Some(lower_scale) = pan_orbit.scale_lower_limit {
+                    if new < lower_scale {
+                        new = lower_scale;
+                    }
+                }
+                p.scale = new;
             } else {
                 pan_orbit.radius = pan_orbit
                     .radius
-                    // Prevent zoom to zero otherwise we can get stuck there
                     .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
             }
             has_moved = true;
