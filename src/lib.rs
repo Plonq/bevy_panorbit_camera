@@ -481,6 +481,7 @@ fn pan_orbit_camera(
             } else {
                 pan_orbit.radius = pan_orbit
                     .radius
+                    // Prevent zoom to zero otherwise we can get stuck there
                     .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
             }
             has_moved = true;
