@@ -271,7 +271,7 @@ fn active_viewport_data(
                         .get(entity)
                         .expect("Must exist, since the camera is referencing it"),
                 };
-                if let Some(mut cursor_pos) = window.cursor_position() {
+                if let Some(cursor_pos) = window.cursor_position() {
                     // Now check if cursor is within this camera's viewport
                     if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
                         // Window coordinates have Y starting at the bottom, so we need to reverse
