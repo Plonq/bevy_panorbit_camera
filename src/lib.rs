@@ -24,7 +24,7 @@ mod util;
 /// fn main() {
 ///     App::new()
 ///         .add_plugins(DefaultPlugins)
-///         .add_plugin(PanOrbitCameraPlugin)
+///         .add_plugins(PanOrbitCameraPlugin)
 ///         .run();
 /// }
 /// ```
@@ -34,20 +34,23 @@ impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ActiveCameraData::default())
             .add_systems(
+                Update,
                 (active_viewport_data, pan_orbit_camera)
                     .chain()
-                    .in_base_set(PanOrbitCameraSystemSet),
+                    .in_set(PanOrbitCameraSystemSet),
             );
 
         #[cfg(feature = "bevy_egui")]
         {
             app.init_resource::<EguiWantsFocus>()
-                .add_system(
+                .add_systems(
+                    Update,
                     egui::check_egui_wants_focus
                         .after(EguiSet::InitContexts)
                         .before(PanOrbitCameraSystemSet),
                 )
                 .configure_set(
+                    Update,
                     PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
                         prev: false,
                         curr: false,
@@ -58,8 +61,7 @@ impl Plugin for PanOrbitCameraPlugin {
 }
 
 /// Base system set to allow ordering of `PanOrbitCamera`
-#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[system_set(base)]
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct PanOrbitCameraSystemSet;
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
@@ -73,8 +75,8 @@ pub struct PanOrbitCameraSystemSet;
 /// # fn main() {
 /// #     App::new()
 /// #         .add_plugins(DefaultPlugins)
-/// #         .add_plugin(PanOrbitCameraPlugin)
-/// #         .add_startup_system(setup)
+/// #         .add_plugins(PanOrbitCameraPlugin)
+/// #         .add_systems(Startup, setup)
 /// #         .run();
 /// # }
 /// fn setup(mut commands: Commands) {
@@ -269,16 +271,15 @@ fn active_viewport_data(
                         .get(entity)
                         .expect("Must exist, since the camera is referencing it"),
                 };
-                if let Some(mut cursor_pos) = window.cursor_position() {
+                if let Some(cursor_pos) = window.cursor_position() {
                     // Now check if cursor is within this camera's viewport
-                    if let Some(vp_rect) = camera.logical_viewport_rect() {
+                    if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
                         // Window coordinates have Y starting at the bottom, so we need to reverse
                         // the y component before comparing with the viewport rect
-                        cursor_pos.y = window.height() - cursor_pos.y;
-                        let cursor_in_vp = cursor_pos.x > vp_rect.0.x
-                            && cursor_pos.x < vp_rect.1.x
-                            && cursor_pos.y > vp_rect.0.y
-                            && cursor_pos.y < vp_rect.1.y;
+                        let cursor_in_vp = cursor_pos.x > min.x
+                            && cursor_pos.x < max.x
+                            && cursor_pos.y > min.y
+                            && cursor_pos.y < max.y;
 
                         // Only set if camera order is higher. This may overwrite a previous value
                         // in the case the viewport is overlapping another viewport.
