@@ -68,6 +68,7 @@ If `alpha` and `beta` are both `0.0`, then the camera will be looking directly f
 
 | bevy | bevy_panorbit_camera |
 |------|----------------------|
+| 0.11 | 0.6                  |
 | 0.10 | 0.1-0.5              |
 
 ## Credits
