@@ -118,6 +118,19 @@ pub fn update_orbit_transform(
     }
 }
 
+pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Option<f32>) -> f32 {
+    let mut new_val = value;
+    if let Some(zoom_upper) = upper_limit {
+        new_val = f32::min(new_val, zoom_upper);
+    }
+    if let Some(zoom_lower) = lower_limit {
+        new_val = f32::max(new_val, zoom_lower);
+    }
+    // Prevent zoom to zero otherwise we can get stuck there because zoom
+    // amount scales based on distance
+    f32::max(new_val, 0.05)
+}
+
 #[cfg(test)]
 mod calculate_from_translation_and_focus_tests {
     use super::*;
