@@ -51,10 +51,6 @@ fn setup(
             }),
             ..default()
         },
-        PanOrbitCamera {
-            zoom_upper_limit: Some(2.0),
-            zoom_lower_limit: Some(1.0),
-            ..default()
-        },
+        PanOrbitCamera::default(),
     ));
 }
