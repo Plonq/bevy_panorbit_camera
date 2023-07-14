@@ -151,6 +151,16 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub beta_lower_limit: Option<f32>,
+    /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
+    /// camera, or the projection scale in the case of using an orthographic
+    /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
+    /// Defaults to `None`.
+    pub zoom_upper_limit: Option<f32>,
+    /// Lower limit on the zoom. This applies to `radius`, in the case of using a perspective
+    /// camera, or the projection scale in the case of using an orthographic
+    /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
+    /// Defaults to `None`.
+    pub zoom_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
@@ -220,6 +230,8 @@ impl Default for PanOrbitCamera {
             alpha_lower_limit: None,
             beta_upper_limit: None,
             beta_lower_limit: None,
+            zoom_upper_limit: None,
+            zoom_lower_limit: None,
             force_update: false,
         }
     }
@@ -322,8 +334,9 @@ fn pan_orbit_camera(
                 util::calculate_from_translation_and_focus(transform.translation, pan_orbit.focus);
             let &mut mut alpha = pan_orbit.alpha.get_or_insert(alpha);
             let &mut mut beta = pan_orbit.beta.get_or_insert(beta);
-            let &mut radius = pan_orbit.radius.get_or_insert(radius);
+            let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
 
+            // Apply limits
             if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
                 if alpha > upper_alpha {
                     alpha = upper_alpha;
@@ -344,18 +357,24 @@ fn pan_orbit_camera(
                     beta = lower_beta;
                 }
             }
+            radius = util::apply_zoom_limits(
+                radius,
+                pan_orbit.zoom_upper_limit,
+                pan_orbit.zoom_lower_limit,
+            );
 
-            if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = radius;
-            }
-
-            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
             pan_orbit.target_focus = pan_orbit.focus;
+
+            if let Projection::Orthographic(ref mut p) = *projection {
+                p.scale = radius;
+            }
+
+            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
 
             pan_orbit.initialized = true;
         }
@@ -446,13 +465,22 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
+            let apply_scroll = |value: f32| value - scroll * value * 0.2;
+
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = f32::max(p.scale - scroll * p.scale * 0.2, 0.05);
+                p.scale = util::apply_zoom_limits(
+                    apply_scroll(p.scale),
+                    pan_orbit.zoom_upper_limit,
+                    pan_orbit.zoom_lower_limit,
+                );
             } else {
-                pan_orbit.radius = pan_orbit
-                    .radius
-                    // Prevent zoom to zero otherwise we can get stuck there
-                    .map(|radius| f32::max(radius - scroll * radius * 0.2, 0.05));
+                pan_orbit.radius = pan_orbit.radius.map(|radius| {
+                    util::apply_zoom_limits(
+                        apply_scroll(radius),
+                        pan_orbit.zoom_upper_limit,
+                        pan_orbit.zoom_lower_limit,
+                    )
+                });
             }
             has_moved = true;
         }

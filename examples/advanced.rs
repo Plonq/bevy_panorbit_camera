@@ -54,11 +54,13 @@ fn setup(
             alpha: Some(TAU / 8.0),
             beta: Some(TAU / 8.0),
             radius: Some(5.0),
-            // Set limits on how far in will rotate
+            // Set limits on rotation and zoom
             alpha_upper_limit: Some(TAU / 4.0),
             alpha_lower_limit: Some(-TAU / 4.0),
             beta_upper_limit: Some(TAU / 3.0),
             beta_lower_limit: Some(-TAU / 3.0),
+            zoom_upper_limit: Some(5.0),
+            zoom_lower_limit: Some(1.0),
             // Adjust sensitivity of controls
             orbit_sensitivity: 1.5,
             pan_sensitivity: 0.5,
