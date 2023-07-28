@@ -135,6 +135,11 @@ pub struct PanOrbitCamera {
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `0.0`.
     pub target_beta: f32,
+    /// The target radius value. The camera will smoothly transition to this value. Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `1.0`.
+    pub target_radius: f32,
     /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
     /// Defaults to `None`.
@@ -175,6 +180,10 @@ pub struct PanOrbitCamera {
     pub pan_smoothness: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
+    /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
+    /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
+    /// smoothing. Defaults to `0.8`.
+    pub zoom_smoothness: f32,
     /// Button used to orbit the camera. Defaults to `Button::Left`.
     pub button_orbit: MouseButton,
     /// Button used to pan the camera. Defaults to `Button::Right`.
@@ -215,6 +224,7 @@ impl Default for PanOrbitCamera {
             pan_sensitivity: 1.0,
             pan_smoothness: 0.6,
             zoom_sensitivity: 1.0,
+            zoom_smoothness: 0.8,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             modifier_orbit: None,
@@ -225,6 +235,7 @@ impl Default for PanOrbitCamera {
             beta: None,
             target_alpha: 0.0,
             target_beta: 0.0,
+            target_radius: 1.0,
             initialized: false,
             alpha_upper_limit: None,
             alpha_lower_limit: None,
@@ -366,6 +377,7 @@ fn pan_orbit_camera(
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
+            pan_orbit.target_radius = radius;
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
             pan_orbit.target_focus = pan_orbit.focus;
@@ -465,24 +477,30 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if scroll.abs() > 0.0 {
-            let apply_scroll = |value: f32| value - scroll * value * 0.2;
+            let delta = - scroll * pan_orbit.target_radius * 0.2;
+            pan_orbit.target_radius = util::apply_zoom_limits(
+                pan_orbit.target_radius + delta,
+                pan_orbit.zoom_upper_limit,
+                pan_orbit.zoom_lower_limit,
+            );
 
-            if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = util::apply_zoom_limits(
-                    apply_scroll(p.scale),
-                    pan_orbit.zoom_upper_limit,
-                    pan_orbit.zoom_lower_limit,
-                );
-            } else {
-                pan_orbit.radius = pan_orbit.radius.map(|radius| {
-                    util::apply_zoom_limits(
-                        apply_scroll(radius),
-                        pan_orbit.zoom_upper_limit,
-                        pan_orbit.zoom_lower_limit,
-                    )
-                });
+        }
+        if let Projection::Orthographic(ref mut p) = *projection {
+            let target = p.scale.lerp(&pan_orbit.target_radius, &(1.0 - pan_orbit.zoom_smoothness));
+            if (target - p.scale).abs() > 0.001 {
+                p.scale = target;
+                has_moved = true;
             }
-            has_moved = true;
+        } else {
+            pan_orbit.radius = pan_orbit.radius.map(|radius| {
+                let target = radius.lerp(&pan_orbit.target_radius, &(1.0 - pan_orbit.zoom_smoothness));
+                if (target - radius).abs() > 0.001 {
+                    has_moved = true;
+                    target
+                } else {
+                    radius
+                }
+            });
         }
 
         // 3 - Apply rotation constraints
