@@ -10,6 +10,7 @@ use bevy_easings::Lerp;
 use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
+use util::approx_equal;
 use std::f32::consts::{PI, TAU};
 
 #[cfg(feature = "bevy_egui")]
@@ -183,6 +184,8 @@ pub struct PanOrbitCamera {
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing. Defaults to `0.8`.
+    /// Note that this setting does not apply to pixel-based scroll events, as they are typically 
+    /// already smooth. It only applies to line-based scroll events.
     pub zoom_smoothness: f32,
     /// Button used to orbit the camera. Defaults to `Button::Left`.
     pub button_orbit: MouseButton,
@@ -395,7 +398,8 @@ fn pan_orbit_camera(
 
         let mut pan = Vec2::ZERO;
         let mut rotation_move = Vec2::ZERO;
-        let mut scroll = 0.0;
+        let mut scroll_line = 0.0;
+        let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
 
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
@@ -411,11 +415,15 @@ fn pan_orbit_camera(
                     true => -1.0,
                     false => 1.0,
                 };
-                let multiplier = match ev.unit {
-                    MouseScrollUnit::Line => 1.0,
-                    MouseScrollUnit::Pixel => 0.005,
+                let delta_scroll = ev.y * direction * pan_orbit.zoom_sensitivity;
+                match ev.unit {
+                    MouseScrollUnit::Line => {
+                        scroll_line += delta_scroll;
+                    }
+                    MouseScrollUnit::Pixel => {
+                        scroll_pixel += delta_scroll * 0.005;
+                    }
                 };
-                scroll += ev.y * multiplier * direction * pan_orbit.zoom_sensitivity;
             }
 
             if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
@@ -476,31 +484,18 @@ fn pan_orbit_camera(
                 pan_orbit.target_focus += translation;
                 has_moved = true;
             }
-        } else if scroll.abs() > 0.0 {
-            let delta = - scroll * pan_orbit.target_radius * 0.2;
+        } else if (scroll_line + scroll_pixel).abs() > 0.0 {
+            // Calculate the amount of change based on line scroll and pixel scroll
+            let line_delta = -scroll_line * pan_orbit.target_radius * 0.2;
+            let pixel_delta = -scroll_pixel * pan_orbit.target_radius * 0.2;
+            // Add the calculated deltas to the target radius
             pan_orbit.target_radius = util::apply_zoom_limits(
-                pan_orbit.target_radius + delta,
+                pan_orbit.target_radius + line_delta + pixel_delta,
                 pan_orbit.zoom_upper_limit,
                 pan_orbit.zoom_lower_limit,
             );
-
-        }
-        if let Projection::Orthographic(ref mut p) = *projection {
-            let target = p.scale.lerp(&pan_orbit.target_radius, &(1.0 - pan_orbit.zoom_smoothness));
-            if (target - p.scale).abs() > 0.001 {
-                p.scale = target;
-                has_moved = true;
-            }
-        } else {
-            pan_orbit.radius = pan_orbit.radius.map(|radius| {
-                let target = radius.lerp(&pan_orbit.target_radius, &(1.0 - pan_orbit.zoom_smoothness));
-                if (target - radius).abs() > 0.001 {
-                    has_moved = true;
-                    target
-                } else {
-                    radius
-                }
-            });
+            // If it is pixel-based scrolling, it is added directly to the target
+            pan_orbit.radius = pan_orbit.radius.map(|radius| radius + pixel_delta);
         }
 
         // 3 - Apply rotation constraints
@@ -535,6 +530,25 @@ fn pan_orbit_camera(
         }
 
         // 4 - Update the camera's transform based on current values
+        pan_orbit.radius = pan_orbit.radius.map(|radius| {
+            if pan_orbit.target_radius != radius {
+                // Radius has been changed by zooming
+                has_moved = true;
+                // Smoothing for line-based scrolling
+                let t = 1.0 - pan_orbit.zoom_smoothness;
+                let mut next_radius = radius.lerp(&pan_orbit.target_radius, &t);
+                if approx_equal(next_radius, pan_orbit.target_radius) {
+                    next_radius = pan_orbit.target_radius
+                }
+                if let Projection::Orthographic(ref mut p) = *projection {
+                    p.scale = next_radius;
+                }
+                next_radius
+            } else {
+                radius
+            }
+        });
+
 
         if let (Some(alpha), Some(beta)) = (pan_orbit.alpha, pan_orbit.beta) {
             if has_moved
@@ -553,10 +567,10 @@ fn pan_orbit_camera(
                 let mut new_beta = beta.lerp(&pan_orbit.target_beta, &t);
 
                 // If we're super close, then just snap to target rotation to save cycles
-                if (new_alpha - pan_orbit.target_alpha).abs() < 0.001 {
+                if approx_equal(new_alpha, pan_orbit.target_alpha) {
                     new_alpha = pan_orbit.target_alpha;
                 }
-                if (new_beta - pan_orbit.target_beta).abs() < 0.001 {
+                if approx_equal(new_beta, pan_orbit.target_beta) {
                     new_beta = pan_orbit.target_beta;
                 }
 
