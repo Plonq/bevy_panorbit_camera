@@ -131,6 +131,11 @@ pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Opti
     f32::max(new_val, 0.05)
 }
 
+
+pub fn approx_equal(a: f32, b: f32) -> bool {
+    (a - b).abs() < 0.001
+}
+
 #[cfg(test)]
 mod calculate_from_translation_and_focus_tests {
     use super::*;
