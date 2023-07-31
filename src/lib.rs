@@ -5,13 +5,11 @@ use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
-use bevy_easings::Lerp;
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
-use util::approx_equal;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
@@ -495,7 +493,13 @@ fn pan_orbit_camera(
                 pan_orbit.zoom_lower_limit,
             );
             // If it is pixel-based scrolling, it is added directly to the target
-            pan_orbit.radius = pan_orbit.radius.map(|radius| radius + pixel_delta);
+            pan_orbit.radius = pan_orbit.radius.map(|radius| {
+                util::apply_zoom_limits(
+                    radius + pixel_delta,
+                    pan_orbit.zoom_upper_limit,
+                    pan_orbit.zoom_lower_limit,
+                )
+            });
             has_moved = true;
         }
 
@@ -542,32 +546,27 @@ fn pan_orbit_camera(
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
-                // Interpolate towards the target rotation
-                let t = 1.0 - pan_orbit.orbit_smoothness;
-                let mut new_alpha = alpha.lerp(&pan_orbit.target_alpha, &t);
-                let mut new_beta = beta.lerp(&pan_orbit.target_beta, &t);
-
-                // Interpolate towards the target radius
-                let t = 1.0 - pan_orbit.zoom_smoothness;
-                let mut new_radius = radius.lerp(&pan_orbit.target_radius, &t);
-
-                // Interpolate towards the target focus
-                let t = 1.0 - pan_orbit.pan_smoothness;
-                let mut new_focus = pan_orbit.focus.lerp(pan_orbit.target_focus, t);
-
-                // If we're super close, then just snap to target rotation to save cycles
-                if approx_equal(new_alpha, pan_orbit.target_alpha) {
-                    new_alpha = pan_orbit.target_alpha;
-                }
-                if approx_equal(new_beta, pan_orbit.target_beta) {
-                    new_beta = pan_orbit.target_beta;
-                }
-                if approx_equal(new_radius, pan_orbit.target_radius) {
-                    new_radius = pan_orbit.target_radius
-                }
-                if approx_equal((new_focus - pan_orbit.target_focus).length(), 0.0) {
-                    new_focus = pan_orbit.target_focus;
-                }
+                // Interpolate towards the target values
+                let new_alpha = util::interpolate_and_check_approx_f32(
+                    pan_orbit.target_alpha,
+                    alpha,
+                    pan_orbit.orbit_smoothness,
+                );
+                let new_beta = util::interpolate_and_check_approx_f32(
+                    pan_orbit.target_beta,
+                    beta,
+                    pan_orbit.orbit_smoothness,
+                );
+                let new_radius = util::interpolate_and_check_approx_f32(
+                    pan_orbit.target_radius,
+                    radius,
+                    pan_orbit.zoom_smoothness,
+                );
+                let new_focus = util::interpolate_and_check_approx_vec3(
+                    pan_orbit.target_focus,
+                    pan_orbit.focus,
+                    pan_orbit.pan_smoothness,
+                );
 
                 if let Projection::Orthographic(ref mut p) = *projection {
                     p.scale = new_radius;
@@ -581,15 +580,12 @@ fn pan_orbit_camera(
                     &mut transform,
                 );
 
-                // Update current alpha and beta values
+                // Update the current values
                 pan_orbit.alpha = Some(new_alpha);
                 pan_orbit.beta = Some(new_beta);
                 pan_orbit.radius = Some(new_radius);
                 pan_orbit.focus = new_focus;
-
-                if pan_orbit.force_update {
-                    pan_orbit.force_update = false;
-                }
+                pan_orbit.force_update = false;
             }
         }
     }

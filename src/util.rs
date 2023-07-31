@@ -2,6 +2,9 @@ use crate::PanOrbitCamera;
 use bevy::input::Input;
 use bevy::math::{Mat3, Quat, Vec3};
 use bevy::prelude::{KeyCode, MouseButton, Res, Transform};
+use bevy_easings::Lerp;
+
+const EPSILON: f32 = 0.001;
 
 pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (f32, f32, f32) {
     let comp_vec = translation - focus;
@@ -130,9 +133,30 @@ pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Opti
     f32::max(new_val, 0.05)
 }
 
-
 pub fn approx_equal(a: f32, b: f32) -> bool {
-    (a - b).abs() < 0.001
+    (a - b).abs() < EPSILON
+}
+
+pub fn interpolate_and_check_approx_f32(target: f32, current: f32, smoothness: f32) -> f32 {
+    let t = 1.0 - smoothness;
+    let mut new_value = current.lerp(&target, &t);
+    if approx_equal(new_value, target) {
+        new_value = target;
+    }
+    new_value
+}
+
+pub fn interpolate_and_check_approx_vec3(
+    target: Vec3,
+    current: Vec3,
+    smoothness: f32,
+) -> Vec3 {
+    let t = 1.0 - smoothness;
+    let mut new_value = current.lerp(target, t);
+    if approx_equal((new_value - target).length(), 0.0) {
+        new_value.x = target.x;
+    }
+    new_value
 }
 
 #[cfg(test)]
