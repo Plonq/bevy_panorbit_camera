@@ -102,20 +102,19 @@ pub fn pan_just_pressed(
 pub fn update_orbit_transform(
     alpha: f32,
     beta: f32,
-    pan_orbit: &PanOrbitCamera,
+    radius: f32,
+    focus: Vec3,
     transform: &mut Transform,
 ) {
-    if let Some(radius) = pan_orbit.radius {
-        let mut rotation = Quat::from_rotation_y(alpha);
-        rotation *= Quat::from_rotation_x(-beta);
+    let mut rotation = Quat::from_rotation_y(alpha);
+    rotation *= Quat::from_rotation_x(-beta);
 
-        transform.rotation = rotation;
+    transform.rotation = rotation;
 
-        // Update the translation of the camera so we are always rotating 'around'
-        // (orbiting) rather than rotating in place
-        let rot_matrix = Mat3::from_quat(transform.rotation);
-        transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
-    }
+    // Update the translation of the camera so we are always rotating 'around'
+    // (orbiting) rather than rotating in place
+    let rot_matrix = Mat3::from_quat(transform.rotation);
+    transform.translation = focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
 }
 
 pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Option<f32>) -> f32 {

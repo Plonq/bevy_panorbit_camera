@@ -10,8 +10,8 @@ use bevy_easings::Lerp;
 use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 use egui::EguiWantsFocus;
-use util::approx_equal;
 use std::f32::consts::{PI, TAU};
+use util::approx_equal;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
@@ -184,7 +184,7 @@ pub struct PanOrbitCamera {
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing. Defaults to `0.8`.
-    /// Note that this setting does not apply to pixel-based scroll events, as they are typically 
+    /// Note that this setting does not apply to pixel-based scroll events, as they are typically
     /// already smooth. It only applies to line-based scroll events.
     pub zoom_smoothness: f32,
     /// Button used to orbit the camera. Defaults to `Button::Left`.
@@ -380,16 +380,16 @@ fn pan_orbit_camera(
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
-            pan_orbit.target_radius = radius;
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
+            pan_orbit.target_radius = radius;
             pan_orbit.target_focus = pan_orbit.focus;
 
             if let Projection::Orthographic(ref mut p) = *projection {
                 p.scale = radius;
             }
 
-            util::update_orbit_transform(alpha, beta, &pan_orbit, &mut transform);
+            util::update_orbit_transform(alpha, beta, radius, pan_orbit.focus, &mut transform);
 
             pan_orbit.initialized = true;
         }
@@ -532,7 +532,9 @@ fn pan_orbit_camera(
 
         // 4 - Update the camera's transform based on current values
 
-        if let (Some(alpha), Some(beta), Some(radius)) = (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius) {
+        if let (Some(alpha), Some(beta), Some(radius)) =
+            (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
+        {
             if has_moved
                 || pan_orbit.target_alpha != alpha
                 || pan_orbit.target_beta != beta
@@ -540,26 +542,18 @@ fn pan_orbit_camera(
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
-                // Interpolate towards the target radius
-                let t = 1.0 - pan_orbit.zoom_smoothness;
-                let mut new_radius = radius.lerp(&pan_orbit.target_radius, &t);
-                if approx_equal(new_radius, pan_orbit.target_radius) {
-                    new_radius = pan_orbit.target_radius
-                }
-                if let Projection::Orthographic(ref mut p) = *projection {
-                    p.scale = new_radius;
-                }
-
-                pan_orbit.radius = Some(new_radius);
-
-                // Interpolate towards the target focus
-                let t = 1.0 - pan_orbit.pan_smoothness;
-                pan_orbit.focus = pan_orbit.focus.lerp(pan_orbit.target_focus, t);
-
                 // Interpolate towards the target rotation
                 let t = 1.0 - pan_orbit.orbit_smoothness;
                 let mut new_alpha = alpha.lerp(&pan_orbit.target_alpha, &t);
                 let mut new_beta = beta.lerp(&pan_orbit.target_beta, &t);
+
+                // Interpolate towards the target radius
+                let t = 1.0 - pan_orbit.zoom_smoothness;
+                let mut new_radius = radius.lerp(&pan_orbit.target_radius, &t);
+
+                // Interpolate towards the target focus
+                let t = 1.0 - pan_orbit.pan_smoothness;
+                let mut new_focus = pan_orbit.focus.lerp(pan_orbit.target_focus, t);
 
                 // If we're super close, then just snap to target rotation to save cycles
                 if approx_equal(new_alpha, pan_orbit.target_alpha) {
@@ -568,12 +562,30 @@ fn pan_orbit_camera(
                 if approx_equal(new_beta, pan_orbit.target_beta) {
                     new_beta = pan_orbit.target_beta;
                 }
+                if approx_equal(new_radius, pan_orbit.target_radius) {
+                    new_radius = pan_orbit.target_radius
+                }
+                if approx_equal((new_focus - pan_orbit.target_focus).length(), 0.0) {
+                    new_focus = pan_orbit.target_focus;
+                }
 
-                util::update_orbit_transform(new_alpha, new_beta, &pan_orbit, &mut transform);
+                if let Projection::Orthographic(ref mut p) = *projection {
+                    p.scale = new_radius;
+                }
+
+                util::update_orbit_transform(
+                    new_alpha,
+                    new_beta,
+                    new_radius,
+                    new_focus,
+                    &mut transform,
+                );
 
                 // Update current alpha and beta values
                 pan_orbit.alpha = Some(new_alpha);
                 pan_orbit.beta = Some(new_beta);
+                pan_orbit.radius = Some(new_radius);
+                pan_orbit.focus = new_focus;
 
                 if pan_orbit.force_update {
                     pan_orbit.force_update = false;
