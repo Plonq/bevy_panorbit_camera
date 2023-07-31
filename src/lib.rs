@@ -531,33 +531,27 @@ fn pan_orbit_camera(
         }
 
         // 4 - Update the camera's transform based on current values
-        pan_orbit.radius = pan_orbit.radius.map(|radius| {
-            if pan_orbit.target_radius != radius {
-                // Radius has been changed by zooming
-                has_moved = true;
-                // Smoothing for line-based scrolling
-                let t = 1.0 - pan_orbit.zoom_smoothness;
-                let mut next_radius = radius.lerp(&pan_orbit.target_radius, &t);
-                if approx_equal(next_radius, pan_orbit.target_radius) {
-                    next_radius = pan_orbit.target_radius
-                }
-                if let Projection::Orthographic(ref mut p) = *projection {
-                    p.scale = next_radius;
-                }
-                next_radius
-            } else {
-                radius
-            }
-        });
 
-
-        if let (Some(alpha), Some(beta)) = (pan_orbit.alpha, pan_orbit.beta) {
+        if let (Some(alpha), Some(beta), Some(radius)) = (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius) {
             if has_moved
                 || pan_orbit.target_alpha != alpha
                 || pan_orbit.target_beta != beta
+                || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
+                // Interpolate towards the target radius
+                let t = 1.0 - pan_orbit.zoom_smoothness;
+                let mut new_radius = radius.lerp(&pan_orbit.target_radius, &t);
+                if approx_equal(new_radius, pan_orbit.target_radius) {
+                    new_radius = pan_orbit.target_radius
+                }
+                if let Projection::Orthographic(ref mut p) = *projection {
+                    p.scale = new_radius;
+                }
+
+                pan_orbit.radius = Some(new_radius);
+
                 // Interpolate towards the target focus
                 let t = 1.0 - pan_orbit.pan_smoothness;
                 pan_orbit.focus = pan_orbit.focus.lerp(pan_orbit.target_focus, t);
