@@ -103,6 +103,12 @@ pub struct PanOrbitCamera {
     /// Automatically updated.
     /// Defaults to `None`.
     pub radius: Option<f32>,
+    /// The scale of the orthographic projection. This field only applies to orthographic cameras.
+    /// If set to `None`, it will be calculated from the camera's current position during
+    /// initialization.
+    /// Automatically updated.
+    /// Defaults to `None`.
+    pub scale: Option<f32>,
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
     /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
@@ -139,6 +145,12 @@ pub struct PanOrbitCamera {
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `1.0`.
     pub target_radius: f32,
+    /// The target scale for orthographic projection. The camera will smoothly transition to this value.
+    /// This field is only applicable with Orthographic cameras.
+    /// Updated automatically, but you can also update it manually to control the camera independently
+    /// of the mouse controls, e.g. with the keyboard.
+    /// Defaults to `1.0`.
+    pub target_scale: f32,
     /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
     /// Defaults to `None`.
@@ -234,9 +246,11 @@ impl Default for PanOrbitCamera {
             enabled: true,
             alpha: None,
             beta: None,
+            scale: None,
             target_alpha: 0.0,
             target_beta: 0.0,
             target_radius: 1.0,
+            target_scale: 1.0,
             initialized: false,
             alpha_upper_limit: None,
             alpha_lower_limit: None,
@@ -338,6 +352,25 @@ fn pan_orbit_camera(
     let mouse_delta = mouse_motion.iter().map(|event| event.delta).sum::<Vec2>();
 
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
+        // Closures that apply limits to the alpha, beta, and zoom values
+        let apply_zoom_limits = {
+            let zoom_upper_limit = pan_orbit.zoom_upper_limit;
+            let zoom_lower_limit = pan_orbit.zoom_lower_limit;
+            move |zoom: f32| util::apply_limits(zoom, zoom_upper_limit, zoom_lower_limit).max(0.05)
+        };
+
+        let apply_alpha_limits = {
+            let alpha_upper_limit = pan_orbit.alpha_upper_limit;
+            let alpha_lower_limit = pan_orbit.alpha_lower_limit;
+            move |alpha: f32| util::apply_limits(alpha, alpha_upper_limit, alpha_lower_limit)
+        };
+
+        let apply_beta_limits = {
+            let beta_upper_limit = pan_orbit.beta_upper_limit;
+            let beta_lower_limit = pan_orbit.beta_lower_limit;
+            move |beta: f32| util::apply_limits(beta, beta_upper_limit, beta_lower_limit)
+        };
+
         if !pan_orbit.initialized {
             // Calculate alpha, beta, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
@@ -349,32 +382,11 @@ fn pan_orbit_camera(
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
 
             // Apply limits
-            if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-                if alpha > upper_alpha {
-                    alpha = upper_alpha;
-                }
-            }
-            if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-                if alpha < lower_alpha {
-                    alpha = lower_alpha;
-                }
-            }
-            if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-                if beta > upper_beta {
-                    beta = upper_beta;
-                }
-            }
-            if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-                if beta < lower_beta {
-                    beta = lower_beta;
-                }
-            }
-            radius = util::apply_zoom_limits(
-                radius,
-                pan_orbit.zoom_upper_limit,
-                pan_orbit.zoom_lower_limit,
-            );
+            alpha = apply_alpha_limits(alpha);
+            beta = apply_beta_limits(beta);
+            radius = apply_zoom_limits(radius);
 
+            // Set initial values
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
             pan_orbit.radius = Some(radius);
@@ -384,7 +396,9 @@ fn pan_orbit_camera(
             pan_orbit.target_focus = pan_orbit.focus;
 
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = radius;
+                p.scale = apply_zoom_limits(p.scale);
+                pan_orbit.scale = Some(p.scale);
+                pan_orbit.target_scale = p.scale;
             }
 
             util::update_orbit_transform(alpha, beta, radius, pan_orbit.focus, &mut transform);
@@ -483,55 +497,37 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         } else if (scroll_line + scroll_pixel).abs() > 0.0 {
-            // Calculate the amount of change based on line scroll and pixel scroll
-            let line_delta = -scroll_line * pan_orbit.target_radius * 0.2;
-            let pixel_delta = -scroll_pixel * pan_orbit.target_radius * 0.2;
-            // Add the calculated deltas to the target radius
-            pan_orbit.target_radius = util::apply_zoom_limits(
-                pan_orbit.target_radius + line_delta + pixel_delta,
-                pan_orbit.zoom_upper_limit,
-                pan_orbit.zoom_lower_limit,
-            );
-            // If it is pixel-based scrolling, it is added directly to the target
-            pan_orbit.radius = pan_orbit.radius.map(|radius| {
-                util::apply_zoom_limits(
-                    radius + pixel_delta,
-                    pan_orbit.zoom_upper_limit,
-                    pan_orbit.zoom_lower_limit,
-                )
-            });
+            // Choose different reference values based on the current projection
+            let pan_orbit = &mut *pan_orbit;
+            let (target_value, value) = if let Projection::Orthographic(_) = *projection {
+                (&mut pan_orbit.target_scale, &mut pan_orbit.scale)
+            } else {
+                (&mut pan_orbit.target_radius, &mut pan_orbit.radius)
+            };
+
+            // Calculate the impact of scrolling on the reference value
+            let line_delta = -scroll_line * (*target_value) * 0.2;
+            let pixel_delta = -scroll_pixel * (*target_value) * 0.2;
+
+            // Update the target value
+            *target_value += line_delta + pixel_delta;
+
+            // If it is pixel-based scrolling, add it directly to the current value
+            *value = value.map(|value| apply_zoom_limits(value + pixel_delta));
+
             has_moved = true;
         }
 
-        // 3 - Apply rotation constraints
+        // 3 - Apply constraints
 
-        if let Some(upper_alpha) = pan_orbit.alpha_upper_limit {
-            if pan_orbit.target_alpha > upper_alpha {
-                pan_orbit.target_alpha = upper_alpha;
-            }
-        }
-        if let Some(lower_alpha) = pan_orbit.alpha_lower_limit {
-            if pan_orbit.target_alpha < lower_alpha {
-                pan_orbit.target_alpha = lower_alpha;
-            }
-        }
-        if let Some(upper_beta) = pan_orbit.beta_upper_limit {
-            if pan_orbit.target_beta > upper_beta {
-                pan_orbit.target_beta = upper_beta;
-            }
-        }
-        if let Some(lower_beta) = pan_orbit.beta_lower_limit {
-            if pan_orbit.target_beta < lower_beta {
-                pan_orbit.target_beta = lower_beta;
-            }
-        }
+        pan_orbit.target_alpha = apply_alpha_limits(pan_orbit.target_alpha);
+        pan_orbit.target_beta = apply_beta_limits(pan_orbit.target_beta);
+        pan_orbit.target_radius = apply_zoom_limits(pan_orbit.target_radius);
+        pan_orbit.target_scale = apply_zoom_limits(pan_orbit.target_scale);
+
         if !pan_orbit.allow_upside_down {
-            if pan_orbit.target_beta < -PI / 2.0 {
-                pan_orbit.target_beta = -PI / 2.0;
-            }
-            if pan_orbit.target_beta > PI / 2.0 {
-                pan_orbit.target_beta = PI / 2.0;
-            }
+            pan_orbit.target_beta =
+                util::apply_limits(pan_orbit.target_beta, Some(PI / 2.0), Some(-PI / 2.0));
         }
 
         // 4 - Update the camera's transform based on current values
@@ -544,6 +540,7 @@ fn pan_orbit_camera(
                 || pan_orbit.target_beta != beta
                 || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
+                || Some(pan_orbit.target_scale) != pan_orbit.scale
                 || pan_orbit.force_update
             {
                 // Interpolate towards the target values
@@ -562,6 +559,11 @@ fn pan_orbit_camera(
                     radius,
                     pan_orbit.zoom_smoothness,
                 );
+                let new_scale = util::interpolate_and_check_approx_f32(
+                    pan_orbit.target_scale,
+                    pan_orbit.scale.unwrap_or(pan_orbit.target_scale),
+                    pan_orbit.zoom_smoothness,
+                );
                 let new_focus = util::interpolate_and_check_approx_vec3(
                     pan_orbit.target_focus,
                     pan_orbit.focus,
@@ -569,7 +571,7 @@ fn pan_orbit_camera(
                 );
 
                 if let Projection::Orthographic(ref mut p) = *projection {
-                    p.scale = new_radius;
+                    p.scale = new_scale;
                 }
 
                 util::update_orbit_transform(
@@ -584,6 +586,7 @@ fn pan_orbit_camera(
                 pan_orbit.alpha = Some(new_alpha);
                 pan_orbit.beta = Some(new_beta);
                 pan_orbit.radius = Some(new_radius);
+                pan_orbit.scale = Some(new_scale);
                 pan_orbit.focus = new_focus;
                 pan_orbit.force_update = false;
             }

@@ -1,6 +1,6 @@
 use crate::PanOrbitCamera;
 use bevy::input::Input;
-use bevy::math::{Mat3, Quat, Vec3};
+use bevy::math::{Quat, Vec3};
 use bevy::prelude::{KeyCode, MouseButton, Res, Transform};
 use bevy_easings::Lerp;
 
@@ -111,16 +111,14 @@ pub fn update_orbit_transform(
 ) {
     let mut rotation = Quat::from_rotation_y(alpha);
     rotation *= Quat::from_rotation_x(-beta);
-
     transform.rotation = rotation;
 
     // Update the translation of the camera so we are always rotating 'around'
     // (orbiting) rather than rotating in place
-    let rot_matrix = Mat3::from_quat(transform.rotation);
-    transform.translation = focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, radius));
+    transform.translation = focus + transform.rotation * Vec3::new(0.0, 0.0, radius);
 }
 
-pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Option<f32>) -> f32 {
+pub fn apply_limits(value: f32, upper_limit: Option<f32>, lower_limit: Option<f32>) -> f32 {
     let mut new_val = value;
     if let Some(zoom_upper) = upper_limit {
         new_val = f32::min(new_val, zoom_upper);
@@ -128,9 +126,7 @@ pub fn apply_zoom_limits(value: f32, upper_limit: Option<f32>, lower_limit: Opti
     if let Some(zoom_lower) = lower_limit {
         new_val = f32::max(new_val, zoom_lower);
     }
-    // Prevent zoom to zero otherwise we can get stuck there because zoom
-    // amount scales based on distance
-    f32::max(new_val, 0.05)
+    new_val
 }
 
 pub fn approx_equal(a: f32, b: f32) -> bool {
@@ -146,11 +142,7 @@ pub fn interpolate_and_check_approx_f32(target: f32, current: f32, smoothness: f
     new_value
 }
 
-pub fn interpolate_and_check_approx_vec3(
-    target: Vec3,
-    current: Vec3,
-    smoothness: f32,
-) -> Vec3 {
+pub fn interpolate_and_check_approx_vec3(target: Vec3, current: Vec3, smoothness: f32) -> Vec3 {
     let t = 1.0 - smoothness;
     let mut new_value = current.lerp(target, t);
     if approx_equal((new_value - target).length(), 0.0) {
@@ -213,5 +205,20 @@ mod calculate_from_translation_and_focus_tests {
         assert!(approx_eq!(f32, alpha, 2.4));
         assert!(approx_eq!(f32, beta, 1.23));
         assert_eq!(radius, 4.1);
+    }
+
+    #[test]
+    fn test_apply_limits() {
+        let upper_limit = Some(10.0);
+        let lower_limit = Some(5.0);
+        assert_eq!(apply_limits(7.0, upper_limit, lower_limit), 7.0);
+        assert_eq!(apply_limits(1.0, upper_limit, lower_limit), 5.0);
+    }
+
+    #[test]
+    fn test_approx_equal() {
+        assert!(approx_equal(1.0, 1.0));
+        assert!(approx_equal(1.0, 1.0000001));
+        assert!(!approx_equal(1.0, 1.01));
     }
 }
