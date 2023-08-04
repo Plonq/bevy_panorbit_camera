@@ -545,6 +545,8 @@ fn pan_orbit_camera(
                 || pan_orbit.target_beta != beta
                 || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
+                // Unlike the rest, scale will always be None for non-orthographic cameras,
+                // so we can't include in the if let above
                 || Some(pan_orbit.target_scale) != pan_orbit.scale
                 || pan_orbit.force_update
             {
