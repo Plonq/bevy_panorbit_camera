@@ -396,8 +396,13 @@ fn pan_orbit_camera(
             pan_orbit.target_focus = pan_orbit.focus;
 
             if let Projection::Orthographic(ref mut p) = *projection {
-                p.scale = apply_zoom_limits(p.scale);
-                pan_orbit.scale = Some(p.scale);
+                // If user hasn't set initial scale value, we want to initialize it with the
+                // projection's scale, otherwise we want to override the projection's scale with
+                // the value the user provided.
+                if pan_orbit.scale.is_none() {
+                    pan_orbit.scale = Some(p.scale);
+                }
+                p.scale = apply_zoom_limits(pan_orbit.scale.expect("Just set to Some above"));
                 pan_orbit.target_scale = p.scale;
             }
 

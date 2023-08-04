@@ -51,6 +51,10 @@ fn setup(
             }),
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            // Setting scale here will override the camera projection's  initial scale
+            scale: Some(2.5),
+            ..default()
+        },
     ));
 }
