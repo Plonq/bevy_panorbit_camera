@@ -133,20 +133,20 @@ pub fn approx_equal(a: f32, b: f32) -> bool {
     (a - b).abs() < EPSILON
 }
 
-pub fn interpolate_and_check_approx_f32(target: f32, current: f32, smoothness: f32) -> f32 {
+pub fn lerp_and_snap_f32(from: f32, to: f32, smoothness: f32) -> f32 {
     let t = 1.0 - smoothness;
-    let mut new_value = current.lerp(&target, &t);
-    if approx_equal(new_value, target) {
-        new_value = target;
+    let mut new_value = from.lerp(&to, &t);
+    if smoothness < 1.0 && approx_equal(new_value, to) {
+        new_value = to;
     }
     new_value
 }
 
-pub fn interpolate_and_check_approx_vec3(target: Vec3, current: Vec3, smoothness: f32) -> Vec3 {
+pub fn lerp_and_snap_vec3(from: Vec3, to: Vec3, smoothness: f32) -> Vec3 {
     let t = 1.0 - smoothness;
-    let mut new_value = current.lerp(target, t);
-    if approx_equal((new_value - target).length(), 0.0) {
-        new_value.x = target.x;
+    let mut new_value = from.lerp(to, t);
+    if smoothness < 1.0 && approx_equal((new_value - to).length(), 0.0) {
+        new_value.x = to.x;
     }
     new_value
 }
@@ -158,7 +158,7 @@ mod calculate_from_translation_and_focus_tests {
     use std::f32::consts::PI;
 
     #[test]
-    fn test_zero() {
+    fn zero() {
         let translation = Vec3::new(0.0, 0.0, 0.0);
         let focus = Vec3::ZERO;
         let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
@@ -168,7 +168,7 @@ mod calculate_from_translation_and_focus_tests {
     }
 
     #[test]
-    fn test_in_front() {
+    fn in_front() {
         let translation = Vec3::new(0.0, 0.0, 5.0);
         let focus = Vec3::ZERO;
         let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
@@ -178,7 +178,7 @@ mod calculate_from_translation_and_focus_tests {
     }
 
     #[test]
-    fn test_to_the_side() {
+    fn to_the_side() {
         let translation = Vec3::new(5.0, 0.0, 0.0);
         let focus = Vec3::ZERO;
         let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
@@ -188,7 +188,7 @@ mod calculate_from_translation_and_focus_tests {
     }
 
     #[test]
-    fn test_above() {
+    fn above() {
         let translation = Vec3::new(0.0, 5.0, 0.0);
         let focus = Vec3::ZERO;
         let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
@@ -198,7 +198,7 @@ mod calculate_from_translation_and_focus_tests {
     }
 
     #[test]
-    fn test_arbitrary() {
+    fn arbitrary() {
         let translation = Vec3::new(0.92563736, 3.864204, -1.0105048);
         let focus = Vec3::ZERO;
         let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
@@ -206,9 +206,14 @@ mod calculate_from_translation_and_focus_tests {
         assert!(approx_eq!(f32, beta, 1.23));
         assert_eq!(radius, 4.1);
     }
+}
+
+#[cfg(test)]
+mod apply_limits_tests {
+    use super::*;
 
     #[test]
-    fn test_apply_limits() {
+    fn both_limits_are_some() {
         let upper_limit = Some(10.0);
         let lower_limit = Some(5.0);
         assert_eq!(apply_limits(7.0, upper_limit, lower_limit), 7.0);
@@ -216,9 +221,94 @@ mod calculate_from_translation_and_focus_tests {
     }
 
     #[test]
-    fn test_approx_equal() {
+    fn lower_limit_is_some() {
+        let upper_limit = None;
+        let lower_limit = Some(5.0);
+        assert_eq!(apply_limits(500.0, upper_limit, lower_limit), 500.0);
+        assert_eq!(apply_limits(1.0, upper_limit, lower_limit), 5.0);
+    }
+
+    #[test]
+    fn upper_limit_is_some() {
+        let upper_limit = Some(10.0);
+        let lower_limit = None;
+        assert_eq!(apply_limits(15.0, upper_limit, lower_limit), 10.0);
+        assert_eq!(apply_limits(-500.0, upper_limit, lower_limit), -500.0);
+    }
+}
+
+#[cfg(test)]
+mod approx_equal_tests {
+    use super::*;
+
+    #[test]
+    fn same_value_is_approx_equal() {
         assert!(approx_equal(1.0, 1.0));
+    }
+
+    #[test]
+    fn value_within_threshold_is_approx_equal() {
         assert!(approx_equal(1.0, 1.0000001));
+    }
+
+    #[test]
+    fn value_outside_threshold_is_not_approx_equal() {
         assert!(!approx_equal(1.0, 1.01));
+    }
+}
+
+#[cfg(test)]
+mod lerp_and_snap_f32_tests {
+    use super::*;
+
+    #[test]
+    fn lerps_when_output_outside_snap_threshold() {
+        let out = lerp_and_snap_f32(1.0, 2.0, 0.5);
+        assert_eq!(out, 1.5);
+    }
+
+    #[test]
+    fn snaps_to_target_when_inside_threshold() {
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.5);
+        assert_eq!(out, 2.0);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.1);
+        assert_eq!(out, 2.0);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.9);
+        assert_eq!(out, 2.0);
+    }
+
+    #[test]
+    fn does_not_snap_if_smoothness_is_one() {
+        // Smoothness of one results in the value not changing, so it doesn't make sense to snap
+        let out = lerp_and_snap_f32(1.9991, 2.0, 1.0);
+        assert_eq!(out, 1.9991);
+    }
+}
+
+#[cfg(test)]
+mod lerp_and_snap_vec3_tests {
+    use super::*;
+
+    #[test]
+    fn lerps_when_output_outside_snap_threshold() {
+        let out = lerp_and_snap_vec3(Vec3::ZERO, Vec3::X, 0.5);
+        assert_eq!(out, Vec3::X * 0.5);
+    }
+
+    #[test]
+    fn snaps_to_target_when_inside_threshold() {
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.5);
+        assert_eq!(out, Vec3::X);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.1);
+        assert_eq!(out, Vec3::X);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.9);
+        assert_eq!(out, Vec3::X);
+    }
+
+    #[test]
+    fn does_not_snap_if_smoothness_is_one() {
+        // Smoothness of one results in the value not changing, so it doesn't make sense to snap
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 1.0);
+        assert_eq!(out, Vec3::X * 0.9991);
     }
 }

@@ -551,29 +551,29 @@ fn pan_orbit_camera(
                 || pan_orbit.force_update
             {
                 // Interpolate towards the target values
-                let new_alpha = util::interpolate_and_check_approx_f32(
-                    pan_orbit.target_alpha,
+                let new_alpha = util::lerp_and_snap_f32(
                     alpha,
+                    pan_orbit.target_alpha,
                     pan_orbit.orbit_smoothness,
                 );
-                let new_beta = util::interpolate_and_check_approx_f32(
-                    pan_orbit.target_beta,
+                let new_beta = util::lerp_and_snap_f32(
                     beta,
+                    pan_orbit.target_beta,
                     pan_orbit.orbit_smoothness,
                 );
-                let new_radius = util::interpolate_and_check_approx_f32(
-                    pan_orbit.target_radius,
+                let new_radius = util::lerp_and_snap_f32(
                     radius,
+                    pan_orbit.target_radius,
                     pan_orbit.zoom_smoothness,
                 );
-                let new_scale = util::interpolate_and_check_approx_f32(
-                    pan_orbit.target_scale,
+                let new_scale = util::lerp_and_snap_f32(
                     pan_orbit.scale.unwrap_or(pan_orbit.target_scale),
+                    pan_orbit.target_scale,
                     pan_orbit.zoom_smoothness,
                 );
-                let new_focus = util::interpolate_and_check_approx_vec3(
-                    pan_orbit.target_focus,
+                let new_focus = util::lerp_and_snap_vec3(
                     pan_orbit.focus,
+                    pan_orbit.target_focus,
                     pan_orbit.pan_smoothness,
                 );
 
