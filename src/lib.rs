@@ -419,6 +419,9 @@ fn pan_orbit_camera(
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
 
+        // The reason we only skip getting input if the camera is inactive/disabled is because
+        // it might still be moving (lerping towards target values) when the user is not
+        // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
