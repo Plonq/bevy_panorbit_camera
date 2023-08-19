@@ -278,8 +278,8 @@ pub struct ActiveCameraData {
     /// is the camera that will move when you orbit/pan/zoom.
     pub entity: Option<Entity>,
     /// The viewport size. This is only used to scale the panning mouse motion. I recommend setting
-    /// this to the actual render target dimensions, and changing `PanOrbitCamera::pan_sensitivity`
-    /// to adjust the sensitivity if required.
+    /// this to the actual render target dimensions (e.g. the image or viewport), and changing
+    /// `PanOrbitCamera::pan_sensitivity` to adjust the sensitivity if required.
     pub viewport_size: Option<Vec2>,
     /// The size of the window. This is only used to scale the orbit mouse motion. I recommend
     /// setting this to actual dimensions of the window that you want to control the camera from,

@@ -1,13 +1,23 @@
-//! Demonstrates the ability to manually override which instance of PanOrbitCamera receives input,
-//! and how that input is scaled.
-//! This effectively disables automatic handling of multiple viewport/windows, but may be suitable
-//! if you have a unique situation, for example when the camera you want to control is rendering to
-//! a texture instead of a window.
+//! Demonstrates the ability to manually override which instance of PanOrbitCamera receives input
+//! events.
+//! The most obvious use case is when rendering to a texture/image instead of a window/viewport.
+//!
+//! This example is based off Bevy's render_to_texture example.
 
-use bevy::core_pipeline::clear_color::ClearColorConfig;
-use bevy::prelude::*;
-use bevy::render::camera::Viewport;
-use bevy::window::{PrimaryWindow, WindowResized};
+use std::f32::consts::PI;
+
+use bevy::window::PrimaryWindow;
+use bevy::{
+    core_pipeline::clear_color::ClearColorConfig,
+    prelude::*,
+    render::{
+        camera::RenderTarget,
+        render_resource::{
+            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+        },
+        view::RenderLayers,
+    },
+};
 use bevy_panorbit_camera::{ActiveCameraData, PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
@@ -15,105 +25,161 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, (update_active_cam, set_camera_viewports))
+        .add_systems(Update, cube_rotator_system)
         .run();
 }
+
+// Marks the first pass cube (rendered to a texture.)
+#[derive(Component)]
+struct FirstPassCube;
+
+// Marks the main pass cube, to which the texture is applied.
+#[derive(Component)]
+struct MainPassCube;
 
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // Ground
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-        ..default()
-    });
-    // Cube
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..default()
-    });
-    // Light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
-    // Main Camera
-    commands.spawn((Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.5, 5.0)),
-        ..default()
-    },));
-    // Minimap Camera
-    commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(1.0, 1.5, 4.0)),
-            camera: Camera {
-                // Renders the minimap camera after the main camera, so it is rendered on top
-                order: 1,
-                ..default()
-            },
-            camera_3d: Camera3d {
-                // Don't clear on the second camera because the first camera already cleared the window
-                clear_color: ClearColorConfig::None,
-                ..default()
-            },
-            ..default()
-        },
-        PanOrbitCamera::default(),
-        MinimapCamera,
-    ));
-}
-
-#[derive(Component)]
-struct MinimapCamera;
-
-fn update_active_cam(
+    mut images: ResMut<Assets<Image>>,
     mut active_cam: ResMut<ActiveCameraData>,
-    minimap_camera_q: Query<(Entity, &Camera), With<MinimapCamera>>,
     windows: Query<&Window, With<PrimaryWindow>>,
 ) {
+    let size = Extent3d {
+        width: 512,
+        height: 512,
+        ..default()
+    };
+
+    // This is the texture that will be rendered to.
+    let mut image = Image {
+        texture_descriptor: TextureDescriptor {
+            label: None,
+            size,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::Bgra8UnormSrgb,
+            mip_level_count: 1,
+            sample_count: 1,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        },
+        ..default()
+    };
+
+    // fill image.data with zeroes
+    image.resize(size);
+
+    let image_handle = images.add(image);
+
+    let cube_handle = meshes.add(Mesh::from(shape::Cube { size: 4.0 }));
+    let cube_material_handle = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.8, 0.7, 0.6),
+        reflectance: 0.02,
+        unlit: false,
+        ..default()
+    });
+
+    // This specifies the layer used for the first pass, which will be attached to the first pass camera and cube.
+    let first_pass_layer = RenderLayers::layer(1);
+
+    // The cube that will be rendered to the texture.
+    commands.spawn((
+        PbrBundle {
+            mesh: cube_handle,
+            material: cube_material_handle,
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 1.0)),
+            ..default()
+        },
+        FirstPassCube,
+        first_pass_layer,
+    ));
+
+    // Light
+    // NOTE: Currently lights are shared between passes - see https://github.com/bevyengine/bevy/issues/3462
+    commands.spawn(PointLightBundle {
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
+        ..default()
+    });
+
+    // The camera for the first pass cube that will be rendered to the texture. This is the camera
+    // that is controlled by PanOrbitCamera.
+    let pan_orbit_id = commands
+        .spawn((
+            Camera3dBundle {
+                camera_3d: Camera3d {
+                    clear_color: ClearColorConfig::Custom(Color::WHITE),
+                    ..default()
+                },
+                camera: Camera {
+                    // render before the "main pass" camera
+                    order: -1,
+                    target: RenderTarget::Image(image_handle.clone()),
+                    ..default()
+                },
+                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
+                    .looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            PanOrbitCamera::default(),
+            first_pass_layer,
+        ))
+        .id();
+
+    let cube_size = 4.0;
+    let cube_handle = meshes.add(Mesh::from(shape::Box::new(cube_size, cube_size, cube_size)));
+
+    // This material has the texture that has been rendered.
+    let material_handle = materials.add(StandardMaterial {
+        base_color_texture: Some(image_handle),
+        reflectance: 0.02,
+        unlit: false,
+        ..default()
+    });
+
+    // Main pass cube, with material containing the rendered first pass texture.
+    commands.spawn((
+        PbrBundle {
+            mesh: cube_handle,
+            material: material_handle,
+            transform: Transform::from_xyz(0.0, 0.0, 1.5)
+                .with_rotation(Quat::from_rotation_x(-PI / 5.0)),
+            ..default()
+        },
+        MainPassCube,
+    ));
+
+    // The main pass camera.
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_xyz(0.0, 0.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
+        ..default()
+    });
+
+    // Set up manual override of PanOrbitCamera. Note that this must run after PanOrbitCameraPlugin
+    // is added, otherwise ActiveCameraData will be overwritten.
+    // Note: you probably want to update the `viewport_size` and `window_size` whenever they change.
     let primary_window = windows
         .get_single()
         .expect("There is only ever one primary camera");
-    let (minimap_camera_id, minimap_camera) =
-        minimap_camera_q.get_single().expect("We only added one");
     active_cam.set_if_neq(ActiveCameraData {
-        // Set the entity to the entity ID of the camera you want to control
-        entity: Some(minimap_camera_id),
-        // Set the viewport and window size based on how you want the mouse motion to be scaled.
-        // The viewport size is used to scale pan motion in order to get 1:1 motion (at default
-        // settings), and window size is used for scaling rotation (because it feels better than
-        // using the viewport size). Here, we set the values to the actual values of the minimap
-        // camera, which is what PanOrbitCameraPlugin would do.
-        viewport_size: minimap_camera.logical_viewport_size(),
+        // Set the entity to the entity ID of the camera you want to control. In this case, it's
+        // the inner (first pass) cube that is rendered to the texture/image.
+        entity: Some(pan_orbit_id),
+        // What you set these values to will depend on your use case, but generally you want the
+        // viewport size to match the size of the render target (image, viewport), and the window
+        // size to match the size of the window that you are interacting with.
+        viewport_size: Some(Vec2::new(size.width as f32, size.height as f32)),
         window_size: Some(Vec2::new(primary_window.width(), primary_window.height())),
         // Setting manual to true ensures PanOrbitCameraPlugin will not overwrite this resource
         manual: true,
     });
 }
 
-fn set_camera_viewports(
-    windows: Query<&Window>,
-    mut resize_events: EventReader<WindowResized>,
-    mut right_camera: Query<&mut Camera, With<MinimapCamera>>,
-) {
-    for resize_event in resize_events.iter() {
-        let window = windows.get(resize_event.window).unwrap();
-        let mut right_camera = right_camera.single_mut();
-        let size = window.resolution.physical_width() / 5;
-        right_camera.viewport = Some(Viewport {
-            physical_position: UVec2::new(window.resolution.physical_width() - size, 0),
-            physical_size: UVec2::new(size, size),
-            ..default()
-        });
+/// Rotates the outer cube (main pass)
+fn cube_rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<MainPassCube>>) {
+    for mut transform in &mut query {
+        transform.rotate_x(1.0 * time.delta_seconds());
+        transform.rotate_y(0.7 * time.delta_seconds());
     }
 }
