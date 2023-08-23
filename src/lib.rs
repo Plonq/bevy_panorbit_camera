@@ -34,7 +34,11 @@ impl Plugin for PanOrbitCameraPlugin {
         app.insert_resource(ActiveCameraData::default())
             .add_systems(
                 Update,
-                (active_viewport_data, pan_orbit_camera)
+                (
+                    active_viewport_data
+                        .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
+                    pan_orbit_camera,
+                )
                     .chain()
                     .in_set(PanOrbitCameraSystemSet),
             );
@@ -263,13 +267,29 @@ impl Default for PanOrbitCamera {
     }
 }
 
-// Tracks the camera entity that should be handling input events.
-// This enables having multiple cameras with different viewports or windows.
+/// Tracks which `PanOrbitCamera` is active (should handle input events), along with the window
+/// and viewport dimensions, which are used for scaling mouse motion.
+/// `PanOrbitCameraPlugin` manages this resource automatically, in order to support multiple
+/// viewports/windows. However, if this doesn't work for you, you can take over and manage it
+/// yourself, e.g. when you want to control a camera that is rendering to a texture.
 #[derive(Resource, Default, Debug, PartialEq)]
-struct ActiveCameraData {
-    entity: Option<Entity>,
-    viewport_size: Option<Vec2>,
-    window_size: Option<Vec2>,
+pub struct ActiveCameraData {
+    /// ID of the entity with `PanOrbitCamera` that will handle user input. In other words, this
+    /// is the camera that will move when you orbit/pan/zoom.
+    pub entity: Option<Entity>,
+    /// The viewport size. This is only used to scale the panning mouse motion. I recommend setting
+    /// this to the actual render target dimensions (e.g. the image or viewport), and changing
+    /// `PanOrbitCamera::pan_sensitivity` to adjust the sensitivity if required.
+    pub viewport_size: Option<Vec2>,
+    /// The size of the window. This is only used to scale the orbit mouse motion. I recommend
+    /// setting this to actual dimensions of the window that you want to control the camera from,
+    /// and changing `PanOrbitCamera::orbit_sensitivity` to adjust the sensitivity if required.
+    pub window_size: Option<Vec2>,
+    /// Indicates to `PanOrbitCameraPlugin` that it should not update/overwrite this resource.
+    /// If you are manually updating this resource you should set this to `true`.
+    /// Note that setting this to `true` will effectively break multiple viewport/window support
+    /// unless you manually reimplement it.
+    pub manual: bool,
 }
 
 // Gathers data about the active viewport, i.e. the viewport the user is interacting with. This
@@ -283,12 +303,7 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
 ) {
-    // let mut new_resource: Option<ActiveCameraData> = None;
-    let mut new_resource = ActiveCameraData {
-        entity: None,
-        viewport_size: None,
-        window_size: None,
-    };
+    let mut new_resource = ActiveCameraData::default();
     let mut max_cam_order = 0;
 
     let mut has_input = false;
@@ -326,6 +341,7 @@ fn active_viewport_data(
                                 entity: Some(entity),
                                 viewport_size: camera.logical_viewport_size(),
                                 window_size: Some(Vec2::new(window.width(), window.height())),
+                                manual: false,
                             };
                             max_cam_order = camera.order;
                         }
@@ -419,6 +435,9 @@ fn pan_orbit_camera(
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
 
+        // The reason we only skip getting input if the camera is inactive/disabled is because
+        // it might still be moving (lerping towards target values) when the user is not
+        // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
