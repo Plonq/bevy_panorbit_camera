@@ -1,6 +1,5 @@
 //! Demonstrates the ability to manually override which instance of PanOrbitCamera receives input
-//! events.
-//! The most obvious use case is when rendering to a texture/image instead of a window/viewport.
+//! events, which is necessary when rendering to a texture/image instead of a window/viewport.
 //!
 //! This example is based off Bevy's render_to_texture example.
 
@@ -158,10 +157,11 @@ fn setup(
 
     // Set up manual override of PanOrbitCamera. Note that this must run after PanOrbitCameraPlugin
     // is added, otherwise ActiveCameraData will be overwritten.
-    // Note: you probably want to update the `viewport_size` and `window_size` whenever they change.
+    // Note: you probably want to update the `viewport_size` and `window_size` whenever they change,
+    // I haven't done this here for simplicity.
     let primary_window = windows
         .get_single()
-        .expect("There is only ever one primary camera");
+        .expect("There is only ever one primary window");
     active_cam.set_if_neq(ActiveCameraData {
         // Set the entity to the entity ID of the camera you want to control. In this case, it's
         // the inner (first pass) cube that is rendered to the texture/image.
