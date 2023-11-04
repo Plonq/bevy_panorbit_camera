@@ -195,6 +195,9 @@ pub struct PanOrbitCamera {
     pub pan_smoothness: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
+    /// How sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. Defaults to `1.0`
+    /// has no effect if either limit is None
+    pub zoom_sensitivity_scaling: f32,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing. Defaults to `0.8`.
@@ -241,6 +244,7 @@ impl Default for PanOrbitCamera {
             pan_sensitivity: 1.0,
             pan_smoothness: 0.6,
             zoom_sensitivity: 1.0,
+            zoom_sensitivity_scaling: 1.0,
             zoom_smoothness: 0.8,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
@@ -451,7 +455,24 @@ fn pan_orbit_camera(
                     true => -1.0,
                     false => 1.0,
                 };
-                let delta_scroll = ev.y * direction * pan_orbit.zoom_sensitivity;
+                let zoom_sensitivity =
+                    match (pan_orbit.zoom_lower_limit, pan_orbit.zoom_upper_limit) {
+                        (Some(lower_limit), Some(upper_limit)) => {
+                            if lower_limit <= pan_orbit.target_radius
+                                && upper_limit >= pan_orbit.target_radius
+                            {
+                                ((pan_orbit.target_radius - lower_limit)
+                                    / (upper_limit - lower_limit))
+                                    .powf(pan_orbit.zoom_sensitivity_scaling)
+                                    * pan_orbit.zoom_sensitivity
+                            } else {
+                                pan_orbit.zoom_sensitivity
+                            }
+                        }
+                        _ => pan_orbit.zoom_sensitivity,
+                    };
+
+                let delta_scroll = ev.y * direction * zoom_sensitivity;
                 match ev.unit {
                     MouseScrollUnit::Line => {
                         scroll_line += delta_scroll;
