@@ -183,6 +183,11 @@ pub struct PanOrbitCamera {
     pub zoom_lower_limit: Option<f32>,
     /// The sensitivity of the orbiting motion. Defaults to `1.0`.
     pub orbit_sensitivity: f32,
+    /// How orbit sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
+    /// Will result in a linear decrease in orbit sensitivity as the camera approaches the lower limit.
+    /// has no effect if either limit is None
+    /// Defaults to None
+    pub orbit_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing. Defaults to `0.8`.
@@ -195,9 +200,11 @@ pub struct PanOrbitCamera {
     pub pan_smoothness: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
     pub zoom_sensitivity: f32,
-    /// How sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. Defaults to `1.0`
+    /// How sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
+    /// Will result in a linear decrease in zoom sensitivity as the camera approaches the lower limit.
     /// has no effect if either limit is None
-    pub zoom_sensitivity_scaling: f32,
+    /// Defaults to None
+    pub zoom_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing. Defaults to `0.8`.
@@ -240,11 +247,12 @@ impl Default for PanOrbitCamera {
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
+            orbit_sensitivity_scaling: None,
             orbit_smoothness: 0.8,
             pan_sensitivity: 1.0,
             pan_smoothness: 0.6,
             zoom_sensitivity: 1.0,
-            zoom_sensitivity_scaling: 1.0,
+            zoom_sensitivity_scaling: None,
             zoom_smoothness: 0.8,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
@@ -444,7 +452,26 @@ fn pan_orbit_camera(
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
-                rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
+                let orbit_sensitivity = match (
+                    pan_orbit.orbit_sensitivity_scaling,
+                    pan_orbit.zoom_lower_limit,
+                    pan_orbit.zoom_upper_limit,
+                ) {
+                    (Some(orbit_sensitivity_scaling), Some(lower_limit), Some(upper_limit)) => {
+                        if lower_limit <= pan_orbit.target_radius
+                            && upper_limit >= pan_orbit.target_radius
+                        {
+                            ((pan_orbit.target_radius - lower_limit) / (upper_limit - lower_limit))
+                                .powf(orbit_sensitivity_scaling)
+                                * pan_orbit.orbit_sensitivity
+                        } else {
+                            pan_orbit.orbit_sensitivity
+                        }
+                    }
+                    _ => pan_orbit.orbit_sensitivity,
+                };
+
+                rotation_move += mouse_delta * orbit_sensitivity;
             } else if util::pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
@@ -455,22 +482,24 @@ fn pan_orbit_camera(
                     true => -1.0,
                     false => 1.0,
                 };
-                let zoom_sensitivity =
-                    match (pan_orbit.zoom_lower_limit, pan_orbit.zoom_upper_limit) {
-                        (Some(lower_limit), Some(upper_limit)) => {
-                            if lower_limit <= pan_orbit.target_radius
-                                && upper_limit >= pan_orbit.target_radius
-                            {
-                                ((pan_orbit.target_radius - lower_limit)
-                                    / (upper_limit - lower_limit))
-                                    .powf(pan_orbit.zoom_sensitivity_scaling)
-                                    * pan_orbit.zoom_sensitivity
-                            } else {
-                                pan_orbit.zoom_sensitivity
-                            }
+                let zoom_sensitivity = match (
+                    pan_orbit.zoom_sensitivity_scaling,
+                    pan_orbit.zoom_lower_limit,
+                    pan_orbit.zoom_upper_limit,
+                ) {
+                    (Some(zoom_sensitivity_scaling), Some(lower_limit), Some(upper_limit)) => {
+                        if lower_limit <= pan_orbit.target_radius
+                            && upper_limit >= pan_orbit.target_radius
+                        {
+                            ((pan_orbit.target_radius - lower_limit) / (upper_limit - lower_limit))
+                                .powf(zoom_sensitivity_scaling)
+                                * pan_orbit.zoom_sensitivity
+                        } else {
+                            pan_orbit.zoom_sensitivity
                         }
-                        _ => pan_orbit.zoom_sensitivity,
-                    };
+                    }
+                    _ => pan_orbit.zoom_sensitivity,
+                };
 
                 let delta_scroll = ev.y * direction * zoom_sensitivity;
                 match ev.unit {
