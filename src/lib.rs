@@ -52,7 +52,7 @@ impl Plugin for PanOrbitCameraPlugin {
                         .after(EguiSet::InitContexts)
                         .before(PanOrbitCameraSystemSet),
                 )
-                .configure_set(
+                .configure_sets(
                     Update,
                     PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
                         prev: false,
@@ -377,7 +377,7 @@ fn pan_orbit_camera(
     mut scroll_events: EventReader<MouseWheel>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
-    let mouse_delta = mouse_motion.iter().map(|event| event.delta).sum::<Vec2>();
+    let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
 
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the alpha, beta, and zoom values
@@ -477,7 +477,7 @@ fn pan_orbit_camera(
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
 
-            for ev in scroll_events.iter() {
+            for ev in scroll_events.read() {
                 let direction = match pan_orbit.reversed_zoom {
                     true => -1.0,
                     false => 1.0,
