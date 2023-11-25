@@ -8,7 +8,7 @@ use bevy::prelude::{DetectChangesMut, Query, ResMut, Resource};
 /// where both egui and the camera are using the input events, which is not desirable.
 ///
 /// This is re-exported in case it's useful. I recommend only using input events if both
-/// `prev` and `curr` are true.
+/// `prev` and `curr` are false.
 #[derive(Resource, PartialEq, Eq, Default)]
 pub struct EguiWantsFocus {
     /// Whether egui wanted focus on the previous frame
