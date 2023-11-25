@@ -8,7 +8,7 @@ use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
-use egui::EguiWantsFocus;
+pub use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
 
 #[cfg(feature = "bevy_egui")]
