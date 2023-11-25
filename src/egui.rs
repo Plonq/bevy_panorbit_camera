@@ -1,13 +1,14 @@
 use bevy::prelude::{DetectChangesMut, Query, ResMut, Resource};
 
 /// A resource that tracks whether egui wants focus on the current and previous frames.
-/// The reason the previous frame's value is saves is because when you click inside an
+///
+/// The reason the previous frame's value is saved is because when you click inside an
 /// egui window, Context::wants_pointer_input() still returns false once before returning
 /// true. If the camera stops taking input only when it returns false, there's one frame
 /// where both egui and the camera are using the input events, which is not desirable.
 ///
 /// This is re-exported in case it's useful. I recommend only using input events if both
-/// `pref` and `curr` are `true`.
+/// `prev` and `curr` are true.
 #[derive(Resource, PartialEq, Eq, Default)]
 pub struct EguiWantsFocus {
     /// Whether egui wanted focus on the previous frame
