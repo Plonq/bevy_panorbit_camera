@@ -22,9 +22,10 @@ pub fn check_egui_wants_focus(
     mut wants_focus: ResMut<EguiWantsFocus>,
     windows: Query<Entity, With<Window>>,
 ) {
-    // If _any_ egui context wants focus, then we treat that as 'egui wants focus', because only
-    // one window can receive input events at a time anyway. In other words, there's no need to
-    // match the egui context with the window currently receiving events.
+    // The window that the user is interacting with and the window that contains the egui context
+    // that the user is interacting with are always going to be the same. Therefore, we can assume
+    // that if any of the egui contexts want focus, then it must be the one that the user is
+    // interacting with.
     let new_wants_focus = windows.iter().any(|window| {
         let ctx = contexts.ctx_for_window_mut(window);
         ctx.wants_pointer_input() || ctx.wants_keyboard_input()
