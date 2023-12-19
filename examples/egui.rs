@@ -2,15 +2,16 @@
 //! egui windows
 
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(WorldInspectorPlugin::default())
+        .add_plugins(EguiPlugin)
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
+        .add_systems(Update, ui_example_system)
         .run();
 }
 
@@ -50,4 +51,10 @@ fn setup(
         },
         PanOrbitCamera::default(),
     ));
+}
+
+fn ui_example_system(mut contexts: EguiContexts) {
+    egui::Window::new("Hello").show(contexts.ctx_mut(), |ui| {
+        ui.label("world");
+    });
 }
