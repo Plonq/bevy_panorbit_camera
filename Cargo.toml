@@ -27,3 +27,7 @@ bevy_egui = { version = "0.24", default-features = false, features = ["default_f
 [[example]]
 name = "egui"
 required-features = ["bevy_egui"]
+
+[[example]]
+name = "egui_multiple_windows"
+required-features = ["bevy_egui"]
