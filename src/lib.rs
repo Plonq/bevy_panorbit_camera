@@ -54,10 +54,7 @@ impl Plugin for PanOrbitCameraPlugin {
                 )
                 .configure_sets(
                     Update,
-                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
-                        prev: false,
-                        curr: false,
-                    })),
+                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus(false))),
                 );
         }
     }
