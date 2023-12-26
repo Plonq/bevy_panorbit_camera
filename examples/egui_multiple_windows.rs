@@ -1,5 +1,6 @@
 //! Demonstrates the bevy_egui feature together with multiple windows.
-//! This is a combination of the egui and multiple_windows examples.
+//! This is a combination of the egui and multiple_windows examples, and doesn't show anything new,
+//! it's primarily here for easy e2e testing.
 
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
