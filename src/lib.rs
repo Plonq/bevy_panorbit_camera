@@ -2,8 +2,10 @@
 #![doc = include_str!("../README.md")]
 
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
+use bevy::input::touch::Touch;
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
+use bevy::utils::HashMap;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
@@ -32,11 +34,13 @@ pub struct PanOrbitCameraPlugin;
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ActiveCameraData::default())
+            .insert_resource(TouchTracker::default())
             .add_systems(
                 Update,
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
+                    touch_tracker,
                     pan_orbit_camera,
                 )
                     .chain()
@@ -289,6 +293,24 @@ pub struct ActiveCameraData {
     pub manual: bool,
 }
 
+#[derive(Resource, Default, Debug)]
+pub struct TouchTracker {
+    pub current_pressed: HashMap<u64, Touch>,
+    pub previous_pressed: HashMap<u64, Touch>,
+}
+
+impl TouchTracker {
+    fn get_orbit(&self) -> Vec2 {
+        let mut orbit = Vec2::ZERO;
+        for (id, touch) in self.current_pressed.iter() {
+            if let Some(prev_touch) = self.previous_pressed.get(id) {
+                orbit += touch.position() - prev_touch.position();
+            }
+        }
+        orbit
+    }
+}
+
 // Gathers data about the active viewport, i.e. the viewport the user is interacting with. This
 // enables multiple viewports/windows.
 fn active_viewport_data(
@@ -358,6 +380,8 @@ fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
+    // touches: Res<Touches>,
+    mut touch_tracker: ResMut<TouchTracker>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
@@ -427,7 +451,7 @@ fn pan_orbit_camera(
         // 1 - Get Input
 
         let mut pan = Vec2::ZERO;
-        let mut rotation_move = Vec2::ZERO;
+        let mut orbit = Vec2::ZERO;
         let mut scroll_line = 0.0;
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
@@ -437,12 +461,16 @@ fn pan_orbit_camera(
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
             if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
-                rotation_move += mouse_delta * pan_orbit.orbit_sensitivity;
+                orbit += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if util::pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
 
+            orbit += touch_tracker.get_orbit();
+            println!("{}", orbit);
+
+            // todo: will moving this to top of system fix issue with egui and changing focus?
             for ev in scroll_events.read() {
                 let direction = match pan_orbit.reversed_zoom {
                     true => -1.0,
@@ -458,6 +486,8 @@ fn pan_orbit_camera(
                     }
                 };
             }
+
+            // for
 
             if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
                 || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
@@ -476,19 +506,19 @@ fn pan_orbit_camera(
         }
 
         let mut has_moved = false;
-        if rotation_move.length_squared() > 0.0 {
+        if orbit.length_squared() > 0.0 {
             // Use window size for rotation otherwise the sensitivity
             // is far too high for small viewports
             if let Some(win_size) = active_cam.window_size {
                 let delta_x = {
-                    let delta = rotation_move.x / win_size.x * PI * 2.0;
+                    let delta = orbit.x / win_size.x * PI * 2.0;
                     if pan_orbit.is_upside_down {
                         -delta
                     } else {
                         delta
                     }
                 };
-                let delta_y = rotation_move.y / win_size.y * PI;
+                let delta_y = orbit.y / win_size.y * PI;
                 pan_orbit.target_alpha -= delta_x;
                 pan_orbit.target_beta += delta_y;
 
@@ -614,5 +644,24 @@ fn pan_orbit_camera(
                 pan_orbit.force_update = false;
             }
         }
+    }
+}
+
+fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>) {
+    let pressed: Vec<&Touch> = touches.iter().collect();
+
+    match pressed.len() {
+        0 => {
+            touch_tracker.current_pressed.clear();
+            touch_tracker.previous_pressed.clear();
+        }
+        1 => {
+            let touch: &Touch = pressed.first().unwrap();
+            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
+            touch_tracker.current_pressed.clear();
+            touch_tracker.current_pressed.insert(touch.id(), *touch);
+        }
+        2 => {}
+        _ => {}
     }
 }

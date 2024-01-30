@@ -5,8 +5,9 @@
 use bevy::{
     input::touch::TouchPhase,
     prelude::*,
-    window::{ApplicationLifetime, WindowMode},
+    window::{ApplicationLifetime, PrimaryWindow, WindowMode},
 };
+use bevy_panorbit_camera::{ActiveCameraData, PanOrbitCamera, PanOrbitCameraPlugin};
 
 // the `bevy_main` proc_macro generates the required boilerplate for iOS and Android
 #[bevy_main]
@@ -20,8 +21,9 @@ fn main() {
         }),
         ..default()
     }))
-    .add_systems(Startup, (setup_scene, setup_music))
-    .add_systems(Update, (touch_camera, button_handler, handle_lifetime));
+    .add_plugins(PanOrbitCameraPlugin)
+    .add_systems(Startup, setup_scene)
+    .add_systems(Update, button_handler);
 
     // MSAA makes some Android devices panic, this is under investigation
     // https://github.com/bevyengine/bevy/issues/8229
@@ -63,11 +65,13 @@ fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut active_cam: ResMut<ActiveCameraData>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     // plane
     commands.spawn(PbrBundle {
         mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.1, 0.2, 0.1).into()),
+        material: materials.add(Color::rgb(0.6, 0.1, 0.2).into()),
         ..default()
     });
     // cube
@@ -104,10 +108,15 @@ fn setup_scene(
         ..default()
     });
     // camera
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+    let pan_orbit_id = commands
+        .spawn((
+            Camera3dBundle {
+                transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            },
+            PanOrbitCamera::default(),
+        ))
+        .id();
 
     // Test ui
     commands
@@ -136,6 +145,16 @@ fn setup_scene(
                 .with_text_alignment(TextAlignment::Center),
             );
         });
+
+    let primary_window = windows
+        .get_single()
+        .expect("There is only ever one primary window");
+    active_cam.set_if_neq(ActiveCameraData {
+        entity: Some(pan_orbit_id),
+        viewport_size: Some(Vec2::new(primary_window.width(), primary_window.height())),
+        window_size: Some(Vec2::new(primary_window.width(), primary_window.height())),
+        manual: true,
+    });
 }
 
 fn button_handler(
@@ -155,28 +174,6 @@ fn button_handler(
             Interaction::None => {
                 *color = Color::WHITE.into();
             }
-        }
-    }
-}
-
-fn setup_music(asset_server: Res<AssetServer>, mut commands: Commands) {
-    commands.spawn(AudioBundle {
-        source: asset_server.load("sounds/Windless Slopes.ogg"),
-        settings: PlaybackSettings::LOOP,
-    });
-}
-
-// Pause audio when app goes into background and resume when it returns.
-// This is handled by the OS on iOS, but not on Android.
-fn handle_lifetime(
-    mut lifetime_events: EventReader<ApplicationLifetime>,
-    music_controller: Query<&AudioSink>,
-) {
-    for event in lifetime_events.read() {
-        match event {
-            ApplicationLifetime::Suspended => music_controller.single().pause(),
-            ApplicationLifetime::Resumed => music_controller.single().play(),
-            ApplicationLifetime::Started => (),
         }
     }
 }
