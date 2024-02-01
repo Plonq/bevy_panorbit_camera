@@ -12,7 +12,7 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 bevy = "0.12"
-bevy_panorbit_camera = { path = "../bevy_panorbit_camera" }
+bevy_panorbit_camera = { path = "../../" }
 
 [package.metadata.android]
 package = "org.plonq.bevyexample"

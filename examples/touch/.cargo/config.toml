@@ -3,6 +3,3 @@
 # See https://github.com/bevyengine/bevy/pull/10178 - remove if it's not needed anymore.
 [target.aarch64-apple-ios-sim]
 rustflags = ["--cfg=ios_simulator"]
-
-[build]
-target-dir = "../../target"
