@@ -17,8 +17,6 @@ use std::f32::consts::{PI, TAU};
 mod egui;
 mod util;
 
-const ZOOM_MULTIPLIER: f32 = 0.005;
-
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
 /// ```no_run
@@ -435,7 +433,6 @@ impl TouchTracker {
                         .position()
                         .distance(previous_touch2.position());
                     zoom += current_distance - previous_distance;
-                    // println!("Zoom amount: {}", zoom);
                 }
                 _ => {}
             }
@@ -629,7 +626,7 @@ fn pan_orbit_camera(
             // Add touch movement (if any)
             orbit += touch_orbit * pan_orbit.orbit_sensitivity;
             pan += touch_pan * pan_orbit.pan_sensitivity;
-            scroll_pixel += touch_zoom * 0.005 * pan_orbit.zoom_sensitivity;
+            scroll_pixel += touch_zoom * 0.01 * pan_orbit.zoom_sensitivity;
 
             if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
                 || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
@@ -666,7 +663,8 @@ fn pan_orbit_camera(
 
                 has_moved = true;
             }
-        } else if pan.length_squared() > 0.0 {
+        }
+        if pan.length_squared() > 0.0 {
             // Make panning distance independent of resolution and FOV,
             if let Some(vp_size) = active_cam.viewport_size {
                 let mut multiplier = 1.0;
@@ -689,7 +687,8 @@ fn pan_orbit_camera(
                 pan_orbit.target_focus += translation;
                 has_moved = true;
             }
-        } else if (scroll_line + scroll_pixel).abs() > 0.0 {
+        }
+        if (scroll_line + scroll_pixel).abs() > 0.0 {
             // Choose different reference values based on the current projection
             let pan_orbit = &mut *pan_orbit;
             let (target_value, value) = if let Projection::Orthographic(_) = *projection {
