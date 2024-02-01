@@ -378,10 +378,6 @@ enum TouchGesture {
 struct TouchTracker {
     pub current_pressed: HashMap<u64, Touch>,
     pub previous_pressed: HashMap<u64, Touch>,
-    pub current_touch1: Option<Touch>,
-    pub current_touch2: Option<Touch>,
-    pub previous_touch1: Option<Touch>,
-    pub previous_touch2: Option<Touch>,
 }
 
 impl TouchTracker {
