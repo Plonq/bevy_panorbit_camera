@@ -12,13 +12,13 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 bevy = "0.12"
-bevy_panorbit_camera = { path = "../.." }
+bevy_panorbit_camera = { path = "../bevy_panorbit_camera" }
 
 [package.metadata.android]
 package = "org.plonq.bevyexample"
 apk_name = "bevyexample"
-#assets = "../../assets"
-#resources = "../../assets/android-res"
+assets = "../bevy/assets"
+resources = "../bevy/assets/android-res"
 # This strips debug symbols from the shared libraries, drastically reducing APK size. If you need them, remove the option.
 strip = "strip"
 build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
