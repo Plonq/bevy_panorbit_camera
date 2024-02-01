@@ -17,6 +17,8 @@ use std::f32::consts::{PI, TAU};
 mod egui;
 mod util;
 
+const ZOOM_MULTIPLIER: f32 = 0.005;
+
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
 /// ```no_run
@@ -40,6 +42,7 @@ impl Plugin for PanOrbitCameraPlugin {
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
+                    touch_debugger,
                     touch_tracker,
                     pan_orbit_camera,
                 )
@@ -293,31 +296,15 @@ pub struct ActiveCameraData {
     pub manual: bool,
 }
 
-#[derive(Resource, Default, Debug)]
-pub struct TouchTracker {
-    pub current_pressed: HashMap<u64, Touch>,
-    pub previous_pressed: HashMap<u64, Touch>,
-}
-
-impl TouchTracker {
-    fn get_orbit(&self) -> Vec2 {
-        let mut orbit = Vec2::ZERO;
-        for (id, touch) in self.current_pressed.iter() {
-            if let Some(prev_touch) = self.previous_pressed.get(id) {
-                orbit += touch.position() - prev_touch.position();
-            }
-        }
-        orbit
-    }
-}
-
-// Gathers data about the active viewport, i.e. the viewport the user is interacting with. This
-// enables multiple viewports/windows.
+/// Gather data about the active viewport, i.e. the viewport the user is interacting with.
+/// Enables multiple viewports/windows.
+#[allow(clippy::too_many_arguments)]
 fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
+    touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
@@ -328,8 +315,10 @@ fn active_viewport_data(
     let mut has_input = false;
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
-            || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
-            || !scroll_events.is_empty();
+                || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+                || !scroll_events.is_empty()
+                // todo: any touch just happened (either 1 or more at once)
+                || (touches.iter_just_pressed().count() > 0 && touches.iter_just_pressed().count() == touches.iter().count());
 
         if input_just_activated {
             has_input = true;
@@ -343,15 +332,21 @@ fn active_viewport_data(
                         .get(entity)
                         .expect("Must exist, since the camera is referencing it"),
                 };
-                if let Some(cursor_pos) = window.cursor_position() {
+
+                if let Some(input_position) = window.cursor_position().or(touches
+                    .iter_just_pressed()
+                    .collect::<Vec<_>>()
+                    .first()
+                    .map(|touch| touch.position()))
+                {
                     // Now check if cursor is within this camera's viewport
                     if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
                         // Window coordinates have Y starting at the bottom, so we need to reverse
                         // the y component before comparing with the viewport rect
-                        let cursor_in_vp = cursor_pos.x > min.x
-                            && cursor_pos.x < max.x
-                            && cursor_pos.y > min.y
-                            && cursor_pos.y < max.y;
+                        let cursor_in_vp = input_position.x > min.x
+                            && input_position.x < max.x
+                            && input_position.y > min.y
+                            && input_position.y < max.y;
 
                         // Only set if camera order is higher. This may overwrite a previous value
                         // in the case the viewport is overlapping another viewport.
@@ -375,13 +370,158 @@ fn active_viewport_data(
     }
 }
 
+enum TouchGesture {
+    None,
+    Orbit,
+    Pan,
+}
+
+/// Store current and previous frame touch data
+#[derive(Resource, Default, Debug)]
+struct TouchTracker {
+    pub current_pressed: HashMap<u64, Touch>,
+    pub previous_pressed: HashMap<u64, Touch>,
+    pub current_touch1: Option<Touch>,
+    pub current_touch2: Option<Touch>,
+    pub previous_touch1: Option<Touch>,
+    pub previous_touch2: Option<Touch>,
+}
+
+impl TouchTracker {
+    fn calculate_movement(&self) -> (Vec2, Vec2, f32) {
+        let mut orbit = Vec2::ZERO;
+        let mut pan = Vec2::ZERO;
+        let mut zoom = 0.0;
+
+        // Skip if number of touches changed this frame
+        // todo: does this result in jank?
+        if self.current_pressed.len() == self.previous_pressed.len() {
+            let current_touches = self.current_pressed.values().collect::<Vec<_>>();
+            let previous_touches = self.previous_pressed.values().collect::<Vec<_>>();
+
+            // println!("Touch count: {}", self.current_pressed.len());
+            match self.current_pressed.len() {
+                1 => {
+                    let current_touch = current_touches.get(0).expect("Def one element");
+                    let previous_touch = previous_touches.get(0).expect("Def one element");
+                    orbit += current_touch.position() - previous_touch.position();
+                }
+                2 => {
+                    let current_touch1 = current_touches.get(0).expect("Def two elements");
+                    let current_touch2 = current_touches.get(1).expect("Def two elements");
+                    let previous_touch1 = previous_touches.get(0).expect("Def two elements");
+                    let previous_touch2 = previous_touches.get(1).expect("Def two elements");
+
+                    let midpoint = |v1: Vec2, v2: Vec2| {
+                        let v1_to_v2 = v2 - v1;
+                        let half = v1_to_v2 / 2.0;
+                        v1 + half
+                    };
+
+                    // Calculate pan based on average of both touches
+                    let current_pos1 = current_touch1.position();
+                    let current_pos2 = current_touch2.position();
+                    let current_midpoint = midpoint(current_pos1, current_pos2);
+                    let previous_pos1 = previous_touch1.position();
+                    let previous_pos2 = previous_touch2.position();
+                    let previous_midpoint = midpoint(previous_pos1, previous_pos2);
+                    pan += current_midpoint - previous_midpoint;
+
+                    // Calculate zoom based on distance between touches
+                    let current_distance = current_touch1
+                        .position()
+                        .distance(current_touch2.position());
+                    let previous_distance = previous_touch1
+                        .position()
+                        .distance(previous_touch2.position());
+                    zoom += current_distance - previous_distance;
+                    // println!("Zoom amount: {}", zoom);
+                }
+                _ => {}
+            }
+        }
+
+        (orbit, pan, zoom)
+    }
+}
+
+/// Read touch input and save it in a resource for easy consumption by the main system
+fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>) {
+    let pressed: Vec<&Touch> = touches.iter().collect();
+
+    match pressed.len() {
+        0 => {
+            touch_tracker.current_pressed.clear();
+            touch_tracker.previous_pressed.clear();
+            // touch_tracker.touch1 = None;
+            // touch_tracker.touch2 = None;
+        }
+        1 => {
+            let touch: &Touch = pressed.first().unwrap();
+            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
+            touch_tracker.current_pressed.clear();
+            touch_tracker.current_pressed.insert(touch.id(), *touch);
+            // touch_tracker.touch1 = Some(*touch);
+            // touch_tracker.touch2 = None;
+        }
+        2 => {
+            let touch1: &Touch = pressed.first().unwrap();
+            let touch2: &Touch = pressed.last().unwrap();
+            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
+            touch_tracker.current_pressed.clear();
+            touch_tracker.current_pressed.insert(touch1.id(), *touch1);
+            touch_tracker.current_pressed.insert(touch2.id(), *touch2);
+            // touch_tracker.touch1 = Some(*touch1);
+            // touch_tracker.touch2 = Some(*touch2);
+        }
+        _ => {}
+    }
+}
+
+fn touch_debugger(
+    mut gizmos: Gizmos,
+    touch_tracker: Res<TouchTracker>,
+    primary_windows: Query<&Window, With<PrimaryWindow>>,
+) {
+    let primary_window = primary_windows.get_single().unwrap();
+    let width = primary_window.width();
+    let height = primary_window.height();
+
+    let to_2d = |pos: Vec2| Vec2::new(pos.x - width / 2.0, -(pos.y - height / 2.0));
+
+    for touch in touch_tracker.current_pressed.values() {
+        let pos = touch.position();
+        gizmos.circle_2d(to_2d(pos), 30., Color::RED);
+    }
+    let touches = touch_tracker.current_pressed.values().collect::<Vec<_>>();
+
+    let midpoint = |v1: Vec2, v2: Vec2| {
+        let v1_to_v2 = v2 - v1;
+        let half = v1_to_v2 / 2.0;
+        v1 + half
+    };
+
+    match touches.len() {
+        1 => {}
+        2 => {
+            let touch1: &Touch = touches.first().unwrap();
+            let touch2: &Touch = touches.last().unwrap();
+            gizmos.circle_2d(
+                to_2d(midpoint(touch1.position(), touch2.position())),
+                30.,
+                Color::GREEN,
+            );
+        }
+        _ => {}
+    }
+}
+
 /// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
-    // touches: Res<Touches>,
-    mut touch_tracker: ResMut<TouchTracker>,
+    touch_tracker: Res<TouchTracker>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
@@ -460,15 +600,14 @@ fn pan_orbit_camera(
         // it might still be moving (lerping towards target values) when the user is not
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
+            let (touch_orbit, touch_pan, touch_zoom) = touch_tracker.calculate_movement();
+
             if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
                 orbit += mouse_delta * pan_orbit.orbit_sensitivity;
             } else if util::pan_pressed(&pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
-
-            orbit += touch_tracker.get_orbit();
-            println!("{}", orbit);
 
             // todo: will moving this to top of system fix issue with egui and changing focus?
             for ev in scroll_events.read() {
@@ -487,7 +626,10 @@ fn pan_orbit_camera(
                 };
             }
 
-            // for
+            // Add touch movement (if any)
+            orbit += touch_orbit * pan_orbit.orbit_sensitivity;
+            pan += touch_pan * pan_orbit.pan_sensitivity;
+            scroll_pixel += touch_zoom * 0.005 * pan_orbit.zoom_sensitivity;
 
             if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
                 || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
@@ -644,24 +786,5 @@ fn pan_orbit_camera(
                 pan_orbit.force_update = false;
             }
         }
-    }
-}
-
-fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>) {
-    let pressed: Vec<&Touch> = touches.iter().collect();
-
-    match pressed.len() {
-        0 => {
-            touch_tracker.current_pressed.clear();
-            touch_tracker.previous_pressed.clear();
-        }
-        1 => {
-            let touch: &Touch = pressed.first().unwrap();
-            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
-            touch_tracker.current_pressed.clear();
-            touch_tracker.current_pressed.insert(touch.id(), *touch);
-        }
-        2 => {}
-        _ => {}
     }
 }
