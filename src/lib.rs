@@ -40,7 +40,6 @@ impl Plugin for PanOrbitCameraPlugin {
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    touch_debugger,
                     touch_tracker,
                     pan_orbit_camera,
                 )
@@ -450,16 +449,12 @@ fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>)
         0 => {
             touch_tracker.current_pressed.clear();
             touch_tracker.previous_pressed.clear();
-            // touch_tracker.touch1 = None;
-            // touch_tracker.touch2 = None;
         }
         1 => {
             let touch: &Touch = pressed.first().unwrap();
             touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
             touch_tracker.current_pressed.clear();
             touch_tracker.current_pressed.insert(touch.id(), *touch);
-            // touch_tracker.touch1 = Some(*touch);
-            // touch_tracker.touch2 = None;
         }
         2 => {
             let touch1: &Touch = pressed.first().unwrap();
@@ -468,46 +463,6 @@ fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>)
             touch_tracker.current_pressed.clear();
             touch_tracker.current_pressed.insert(touch1.id(), *touch1);
             touch_tracker.current_pressed.insert(touch2.id(), *touch2);
-            // touch_tracker.touch1 = Some(*touch1);
-            // touch_tracker.touch2 = Some(*touch2);
-        }
-        _ => {}
-    }
-}
-
-fn touch_debugger(
-    mut gizmos: Gizmos,
-    touch_tracker: Res<TouchTracker>,
-    primary_windows: Query<&Window, With<PrimaryWindow>>,
-) {
-    let primary_window = primary_windows.get_single().unwrap();
-    let width = primary_window.width();
-    let height = primary_window.height();
-
-    let to_2d = |pos: Vec2| Vec2::new(pos.x - width / 2.0, -(pos.y - height / 2.0));
-
-    for touch in touch_tracker.current_pressed.values() {
-        let pos = touch.position();
-        gizmos.circle_2d(to_2d(pos), 30., Color::RED);
-    }
-    let touches = touch_tracker.current_pressed.values().collect::<Vec<_>>();
-
-    let midpoint = |v1: Vec2, v2: Vec2| {
-        let v1_to_v2 = v2 - v1;
-        let half = v1_to_v2 / 2.0;
-        v1 + half
-    };
-
-    match touches.len() {
-        1 => {}
-        2 => {
-            let touch1: &Touch = touches.first().unwrap();
-            let touch2: &Touch = touches.last().unwrap();
-            gizmos.circle_2d(
-                to_2d(midpoint(touch1.position(), touch2.position())),
-                30.,
-                Color::GREEN,
-            );
         }
         _ => {}
     }
