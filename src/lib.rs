@@ -391,7 +391,6 @@ impl TouchTracker {
             let current_touches = self.current_pressed.values().collect::<Vec<_>>();
             let previous_touches = self.previous_pressed.values().collect::<Vec<_>>();
 
-            // println!("Touch count: {}", self.current_pressed.len());
             match self.current_pressed.len() {
                 1 => {
                     let current_touch = current_touches.get(0).expect("Def one element");
