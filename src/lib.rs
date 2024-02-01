@@ -410,7 +410,7 @@ impl TouchTracker {
                         v1 + half
                     };
 
-                    // Calculate pan based on average of both touches
+                    // Calculate pan based on midpoint of both touches
                     let current_pos1 = current_touch1.position();
                     let current_pos2 = current_touch2.position();
                     let current_midpoint = midpoint(current_pos1, current_pos2);
