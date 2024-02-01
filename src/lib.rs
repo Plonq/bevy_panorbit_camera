@@ -391,7 +391,6 @@ impl TouchTracker {
         let mut zoom = 0.0;
 
         // Skip if number of touches changed this frame
-        // todo: does this result in jank?
         if self.current_pressed.len() == self.previous_pressed.len() {
             let current_touches = self.current_pressed.values().collect::<Vec<_>>();
             let previous_touches = self.previous_pressed.values().collect::<Vec<_>>();
