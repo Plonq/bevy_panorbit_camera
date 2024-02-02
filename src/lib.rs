@@ -385,6 +385,7 @@ struct TouchTracker {
 }
 
 impl TouchTracker {
+    /// Return orbit, pan, and zoom values based on touch data
     fn calculate_movement(&self) -> (Vec2, Vec2, f32) {
         let mut orbit = Vec2::ZERO;
         let mut pan = Vec2::ZERO;
