@@ -12,10 +12,12 @@ use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 pub use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
+use vec_extras::Vec2Extras;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
 mod util;
+mod vec_extras;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
@@ -378,6 +380,8 @@ enum TouchGesture {
 struct TouchTracker {
     pub current_pressed: HashMap<u64, Touch>,
     pub previous_pressed: HashMap<u64, Touch>,
+    pub curr_pressed: (Option<Touch>, Option<Touch>),
+    pub prev_pressed: (Option<Touch>, Option<Touch>),
 }
 
 impl TouchTracker {
@@ -386,50 +390,30 @@ impl TouchTracker {
         let mut pan = Vec2::ZERO;
         let mut zoom = 0.0;
 
-        // Skip if number of touches changed this frame so we don't have to deal with
-        // different number of touches
-        if self.current_pressed.len() == self.previous_pressed.len() {
-            let current_touches = self.current_pressed.values().collect::<Vec<_>>();
-            let previous_touches = self.previous_pressed.values().collect::<Vec<_>>();
+        // Only match when curr and prev have same number of touches, for simplicity.
+        // I did not notice any adverse behaviour as a result.
+        match (self.curr_pressed, self.prev_pressed) {
+            ((Some(curr), None), (Some(prev), None)) => {
+                let curr_pos = curr.position();
+                let prev_pos = prev.position();
 
-            match self.current_pressed.len() {
-                1 => {
-                    let current_touch = current_touches.get(0).expect("Def one element");
-                    let previous_touch = previous_touches.get(0).expect("Def one element");
-                    orbit += current_touch.position() - previous_touch.position();
-                }
-                2 => {
-                    let current_touch1 = current_touches.get(0).expect("Def two elements");
-                    let current_touch2 = current_touches.get(1).expect("Def two elements");
-                    let previous_touch1 = previous_touches.get(0).expect("Def two elements");
-                    let previous_touch2 = previous_touches.get(1).expect("Def two elements");
-
-                    let midpoint = |v1: Vec2, v2: Vec2| {
-                        let v1_to_v2 = v2 - v1;
-                        let half = v1_to_v2 / 2.0;
-                        v1 + half
-                    };
-
-                    // Calculate pan based on midpoint of both touches
-                    let current_pos1 = current_touch1.position();
-                    let current_pos2 = current_touch2.position();
-                    let current_midpoint = midpoint(current_pos1, current_pos2);
-                    let previous_pos1 = previous_touch1.position();
-                    let previous_pos2 = previous_touch2.position();
-                    let previous_midpoint = midpoint(previous_pos1, previous_pos2);
-                    pan += current_midpoint - previous_midpoint;
-
-                    // Calculate zoom based on distance between touches
-                    let current_distance = current_touch1
-                        .position()
-                        .distance(current_touch2.position());
-                    let previous_distance = previous_touch1
-                        .position()
-                        .distance(previous_touch2.position());
-                    zoom += current_distance - previous_distance;
-                }
-                _ => {}
+                orbit += curr_pos - prev_pos;
             }
+            ((Some(curr1), Some(curr2)), (Some(prev1), Some(prev2))) => {
+                let curr1_pos = curr1.position();
+                let curr2_pos = curr2.position();
+                let prev1_pos = prev1.position();
+                let prev2_pos = prev2.position();
+
+                let curr_midpoint = curr1_pos.midpoint(curr2_pos);
+                let prev_midpoint = prev1_pos.midpoint(prev2_pos);
+                pan += curr_midpoint - prev_midpoint;
+
+                let curr_dist = curr1_pos.distance(curr2_pos);
+                let prev_dist = prev1_pos.distance(prev2_pos);
+                zoom += curr_dist - prev_dist;
+            }
+            _ => {}
         }
 
         (orbit, pan, zoom)
@@ -444,12 +428,18 @@ fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>)
         0 => {
             touch_tracker.current_pressed.clear();
             touch_tracker.previous_pressed.clear();
+
+            touch_tracker.curr_pressed = (None, None);
+            touch_tracker.prev_pressed = (None, None);
         }
         1 => {
             let touch: &Touch = pressed.first().unwrap();
             touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
             touch_tracker.current_pressed.clear();
             touch_tracker.current_pressed.insert(touch.id(), *touch);
+
+            touch_tracker.prev_pressed = touch_tracker.curr_pressed;
+            touch_tracker.curr_pressed = (Some(*touch), None);
         }
         2 => {
             let touch1: &Touch = pressed.first().unwrap();
@@ -458,6 +448,9 @@ fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>)
             touch_tracker.current_pressed.clear();
             touch_tracker.current_pressed.insert(touch1.id(), *touch1);
             touch_tracker.current_pressed.insert(touch2.id(), *touch2);
+
+            touch_tracker.prev_pressed = touch_tracker.curr_pressed;
+            touch_tracker.curr_pressed = (Some(*touch1), Some(*touch2));
         }
         _ => {}
     }
