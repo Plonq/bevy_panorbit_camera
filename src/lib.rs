@@ -312,10 +312,10 @@ fn active_viewport_data(
     let mut has_input = false;
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
-                || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
-                || !scroll_events.is_empty()
-                // todo: any touch just happened (either 1 or more at once)
-                || (touches.iter_just_pressed().count() > 0 && touches.iter_just_pressed().count() == touches.iter().count());
+            || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || !scroll_events.is_empty()
+            || (touches.iter_just_pressed().count() > 0
+                && touches.iter_just_pressed().count() == touches.iter().count());
 
         if input_just_activated {
             has_input = true;
@@ -436,7 +436,7 @@ impl TouchTracker {
     }
 }
 
-/// Read touch input and save it in a resource for easy consumption by the main system
+/// Read touch input and save it in TouchTracker resource for easy consumption by the main system
 fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>) {
     let pressed: Vec<&Touch> = touches.iter().collect();
 

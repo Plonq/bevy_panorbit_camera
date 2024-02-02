@@ -26,6 +26,7 @@ fn main() {
                 ..default()
             })
             .set(LogPlugin {
+                // Filters out spammy useless warnings
                 filter: "warn,winit=error,bevy_panorbit_camera=debug".into(),
                 level: bevy::log::Level::DEBUG,
             }),
@@ -81,67 +82,6 @@ fn setup_scene(
         },
         PanOrbitCamera::default(),
     ));
-    // 2D camera for debugging
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            // Renders the minimap camera after the main camera, so it is rendered on top
-            order: 1,
-            ..default()
-        },
-        camera_2d: Camera2d {
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
-        ..default()
-    });
-    // camera
-    // let pan_orbit_id = commands
-    //     .spawn((
-    //         Camera3dBundle {
-    //             transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-    //             ..default()
-    //         },
-    //         PanOrbitCamera::default(),
-    //     ))
-    //     .id();
-
-    // Test ui
-    // commands
-    //     .spawn(ButtonBundle {
-    //         style: Style {
-    //             justify_content: JustifyContent::Center,
-    //             align_items: AlignItems::Center,
-    //             position_type: PositionType::Absolute,
-    //             left: Val::Px(50.0),
-    //             right: Val::Px(50.0),
-    //             bottom: Val::Px(50.0),
-    //             ..default()
-    //         },
-    //         ..default()
-    //     })
-    //     .with_children(|b| {
-    //         b.spawn(
-    //             TextBundle::from_section(
-    //                 "Test Button",
-    //                 TextStyle {
-    //                     font_size: 30.0,
-    //                     color: Color::BLACK,
-    //                     ..default()
-    //                 },
-    //             )
-    //             .with_text_alignment(TextAlignment::Center),
-    //         );
-    //     });
-    //
-    // let primary_window = windows
-    //     .get_single()
-    //     .expect("There is only ever one primary window");
-    // active_cam.set_if_neq(ActiveCameraData {
-    //     entity: Some(pan_orbit_id),
-    //     viewport_size: Some(Vec2::new(primary_window.width(), primary_window.height())),
-    //     window_size: Some(Vec2::new(primary_window.width(), primary_window.height())),
-    //     manual: true,
-    // });
 }
 
 fn button_handler(
