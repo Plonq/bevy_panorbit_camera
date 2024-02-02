@@ -1,0 +1,31 @@
+[package]
+name = "bevy_mobile_example"
+version = "0.1.0"
+edition = "2021"
+description = "Example mobile app demonstrating bevy_panorbit_camera touch controls"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "bevy_mobile_example"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+bevy = "0.12"
+bevy_panorbit_camera = { path = "../../" }
+
+[package.metadata.android]
+package = "org.plonq.bevyexample"
+apk_name = "bevyexample"
+assets = "../bevy/assets"
+resources = "../bevy/assets/android-res"
+# This strips debug symbols from the shared libraries, drastically reducing APK size. If you need them, remove the option.
+strip = "strip"
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
+
+[package.metadata.android.sdk]
+target_sdk_version = 31
+
+[package.metadata.android.application]
+icon = "@mipmap/ic_launcher"
+label = "Bevy Example"
