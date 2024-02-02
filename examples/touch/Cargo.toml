@@ -2,7 +2,7 @@
 name = "bevy_mobile_example"
 version = "0.1.0"
 edition = "2021"
-description = "Example for building an iOS or Android app with Bevy"
+description = "Example mobile app demonstrating bevy_panorbit_camera touch controls"
 publish = false
 license = "MIT OR Apache-2.0"
 
