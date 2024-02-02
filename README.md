@@ -19,12 +19,20 @@ Default controls:
 - Right Mouse - Pan
 - Scroll Wheel - Zoom
 
+Touch controls:
+
+- One finger - Orbit
+- Two fingers - Pan
+- Pinch - Zoom
+
 ## Features:
 
 - Orbiting, panning and zooming
 - Smooth motion
 - Works with orthographic camera projection in addition to perspective
 - Customisable controls, sensitivity, and more
+- Touch support
+  - Currently 'beta' - please report any issues!
 - Works with multiple viewports and/or windows
 - Easy to control manually, e.g. for keyboard control or animation
 - Can control cameras that render to a texture
