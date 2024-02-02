@@ -369,12 +369,6 @@ fn active_viewport_data(
     }
 }
 
-enum TouchGesture {
-    None,
-    Orbit,
-    Pan,
-}
-
 /// Store current and previous frame touch data
 #[derive(Resource, Default, Debug)]
 struct TouchTracker {
