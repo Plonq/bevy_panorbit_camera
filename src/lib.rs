@@ -12,12 +12,12 @@ use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 pub use egui::EguiWantsFocus;
 use std::f32::consts::{PI, TAU};
-use vec_extras::Vec2Extras;
+use traits::Midpoint;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
+mod traits;
 mod util;
-mod vec_extras;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
