@@ -556,13 +556,13 @@ fn pan_orbit_camera(
                 pan += mouse_delta * pan_orbit.pan_sensitivity;
             }
 
-            // todo: will moving this to top of system fix issue with egui and changing focus?
+            let zoom_direction = match pan_orbit.reversed_zoom {
+                true => -1.0,
+                false => 1.0,
+            };
+            // todo: will moving scroll events read to top of system fix issue with egui and changing focus?
             for ev in scroll_events.read() {
-                let direction = match pan_orbit.reversed_zoom {
-                    true => -1.0,
-                    false => 1.0,
-                };
-                let delta_scroll = ev.y * direction * pan_orbit.zoom_sensitivity;
+                let delta_scroll = ev.y * zoom_direction * pan_orbit.zoom_sensitivity;
                 match ev.unit {
                     MouseScrollUnit::Line => {
                         scroll_line += delta_scroll;
@@ -576,7 +576,7 @@ fn pan_orbit_camera(
             // Add touch movement (if any)
             orbit += touch_orbit * pan_orbit.orbit_sensitivity;
             pan += touch_pan * pan_orbit.pan_sensitivity;
-            scroll_pixel += touch_zoom * 0.01 * pan_orbit.zoom_sensitivity;
+            scroll_pixel += touch_zoom * 0.015 * zoom_direction * pan_orbit.zoom_sensitivity;
 
             if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
                 || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
