@@ -1,17 +1,18 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+use std::f32::consts::{PI, TAU};
+
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::Touch;
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
-use bevy::utils::HashMap;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
+
 #[cfg(feature = "bevy_egui")]
 pub use egui::EguiWantsFocus;
-use std::f32::consts::{PI, TAU};
 use traits::Midpoint;
 
 #[cfg(feature = "bevy_egui")]
@@ -375,8 +376,6 @@ fn active_viewport_data(
 /// Store current and previous frame touch data
 #[derive(Resource, Default, Debug)]
 struct TouchTracker {
-    pub current_pressed: HashMap<u64, Touch>,
-    pub previous_pressed: HashMap<u64, Touch>,
     pub curr_pressed: (Option<Touch>, Option<Touch>),
     pub prev_pressed: (Option<Touch>, Option<Touch>),
 }
@@ -424,29 +423,17 @@ fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTracker>)
 
     match pressed.len() {
         0 => {
-            touch_tracker.current_pressed.clear();
-            touch_tracker.previous_pressed.clear();
-
             touch_tracker.curr_pressed = (None, None);
             touch_tracker.prev_pressed = (None, None);
         }
         1 => {
             let touch: &Touch = pressed.first().unwrap();
-            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
-            touch_tracker.current_pressed.clear();
-            touch_tracker.current_pressed.insert(touch.id(), *touch);
-
             touch_tracker.prev_pressed = touch_tracker.curr_pressed;
             touch_tracker.curr_pressed = (Some(*touch), None);
         }
         2 => {
             let touch1: &Touch = pressed.first().unwrap();
             let touch2: &Touch = pressed.last().unwrap();
-            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
-            touch_tracker.current_pressed.clear();
-            touch_tracker.current_pressed.insert(touch1.id(), *touch1);
-            touch_tracker.current_pressed.insert(touch2.id(), *touch2);
-
             touch_tracker.prev_pressed = touch_tracker.curr_pressed;
             touch_tracker.curr_pressed = (Some(*touch1), Some(*touch2));
         }
