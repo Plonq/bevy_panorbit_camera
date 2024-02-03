@@ -1,14 +1,76 @@
-use crate::traits::Midpoint;
+use crate::util;
+use crate::{ActiveCameraData, PanOrbitCamera};
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::Touch;
-use bevy::math::Vec2;
-use bevy::prelude::{Res, ResMut, Resource, Touches};
-use bevy::utils::HashMap;
+use bevy::prelude::*;
+
+use crate::traits::Midpoint;
+
+#[derive(Resource, Default, Debug)]
+pub struct MouseTracker {
+    pub orbit: Vec2,
+    pub pan: Vec2,
+    pub scroll_line: f32,
+    pub scroll_pixel: f32,
+    pub orbit_button_changed: bool,
+}
+
+pub fn mouse_tracker(
+    mut camera_movement: ResMut<MouseTracker>,
+    mouse_input: Res<Input<MouseButton>>,
+    key_input: Res<Input<KeyCode>>,
+    mut mouse_motion: EventReader<MouseMotion>,
+    mut scroll_events: EventReader<MouseWheel>,
+    active_cam: Res<ActiveCameraData>,
+    orbit_cameras: Query<&PanOrbitCamera>,
+) {
+    if let Some(active_entity) = active_cam.entity {
+        if let Ok(pan_orbit) = orbit_cameras.get(active_entity) {
+            let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
+
+            let mut orbit = Vec2::ZERO;
+            let mut pan = Vec2::ZERO;
+            let mut scroll_line = 0.0;
+            let mut scroll_pixel = 0.0;
+            let mut orbit_button_changed = false;
+
+            if util::orbit_pressed(pan_orbit, &mouse_input, &key_input) {
+                orbit += mouse_delta;
+            } else if util::pan_pressed(pan_orbit, &mouse_input, &key_input) {
+                // Pan only if we're not rotating at the moment
+                pan += mouse_delta;
+            }
+
+            for ev in scroll_events.read() {
+                let delta_scroll = ev.y;
+                match ev.unit {
+                    MouseScrollUnit::Line => {
+                        scroll_line += delta_scroll;
+                    }
+                    MouseScrollUnit::Pixel => {
+                        scroll_pixel += delta_scroll * 0.005;
+                    }
+                };
+            }
+
+            if util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
+                || util::orbit_just_released(pan_orbit, &mouse_input, &key_input)
+            {
+                orbit_button_changed = true;
+            }
+
+            camera_movement.orbit = orbit;
+            camera_movement.pan = pan;
+            camera_movement.scroll_line = scroll_line;
+            camera_movement.scroll_pixel = scroll_pixel;
+            camera_movement.orbit_button_changed = orbit_button_changed;
+        }
+    }
+}
 
 /// Store current and previous frame touch data
 #[derive(Resource, Default, Debug)]
 pub struct TouchTracker {
-    pub current_pressed: HashMap<u64, Touch>,
-    pub previous_pressed: HashMap<u64, Touch>,
     pub curr_pressed: (Option<Touch>, Option<Touch>),
     pub prev_pressed: (Option<Touch>, Option<Touch>),
 }
@@ -18,7 +80,7 @@ impl TouchTracker {
     pub fn calculate_movement(&self) -> (Vec2, Vec2, f32) {
         let mut orbit = Vec2::ZERO;
         let mut pan = Vec2::ZERO;
-        let mut zoom = 0.0;
+        let mut zoom_pixel = 0.0;
 
         // Only match when curr and prev have same number of touches, for simplicity.
         // I did not notice any adverse behaviour as a result.
@@ -41,12 +103,12 @@ impl TouchTracker {
 
                 let curr_dist = curr1_pos.distance(curr2_pos);
                 let prev_dist = prev1_pos.distance(prev2_pos);
-                zoom += curr_dist - prev_dist;
+                zoom_pixel += (curr_dist - prev_dist) * 0.015;
             }
             _ => {}
         }
 
-        (orbit, pan, zoom)
+        (orbit, pan, zoom_pixel)
     }
 }
 
@@ -56,29 +118,17 @@ pub fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTrack
 
     match pressed.len() {
         0 => {
-            touch_tracker.current_pressed.clear();
-            touch_tracker.previous_pressed.clear();
-
             touch_tracker.curr_pressed = (None, None);
             touch_tracker.prev_pressed = (None, None);
         }
         1 => {
             let touch: &Touch = pressed.first().unwrap();
-            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
-            touch_tracker.current_pressed.clear();
-            touch_tracker.current_pressed.insert(touch.id(), *touch);
-
             touch_tracker.prev_pressed = touch_tracker.curr_pressed;
             touch_tracker.curr_pressed = (Some(*touch), None);
         }
         2 => {
             let touch1: &Touch = pressed.first().unwrap();
             let touch2: &Touch = pressed.last().unwrap();
-            touch_tracker.previous_pressed = touch_tracker.current_pressed.clone();
-            touch_tracker.current_pressed.clear();
-            touch_tracker.current_pressed.insert(touch1.id(), *touch1);
-            touch_tracker.current_pressed.insert(touch2.id(), *touch2);
-
             touch_tracker.prev_pressed = touch_tracker.curr_pressed;
             touch_tracker.curr_pressed = (Some(*touch1), Some(*touch2));
         }

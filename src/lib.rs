@@ -10,6 +10,7 @@ use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
 
+use crate::input::MouseTracker;
 #[cfg(feature = "bevy_egui")]
 pub use egui::EguiWantsFocus;
 use input::TouchTracker;
@@ -17,9 +18,9 @@ use traits::Midpoint;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
+mod input;
 mod traits;
 mod util;
-mod input;
 
 /// Bevy plugin that contains the systems for controlling `PanOrbitCamera` components.
 /// # Example
@@ -38,12 +39,14 @@ pub struct PanOrbitCameraPlugin;
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ActiveCameraData::default())
+            .insert_resource(MouseTracker::default())
             .insert_resource(TouchTracker::default())
             .add_systems(
                 Update,
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
+                    input::mouse_tracker,
                     input::touch_tracker,
                     pan_orbit_camera,
                 )
@@ -377,15 +380,10 @@ fn active_viewport_data(
 /// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
-    mouse_input: Res<Input<MouseButton>>,
-    key_input: Res<Input<KeyCode>>,
+    mouse_tracker: Res<MouseTracker>,
     touch_tracker: Res<TouchTracker>,
-    mut mouse_motion: EventReader<MouseMotion>,
-    mut scroll_events: EventReader<MouseWheel>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
-    let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
-
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the alpha, beta, and zoom values
         let apply_zoom_limits = {
@@ -448,8 +446,8 @@ fn pan_orbit_camera(
 
         // 1 - Get Input
 
-        let mut pan = Vec2::ZERO;
         let mut orbit = Vec2::ZERO;
+        let mut pan = Vec2::ZERO;
         let mut scroll_line = 0.0;
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
@@ -459,41 +457,18 @@ fn pan_orbit_camera(
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
             let (touch_orbit, touch_pan, touch_zoom) = touch_tracker.calculate_movement();
-
-            if util::orbit_pressed(&pan_orbit, &mouse_input, &key_input) {
-                orbit += mouse_delta * pan_orbit.orbit_sensitivity;
-            } else if util::pan_pressed(&pan_orbit, &mouse_input, &key_input) {
-                // Pan only if we're not rotating at the moment
-                pan += mouse_delta * pan_orbit.pan_sensitivity;
-            }
-
             let zoom_direction = match pan_orbit.reversed_zoom {
                 true => -1.0,
                 false => 1.0,
             };
-            // todo: will moving scroll events read to top of system fix issue with egui and changing focus?
-            for ev in scroll_events.read() {
-                let delta_scroll = ev.y * zoom_direction * pan_orbit.zoom_sensitivity;
-                match ev.unit {
-                    MouseScrollUnit::Line => {
-                        scroll_line += delta_scroll;
-                    }
-                    MouseScrollUnit::Pixel => {
-                        scroll_pixel += delta_scroll * 0.005;
-                    }
-                };
-            }
 
-            // Add touch movement (if any)
-            orbit += touch_orbit * pan_orbit.orbit_sensitivity;
-            pan += touch_pan * pan_orbit.pan_sensitivity;
-            scroll_pixel += touch_zoom * 0.015 * zoom_direction * pan_orbit.zoom_sensitivity;
-
-            if util::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input)
-                || util::orbit_just_released(&pan_orbit, &mouse_input, &key_input)
-            {
-                orbit_button_changed = true;
-            }
+            orbit = (mouse_tracker.orbit + touch_orbit) * pan_orbit.orbit_sensitivity;
+            pan = (mouse_tracker.pan + touch_pan) * pan_orbit.pan_sensitivity;
+            scroll_line = mouse_tracker.scroll_line * zoom_direction * pan_orbit.zoom_sensitivity;
+            scroll_pixel = (mouse_tracker.scroll_pixel + touch_zoom)
+                * zoom_direction
+                * pan_orbit.zoom_sensitivity;
+            orbit_button_changed = mouse_tracker.orbit_button_changed;
         }
 
         // 2 - Process input into target alpha/beta, or focus, radius
