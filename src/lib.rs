@@ -3,18 +3,18 @@
 
 use std::f32::consts::{PI, TAU};
 
-use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
 
-use crate::input::MouseTracker;
 #[cfg(feature = "bevy_egui")]
 pub use egui::EguiWantsFocus;
 use input::TouchTracker;
-use traits::Midpoint;
+
+use crate::input::MouseTracker;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
@@ -321,8 +321,8 @@ fn active_viewport_data(
 
     let mut has_input = false;
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
-        let input_just_activated = util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
-            || util::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+        let input_just_activated = input::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !scroll_events.is_empty()
             || (touches.iter_just_pressed().count() > 0
                 && touches.iter_just_pressed().count() == touches.iter().count());

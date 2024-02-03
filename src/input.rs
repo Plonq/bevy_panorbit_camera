@@ -1,4 +1,3 @@
-use crate::util;
 use crate::{ActiveCameraData, PanOrbitCamera};
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::Touch;
@@ -34,9 +33,9 @@ pub fn mouse_tracker(
             let mut scroll_pixel = 0.0;
             let mut orbit_button_changed = false;
 
-            if util::orbit_pressed(pan_orbit, &mouse_input, &key_input) {
+            if orbit_pressed(pan_orbit, &mouse_input, &key_input) {
                 orbit += mouse_delta;
-            } else if util::pan_pressed(pan_orbit, &mouse_input, &key_input) {
+            } else if pan_pressed(pan_orbit, &mouse_input, &key_input) {
                 // Pan only if we're not rotating at the moment
                 pan += mouse_delta;
             }
@@ -53,8 +52,8 @@ pub fn mouse_tracker(
                 };
             }
 
-            if util::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
-                || util::orbit_just_released(pan_orbit, &mouse_input, &key_input)
+            if orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
+                || orbit_just_released(pan_orbit, &mouse_input, &key_input)
             {
                 orbit_button_changed = true;
             }
@@ -134,4 +133,84 @@ pub fn touch_tracker(touches: Res<Touches>, mut touch_tracker: ResMut<TouchTrack
         }
         _ => {}
     }
+}
+
+pub fn orbit_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_orbit);
+
+    is_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn orbit_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_pressed(pan_orbit.button_orbit));
+
+    just_pressed
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn orbit_just_released(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_released = pan_orbit
+        .modifier_orbit
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_released(pan_orbit.button_orbit));
+
+    just_released
+        && pan_orbit
+            .modifier_pan
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn pan_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let is_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && mouse_input.pressed(pan_orbit.button_pan);
+
+    is_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
+}
+
+pub fn pan_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<Input<MouseButton>>,
+    key_input: &Res<Input<KeyCode>>,
+) -> bool {
+    let just_pressed = pan_orbit
+        .modifier_pan
+        .map_or(true, |modifier| key_input.pressed(modifier))
+        && (mouse_input.just_pressed(pan_orbit.button_pan));
+
+    just_pressed
+        && pan_orbit
+            .modifier_orbit
+            .map_or(true, |modifier| !key_input.pressed(modifier))
 }
