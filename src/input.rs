@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use crate::traits::Midpoint;
 
 #[derive(Resource, Default, Debug)]
-pub struct MouseTracker {
+pub struct MouseKeyTracker {
     pub orbit: Vec2,
     pub pan: Vec2,
     pub scroll_line: f32,
@@ -14,8 +14,8 @@ pub struct MouseTracker {
     pub orbit_button_changed: bool,
 }
 
-pub fn mouse_tracker(
-    mut camera_movement: ResMut<MouseTracker>,
+pub fn mouse_key_tracker(
+    mut camera_movement: ResMut<MouseKeyTracker>,
     mouse_input: Res<Input<MouseButton>>,
     key_input: Res<Input<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,

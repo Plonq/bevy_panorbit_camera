@@ -14,7 +14,7 @@ use bevy_egui::EguiSet;
 pub use egui::EguiWantsFocus;
 use input::TouchTracker;
 
-use crate::input::MouseTracker;
+use crate::input::MouseKeyTracker;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
@@ -39,14 +39,14 @@ pub struct PanOrbitCameraPlugin;
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ActiveCameraData::default())
-            .insert_resource(MouseTracker::default())
+            .insert_resource(MouseKeyTracker::default())
             .insert_resource(TouchTracker::default())
             .add_systems(
                 Update,
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    input::mouse_tracker,
+                    input::mouse_key_tracker,
                     input::touch_tracker,
                     pan_orbit_camera,
                 )
@@ -380,7 +380,7 @@ fn active_viewport_data(
 /// Main system for processing input and converting to transformations
 fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
-    mouse_tracker: Res<MouseTracker>,
+    mouse_key_tracker: Res<MouseKeyTracker>,
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
@@ -462,13 +462,14 @@ fn pan_orbit_camera(
                 false => 1.0,
             };
 
-            orbit = (mouse_tracker.orbit + touch_orbit) * pan_orbit.orbit_sensitivity;
-            pan = (mouse_tracker.pan + touch_pan) * pan_orbit.pan_sensitivity;
-            scroll_line = mouse_tracker.scroll_line * zoom_direction * pan_orbit.zoom_sensitivity;
-            scroll_pixel = (mouse_tracker.scroll_pixel + touch_zoom)
+            orbit = (mouse_key_tracker.orbit + touch_orbit) * pan_orbit.orbit_sensitivity;
+            pan = (mouse_key_tracker.pan + touch_pan) * pan_orbit.pan_sensitivity;
+            scroll_line =
+                mouse_key_tracker.scroll_line * zoom_direction * pan_orbit.zoom_sensitivity;
+            scroll_pixel = (mouse_key_tracker.scroll_pixel + touch_zoom)
                 * zoom_direction
                 * pan_orbit.zoom_sensitivity;
-            orbit_button_changed = mouse_tracker.orbit_button_changed;
+            orbit_button_changed = mouse_key_tracker.orbit_button_changed;
         }
 
         // 2 - Process input into target alpha/beta, or focus, radius
