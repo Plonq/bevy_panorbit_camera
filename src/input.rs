@@ -2,6 +2,7 @@ use crate::{ActiveCameraData, PanOrbitCamera};
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::Touch;
 use bevy::prelude::*;
+use std::f32::consts::TAU;
 
 use crate::traits::Midpoint;
 
@@ -11,6 +12,7 @@ pub struct MouseKeyTracker {
     pub pan: Vec2,
     pub scroll_line: f32,
     pub scroll_pixel: f32,
+    pub roll_angle: f32,
     pub orbit_button_changed: bool,
 }
 
@@ -31,8 +33,10 @@ pub fn mouse_key_tracker(
             let mut pan = Vec2::ZERO;
             let mut scroll_line = 0.0;
             let mut scroll_pixel = 0.0;
+            let mut roll_angle = 0.0;
             let mut orbit_button_changed = false;
 
+            // Orbit and pan
             if orbit_pressed(pan_orbit, &mouse_input, &key_input) {
                 orbit += mouse_delta;
             } else if pan_pressed(pan_orbit, &mouse_input, &key_input) {
@@ -40,6 +44,7 @@ pub fn mouse_key_tracker(
                 pan += mouse_delta;
             }
 
+            // Zoom
             for ev in scroll_events.read() {
                 let delta_scroll = ev.y;
                 match ev.unit {
@@ -52,6 +57,21 @@ pub fn mouse_key_tracker(
                 };
             }
 
+            // Roll
+            let roll_amount = TAU * 0.003;
+
+            if let Some(roll_left_key) = pan_orbit.key_roll_left {
+                if key_input.pressed(roll_left_key) {
+                    roll_angle -= roll_amount;
+                }
+            }
+            if let Some(roll_right_key) = pan_orbit.key_roll_right {
+                if key_input.pressed(roll_right_key) {
+                    roll_angle += roll_amount;
+                }
+            }
+
+            // Other
             if orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
                 || orbit_just_released(pan_orbit, &mouse_input, &key_input)
             {
@@ -62,6 +82,7 @@ pub fn mouse_key_tracker(
             camera_movement.pan = pan;
             camera_movement.scroll_line = scroll_line;
             camera_movement.scroll_pixel = scroll_pixel;
+            camera_movement.roll_angle = roll_angle;
             camera_movement.orbit_button_changed = orbit_button_changed;
         }
     }

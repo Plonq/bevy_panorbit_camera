@@ -15,6 +15,7 @@ pub use egui::EguiWantsFocus;
 use input::TouchTracker;
 
 use crate::input::MouseKeyTracker;
+use crate::traits::OptionalClamp;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
@@ -192,39 +193,86 @@ pub struct PanOrbitCamera {
     /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
     /// Defaults to `None`.
     pub zoom_lower_limit: Option<f32>,
-    /// The sensitivity of the orbiting motion. Defaults to `1.0`.
+    /// The sensitivity of the orbiting motion.
+    /// Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
-    /// smoothing. Defaults to `0.8`.
+    /// smoothing.
+    /// Defaults to `0.8`.
     pub orbit_smoothness: f32,
-    /// The sensitivity of the panning motion. Defaults to `1.0`.
+    /// The sensitivity of the panning motion.
+    /// Defaults to `1.0`.
     pub pan_sensitivity: f32,
     /// How much smoothing is applied to the panning motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
-    /// smoothing. Defaults to `0.6`.
+    /// smoothing.
+    /// Defaults to `0.6`.
     pub pan_smoothness: f32,
-    /// The sensitivity of moving the camera closer or further way using the scroll wheel. Defaults to `1.0`.
+    /// The sensitivity of moving the camera closer or further way using the scroll wheel.
+    /// Defaults to `1.0`.
     pub zoom_sensitivity: f32,
+    /// The sensitivity of rolling the camera (rotating around local Z-axis).
+    /// Defaults to `1.0`.
+    pub roll_sensitivity: f32,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
-    /// smoothing. Defaults to `0.8`.
+    /// smoothing.
+    /// Defaults to `0.8`.
     /// Note that this setting does not apply to pixel-based scroll events, as they are typically
     /// already smooth. It only applies to line-based scroll events.
     pub zoom_smoothness: f32,
-    /// Button used to orbit the camera. Defaults to `Button::Left`.
+    /// Button used to orbit the camera.
+    /// Defaults to `Button::Left`.
     pub button_orbit: MouseButton,
-    /// Button used to pan the camera. Defaults to `Button::Right`.
+    /// Button used to pan the camera.
+    /// Defaults to `Button::Right`.
     pub button_pan: MouseButton,
-    /// Key that must be pressed for `button_orbit` to work. Defaults to `None` (no modifier).
+    /// Key that must be pressed for `button_orbit` to work.
+    /// Defaults to `None` (no modifier).
     pub modifier_orbit: Option<KeyCode>,
-    /// Key that must be pressed for `button_pan` to work. Defaults to `None` (no modifier).
+    /// Key that must be pressed for `button_pan` to work.
+    /// Defaults to `None` (no modifier).
     pub modifier_pan: Option<KeyCode>,
-    /// Whether to reverse the zoom direction. Defaults to `false`.
+    /// Key to use for rolling right (clockwise) around the local -Z-axis (i.e. the direction the
+    /// camera is currently facing).
+    /// Enabling roll by setting this and/or `key_roll_left` to a `Some` value introduces the 3rd
+    /// axis of rotation. This can be useful in some scenarios, but has some drawbacks. Notably
+    /// it effectively allows changing the 'up' vector, and once changed it's practically impossible
+    /// to reset it back to the world 'up' vector with the mouse controls alone (you must do it
+    /// programmatically). Hence, by default rolling is disabled.
+    /// If you do want to reset the up vector programmatically, set `base_transform` to
+    /// `Transform::IDENTITY`.
+    /// If you enable roll, I highly recommend also setting `allow_upside_down` to `true`, because
+    /// being 'upside down' doesn't really mean anything when you can roll freely.
+    /// Defaults to `None`.
+    pub key_roll_right: Option<KeyCode>,
+    /// Key to use for rolling left (anti-clockwise) around the local -Z-axis (i.e. the direction
+    /// the camera is currently facing).
+    /// Enabling roll by setting this and/or `key_roll_right` to a `Some` value introduces the 3rd
+    /// axis of rotation. This can be useful in some scenarios, but has some drawbacks. Notably
+    /// it effectively allows changing the 'up' vector, and once changed it's practically impossible
+    /// to reset it back to the world 'up' vector with the mouse controls alone (you must do it
+    /// programmatically). Hence, by default rolling is disabled.
+    /// If you do want to reset the up vector programmatically, set `base_transform` to
+    /// `Transform::IDENTITY`.
+    /// If you enable roll, I highly recommend also setting `allow_upside_down` to `true`, because
+    /// being 'upside down' doesn't really mean anything when you can roll freely.
+    /// Defaults to `None`.
+    pub key_roll_left: Option<KeyCode>,
+    /// Whether to reverse the zoom direction.
+    /// Defaults to `false`.
     pub reversed_zoom: bool,
-    /// Whether the camera is currently upside down. Updated automatically. Should not be set manually.
+    /// Whether the camera is currently upside down. Updated automatically.
+    /// This is used to determine which way to orbit, because it's more intuitive to reverse the
+    /// orbit direction when upside down.
+    /// Should not be set manually unless you know what you're doing.
+    /// Defaults to `false` (but will be updated immediately).
     pub is_upside_down: bool,
-    /// Whether to allow the camera to go upside down. Defaults to `false`.
+    /// Whether to allow the camera to go upside down.
+    /// You probably want to set this to `true` if you change `base_transform` or `key_roll_left` /
+    /// `key_roll_right`. See the documentation for those properties for more information.
+    /// Defaults to `false`.
     pub allow_upside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
@@ -237,6 +285,13 @@ pub struct PanOrbitCamera {
     /// This will be automatically set back to `false` after one frame.
     /// Defaults to `false`.
     pub force_update: bool,
+    /// The transform that all rotations and transforms are based upon.
+    /// Typically this will always be equal to `Transform::IDENTITY`. It is used for the 'roll' axis
+    /// (see `key_roll_left` and `key_roll_right`), but it can also be used to manually set the
+    /// vector the camera treats as 'up'.
+    /// Note that changing the translation or scale of this transform is currently not supported.
+    /// Defaults to `Transform::IDENTITY`.
+    pub base_transform: Transform,
 }
 
 impl Default for PanOrbitCamera {
@@ -253,10 +308,13 @@ impl Default for PanOrbitCamera {
             pan_smoothness: 0.6,
             zoom_sensitivity: 1.0,
             zoom_smoothness: 0.8,
+            roll_sensitivity: 1.0,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             modifier_orbit: None,
             modifier_pan: None,
+            key_roll_right: None,
+            key_roll_left: None,
             reversed_zoom: false,
             enabled: true,
             alpha: None,
@@ -274,6 +332,7 @@ impl Default for PanOrbitCamera {
             zoom_upper_limit: None,
             zoom_lower_limit: None,
             force_update: false,
+            base_transform: Transform::IDENTITY,
         }
     }
 }
@@ -389,19 +448,22 @@ fn pan_orbit_camera(
         let apply_zoom_limits = {
             let zoom_upper_limit = pan_orbit.zoom_upper_limit;
             let zoom_lower_limit = pan_orbit.zoom_lower_limit;
-            move |zoom: f32| util::apply_limits(zoom, zoom_upper_limit, zoom_lower_limit).max(0.05)
+            move |zoom: f32| {
+                zoom.clamp_optional(zoom_lower_limit, zoom_upper_limit)
+                    .max(0.05)
+            }
         };
 
         let apply_alpha_limits = {
             let alpha_upper_limit = pan_orbit.alpha_upper_limit;
             let alpha_lower_limit = pan_orbit.alpha_lower_limit;
-            move |alpha: f32| util::apply_limits(alpha, alpha_upper_limit, alpha_lower_limit)
+            move |alpha: f32| alpha.clamp_optional(alpha_lower_limit, alpha_upper_limit)
         };
 
         let apply_beta_limits = {
             let beta_upper_limit = pan_orbit.beta_upper_limit;
             let beta_lower_limit = pan_orbit.beta_lower_limit;
-            move |beta: f32| util::apply_limits(beta, beta_upper_limit, beta_lower_limit)
+            move |beta: f32| beta.clamp_optional(beta_lower_limit, beta_upper_limit)
         };
 
         if !pan_orbit.initialized {
@@ -439,7 +501,14 @@ fn pan_orbit_camera(
                 pan_orbit.target_scale = p.scale;
             }
 
-            util::update_orbit_transform(alpha, beta, radius, pan_orbit.focus, &mut transform);
+            util::update_orbit_transform(
+                alpha,
+                beta,
+                radius,
+                pan_orbit.focus,
+                &mut transform,
+                &pan_orbit.base_transform,
+            );
 
             pan_orbit.initialized = true;
         }
@@ -450,6 +519,7 @@ fn pan_orbit_camera(
         let mut pan = Vec2::ZERO;
         let mut scroll_line = 0.0;
         let mut scroll_pixel = 0.0;
+        let mut roll_angle = 0.0;
         let mut orbit_button_changed = false;
 
         // The reason we only skip getting input if the camera is inactive/disabled is because
@@ -469,10 +539,17 @@ fn pan_orbit_camera(
             scroll_pixel = (mouse_key_tracker.scroll_pixel + touch_zoom)
                 * zoom_direction
                 * pan_orbit.zoom_sensitivity;
+            // todo: roll via touch?
+            roll_angle = mouse_key_tracker.roll_angle * pan_orbit.roll_sensitivity;
             orbit_button_changed = mouse_key_tracker.orbit_button_changed;
         }
 
-        // 2 - Process input into target alpha/beta, or focus, radius
+        // 2 - Adjust basis transform based on roll
+        pan_orbit
+            .base_transform
+            .rotate_axis(transform.local_z(), roll_angle);
+
+        // 3 - Process input into target alpha/beta, or focus, radius
 
         if orbit_button_changed {
             // Only check for upside down when orbiting started or ended this frame,
@@ -547,7 +624,7 @@ fn pan_orbit_camera(
             has_moved = true;
         }
 
-        // 3 - Apply constraints
+        // 4 - Apply constraints
 
         pan_orbit.target_alpha = apply_alpha_limits(pan_orbit.target_alpha);
         pan_orbit.target_beta = apply_beta_limits(pan_orbit.target_beta);
@@ -555,22 +632,27 @@ fn pan_orbit_camera(
         pan_orbit.target_scale = apply_zoom_limits(pan_orbit.target_scale);
 
         if !pan_orbit.allow_upside_down {
-            pan_orbit.target_beta =
-                util::apply_limits(pan_orbit.target_beta, Some(PI / 2.0), Some(-PI / 2.0));
+            pan_orbit.target_beta = pan_orbit.target_beta.clamp(-PI / 2.0, PI / 2.0);
         }
 
-        // 4 - Update the camera's transform based on current values
+        // 5 - Update the camera's transform based on current values
 
         if let (Some(alpha), Some(beta), Some(radius)) =
             (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
         {
             if has_moved
+                // For smoothed values, we must check whether current value is different from target
+                // value. If we only checked whether the values were non-zero this frame, then
+                // the camera would instantly stop moving as soon as you stopped moving it, instead
+                // of smoothly stopping
                 || pan_orbit.target_alpha != alpha
                 || pan_orbit.target_beta != beta
                 || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
-                // Unlike the rest, scale will always be None for non-orthographic cameras,
-                // so we can't include in the if let above
+                // Rolling is not smoothed, so just checking whether it's non-zero is fine
+                || roll_angle != 0.0
+                // Scale will always be None for non-orthographic cameras, so we can't include it in
+                // the 'if let' above
                 || Some(pan_orbit.target_scale) != pan_orbit.scale
                 || pan_orbit.force_update
             {
@@ -611,6 +693,7 @@ fn pan_orbit_camera(
                     new_radius,
                     new_focus,
                     &mut transform,
+                    &pan_orbit.base_transform,
                 );
 
                 // Update the current values
