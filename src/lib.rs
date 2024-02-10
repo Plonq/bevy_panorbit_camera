@@ -313,7 +313,9 @@ pub struct PanOrbitCamera {
     /// The transform that all rotations and transforms are based upon.
     /// Typically this will always be equal to `Transform::IDENTITY`. It is used for the 'roll' axis
     /// (see `key_roll_left` and `key_roll_right`), but it can also be used to manually set the
-    /// vector the camera treats as 'up'.
+    /// vector the camera treats as 'up'. If you change this (or enable roll controls), you
+    /// probably also want to set `allow_upside_down` to `true`. Also note that alpha/beta limits
+    /// will be applied after `base_transform`, and thus may not act like you expect.
     /// Note that changing the translation or scale of this transform is currently not supported.
     /// Defaults to `Transform::IDENTITY`.
     pub base_transform: Transform,
