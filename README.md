@@ -90,7 +90,8 @@ the concept of 'up' and 'down' change, and so the above explanation changes acco
 
 ## Cargo Features
 
-- `bevy_egui` (optional): makes `PanOrbitCamera` ignore any input that `egui` uses
+- `bevy_egui` (optional): makes `PanOrbitCamera` ignore any input that `egui` uses, thus preventing moving the camera
+  when interacting with egui windows
 
 ## Version Compatibility
 
