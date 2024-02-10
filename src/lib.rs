@@ -581,7 +581,7 @@ fn pan_orbit_camera(
             }
         }
 
-        // 2 - Adjust basis transform based on roll
+        // 2 - Adjust base transform based on roll
         pan_orbit
             .base_transform
             .rotate_axis(transform.local_z(), roll_angle);
