@@ -47,8 +47,24 @@ impl Plugin for PanOrbitCameraPlugin {
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    input::mouse_key_tracker,
-                    input::touch_tracker,
+                    // The order of the input systems doesn't matter
+                    (
+                        input::mouse_key_tracker,
+                        input::touch_tracker.run_if(
+                            // Run only if touch enabled in the active PanOrbitCamera (if there is one)
+                            |active_cam: Res<ActiveCameraData>,
+                             pan_orbit_q: Query<&PanOrbitCamera>| {
+                                active_cam.entity.map_or_else(
+                                    || false,
+                                    |entity| {
+                                        pan_orbit_q
+                                            .get(entity)
+                                            .map_or_else(|_| false, |po_cam| po_cam.touch_enabled)
+                                    },
+                                )
+                            },
+                        ),
+                    ),
                     pan_orbit_camera,
                 )
                     .chain()
@@ -260,6 +276,15 @@ pub struct PanOrbitCamera {
     /// being 'upside down' doesn't really mean anything when you can roll freely.
     /// Defaults to `None`.
     pub key_roll_left: Option<KeyCode>,
+    /// Whether touch controls are enabled.
+    /// Defaults to `true`.
+    pub touch_enabled: bool,
+    /// Whether 'roll' touch control is enabled. Roll is achieved by rotating two fingers in a
+    /// circle. It is disabled by default because rolling changes the 'up' vector which is not
+    /// desirable in most circumstances. See documentation for `key_roll_left` / `key_roll_right`
+    /// and `base_transform` for more information.
+    /// Defaults to `false`.
+    pub touch_roll_enabled: bool,
     /// Whether to reverse the zoom direction.
     /// Defaults to `false`.
     pub reversed_zoom: bool,
@@ -315,6 +340,8 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             key_roll_right: None,
             key_roll_left: None,
+            touch_enabled: true,
+            touch_roll_enabled: false,
             reversed_zoom: false,
             enabled: true,
             alpha: None,
@@ -526,22 +553,30 @@ fn pan_orbit_camera(
         // it might still be moving (lerping towards target values) when the user is not
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
-            let (touch_orbit, touch_pan, touch_zoom) = touch_tracker.calculate_movement();
+            let (touch_orbit, touch_pan, touch_roll_angle, touch_zoom_pixel) =
+                touch_tracker.calculate_movement();
             let zoom_direction = match pan_orbit.reversed_zoom {
                 true => -1.0,
                 false => 1.0,
             };
 
-            orbit = (mouse_key_tracker.orbit + touch_orbit) * pan_orbit.orbit_sensitivity;
-            pan = (mouse_key_tracker.pan + touch_pan) * pan_orbit.pan_sensitivity;
+            orbit = mouse_key_tracker.orbit * pan_orbit.orbit_sensitivity;
+            pan = mouse_key_tracker.pan * pan_orbit.pan_sensitivity;
             scroll_line =
                 mouse_key_tracker.scroll_line * zoom_direction * pan_orbit.zoom_sensitivity;
-            scroll_pixel = (mouse_key_tracker.scroll_pixel + touch_zoom)
-                * zoom_direction
-                * pan_orbit.zoom_sensitivity;
-            // todo: roll via touch?
+            scroll_pixel =
+                mouse_key_tracker.scroll_pixel * zoom_direction * pan_orbit.zoom_sensitivity;
             roll_angle = mouse_key_tracker.roll_angle * pan_orbit.roll_sensitivity;
             orbit_button_changed = mouse_key_tracker.orbit_button_changed;
+
+            if pan_orbit.touch_enabled {
+                orbit += touch_orbit * pan_orbit.orbit_sensitivity;
+                pan += touch_pan * pan_orbit.pan_sensitivity;
+                scroll_pixel += touch_zoom_pixel * zoom_direction * pan_orbit.zoom_sensitivity;
+                if pan_orbit.touch_roll_enabled {
+                    roll_angle += touch_roll_angle * pan_orbit.roll_sensitivity;
+                }
+            }
         }
 
         // 2 - Adjust basis transform based on roll

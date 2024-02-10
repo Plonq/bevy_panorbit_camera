@@ -97,13 +97,15 @@ pub struct TouchTracker {
 
 impl TouchTracker {
     /// Return orbit, pan, and zoom values based on touch data
-    pub fn calculate_movement(&self) -> (Vec2, Vec2, f32) {
+    pub fn calculate_movement(&self) -> (Vec2, Vec2, f32, f32) {
         let mut orbit = Vec2::ZERO;
         let mut pan = Vec2::ZERO;
+        let mut roll_angle = 0.0;
         let mut zoom_pixel = 0.0;
 
         // Only match when curr and prev have same number of touches, for simplicity.
-        // I did not notice any adverse behaviour as a result.
+        // I did not notice any adverse behaviour as a result of ignoring the single frame
+        // where the number of touches changes (e.g. from 1 to 2 or from 2 to 1).
         match (self.curr_pressed, self.prev_pressed) {
             ((Some(curr), None), (Some(prev), None)) => {
                 let curr_pos = curr.position();
@@ -117,18 +119,27 @@ impl TouchTracker {
                 let prev1_pos = prev1.position();
                 let prev2_pos = prev2.position();
 
+                // Pan
                 let curr_midpoint = curr1_pos.midpoint(curr2_pos);
                 let prev_midpoint = prev1_pos.midpoint(prev2_pos);
                 pan += curr_midpoint - prev_midpoint;
 
+                // Zoom
                 let curr_dist = curr1_pos.distance(curr2_pos);
                 let prev_dist = prev1_pos.distance(prev2_pos);
                 zoom_pixel += (curr_dist - prev_dist) * 0.015;
+
+                // Roll
+                let prev_vec = prev2_pos - prev1_pos;
+                let curr_vec = curr2_pos - curr1_pos;
+                let prev_angle = prev_vec.angle_between(Vec2::NEG_Y);
+                let curr_angle = curr_vec.angle_between(Vec2::NEG_Y);
+                roll_angle = prev_angle - curr_angle;
             }
             _ => {}
         }
 
-        (orbit, pan, zoom_pixel)
+        (orbit, pan, roll_angle, zoom_pixel)
     }
 }
 
