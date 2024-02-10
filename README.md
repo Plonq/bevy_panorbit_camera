@@ -13,7 +13,26 @@
 Bevy Pan/Orbit Camera provides orbit camera controls for Bevy Engine, designed with simplicity and flexibility in mind.
 Use it to quickly prototype, experiment, for model viewers, and more!
 
-Default controls:
+## Features:
+
+- Smoothed orbiting, panning, and zooming
+- Works with orthographic camera projection in addition to perspective
+- Customisable controls, sensitivity, and more
+- Touch support
+  - Currently 'beta' - please report any issues!
+- Works with multiple viewports and/or windows
+- Easy to control manually, e.g. for keyboard control or animation
+- Can control cameras that render to a texture
+- Supports the 'roll' axis and changing the 'up' vector, and thus controlling all 3 rotational axes
+  - Comes with caveats as explained in the documentation for `PanOrbitCamera.key_roll_left` /
+    `PanOrbitCamera.key_roll_right` and `PanOrbitCamera.base_transform`
+
+## Controls
+
+By default, you can only orbit, pan, and zoom. Optionally, you can enable the 'roll' axis, which modifies the 'up'
+vector of the camera. You can also set the 'up' vector manually - see `PanOrbitCamera.base_transform`.
+
+Default mouse controls:
 
 - Left Mouse - Orbit
 - Right Mouse - Pan
@@ -24,18 +43,10 @@ Touch controls:
 - One finger - Orbit
 - Two fingers - Pan
 - Pinch - Zoom
+- Two finger rotate - Roll (disabled by default)
 
-## Features:
-
-- Orbiting, panning and zooming
-- Smooth motion
-- Works with orthographic camera projection in addition to perspective
-- Customisable controls, sensitivity, and more
-- Touch support
-  - Currently 'beta' - please report any issues!
-- Works with multiple viewports and/or windows
-- Easy to control manually, e.g. for keyboard control or animation
-- Can control cameras that render to a texture
+Note: touch controls are currently not customisable. Please create an issue if you would like to customise the touch
+controls.
 
 ## Quick Start
 
