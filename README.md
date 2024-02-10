@@ -2,7 +2,7 @@
 [![docs.rs](https://docs.rs/bevy_panorbit_camera/badge.svg)](https://docs.rs/bevy_panorbit_camera)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 
-<div align="center">
+<div style="text-align: center">
   <h1>Bevy Pan/Orbit Camera</h1>
 </div>
 
