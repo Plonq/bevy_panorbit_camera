@@ -8,7 +8,7 @@
 
 ![A screen recording showing camera movement](https://user-images.githubusercontent.com/7709415/230715348-eb19d9a8-4826-4a73-a039-02cacdcb3dc9.gif "Demo of bevy_panorbit_camera")
 
-## What Is This?
+## Summary
 
 Bevy Pan/Orbit Camera provides orbit camera controls for Bevy Engine, designed with simplicity and flexibility in mind.
 Use it to quickly prototype, experiment, for model viewers, and more!
