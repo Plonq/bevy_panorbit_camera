@@ -45,10 +45,6 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
             ..default()
         },
-        PanOrbitCamera {
-            key_roll_left: Some(KeyCode::A),
-            key_roll_right: Some(KeyCode::D),
-            ..default()
-        },
+        PanOrbitCamera::default(),
     ));
 }
