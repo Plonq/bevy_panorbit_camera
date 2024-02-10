@@ -132,9 +132,23 @@ impl TouchTracker {
                 // Roll
                 let prev_vec = prev2_pos - prev1_pos;
                 let curr_vec = curr2_pos - curr1_pos;
-                let prev_angle = prev_vec.angle_between(Vec2::NEG_Y);
-                let curr_angle = curr_vec.angle_between(Vec2::NEG_Y);
-                roll_angle = prev_angle - curr_angle;
+                let prev_angle_negy = prev_vec.angle_between(Vec2::NEG_Y);
+                let curr_angle_negy = curr_vec.angle_between(Vec2::NEG_Y);
+                let prev_angle_posy = prev_vec.angle_between(Vec2::Y);
+                let curr_angle_posy = curr_vec.angle_between(Vec2::Y);
+                let roll_angle_negy = prev_angle_negy - curr_angle_negy;
+                let roll_angle_posy = prev_angle_posy - curr_angle_posy;
+                // The angle between -1deg and +1deg is 358deg according to Vec2::angle_between,
+                // but we want the answer to be +2deg (or -2deg if swapped). Therefore, we calculate
+                // two angles - one from UP and one from DOWN, and use the smallest absolute value
+                // of the two. This is necessary to get a predictable result when the two touches
+                // swap sides (change from one being on the left and one being on the right to the
+                // other way round).
+                if roll_angle_negy.abs() < roll_angle_posy.abs() {
+                    roll_angle = roll_angle_negy;
+                } else {
+                    roll_angle = roll_angle_posy;
+                }
             }
             _ => {}
         }
