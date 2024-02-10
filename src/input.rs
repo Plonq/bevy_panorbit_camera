@@ -2,6 +2,7 @@ use crate::{ActiveCameraData, PanOrbitCamera};
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::Touch;
 use bevy::prelude::*;
+use std::f32::consts::TAU;
 
 use crate::traits::Midpoint;
 
@@ -11,6 +12,7 @@ pub struct MouseKeyTracker {
     pub pan: Vec2,
     pub scroll_line: f32,
     pub scroll_pixel: f32,
+    pub roll_angle: f32,
     pub orbit_button_changed: bool,
 }
 
@@ -31,8 +33,10 @@ pub fn mouse_key_tracker(
             let mut pan = Vec2::ZERO;
             let mut scroll_line = 0.0;
             let mut scroll_pixel = 0.0;
+            let mut roll_angle = 0.0;
             let mut orbit_button_changed = false;
 
+            // Orbit and pan
             if orbit_pressed(pan_orbit, &mouse_input, &key_input) {
                 orbit += mouse_delta;
             } else if pan_pressed(pan_orbit, &mouse_input, &key_input) {
@@ -40,6 +44,7 @@ pub fn mouse_key_tracker(
                 pan += mouse_delta;
             }
 
+            // Zoom
             for ev in scroll_events.read() {
                 let delta_scroll = ev.y;
                 match ev.unit {
@@ -52,6 +57,21 @@ pub fn mouse_key_tracker(
                 };
             }
 
+            // Roll
+            let roll_amount = TAU * 0.003;
+
+            if let Some(roll_left_key) = pan_orbit.key_roll_left {
+                if key_input.pressed(roll_left_key) {
+                    roll_angle -= roll_amount;
+                }
+            }
+            if let Some(roll_right_key) = pan_orbit.key_roll_right {
+                if key_input.pressed(roll_right_key) {
+                    roll_angle += roll_amount;
+                }
+            }
+
+            // Other
             if orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
                 || orbit_just_released(pan_orbit, &mouse_input, &key_input)
             {
@@ -62,6 +82,7 @@ pub fn mouse_key_tracker(
             camera_movement.pan = pan;
             camera_movement.scroll_line = scroll_line;
             camera_movement.scroll_pixel = scroll_pixel;
+            camera_movement.roll_angle = roll_angle;
             camera_movement.orbit_button_changed = orbit_button_changed;
         }
     }
@@ -76,13 +97,15 @@ pub struct TouchTracker {
 
 impl TouchTracker {
     /// Return orbit, pan, and zoom values based on touch data
-    pub fn calculate_movement(&self) -> (Vec2, Vec2, f32) {
+    pub fn calculate_movement(&self) -> (Vec2, Vec2, f32, f32) {
         let mut orbit = Vec2::ZERO;
         let mut pan = Vec2::ZERO;
+        let mut roll_angle = 0.0;
         let mut zoom_pixel = 0.0;
 
         // Only match when curr and prev have same number of touches, for simplicity.
-        // I did not notice any adverse behaviour as a result.
+        // I did not notice any adverse behaviour as a result of ignoring the single frame
+        // where the number of touches changes (e.g. from 1 to 2 or from 2 to 1).
         match (self.curr_pressed, self.prev_pressed) {
             ((Some(curr), None), (Some(prev), None)) => {
                 let curr_pos = curr.position();
@@ -96,18 +119,41 @@ impl TouchTracker {
                 let prev1_pos = prev1.position();
                 let prev2_pos = prev2.position();
 
+                // Pan
                 let curr_midpoint = curr1_pos.midpoint(curr2_pos);
                 let prev_midpoint = prev1_pos.midpoint(prev2_pos);
                 pan += curr_midpoint - prev_midpoint;
 
+                // Zoom
                 let curr_dist = curr1_pos.distance(curr2_pos);
                 let prev_dist = prev1_pos.distance(prev2_pos);
                 zoom_pixel += (curr_dist - prev_dist) * 0.015;
+
+                // Roll
+                let prev_vec = prev2_pos - prev1_pos;
+                let curr_vec = curr2_pos - curr1_pos;
+                let prev_angle_negy = prev_vec.angle_between(Vec2::NEG_Y);
+                let curr_angle_negy = curr_vec.angle_between(Vec2::NEG_Y);
+                let prev_angle_posy = prev_vec.angle_between(Vec2::Y);
+                let curr_angle_posy = curr_vec.angle_between(Vec2::Y);
+                let roll_angle_negy = prev_angle_negy - curr_angle_negy;
+                let roll_angle_posy = prev_angle_posy - curr_angle_posy;
+                // The angle between -1deg and +1deg is 358deg according to Vec2::angle_between,
+                // but we want the answer to be +2deg (or -2deg if swapped). Therefore, we calculate
+                // two angles - one from UP and one from DOWN, and use the smallest absolute value
+                // of the two. This is necessary to get a predictable result when the two touches
+                // swap sides (change from one being on the left and one being on the right to the
+                // other way round).
+                if roll_angle_negy.abs() < roll_angle_posy.abs() {
+                    roll_angle = roll_angle_negy;
+                } else {
+                    roll_angle = roll_angle_posy;
+                }
             }
             _ => {}
         }
 
-        (orbit, pan, zoom_pixel)
+        (orbit, pan, roll_angle, zoom_pixel)
     }
 }
 

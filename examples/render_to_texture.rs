@@ -1,6 +1,9 @@
 //! Demonstrates the ability to manually override which instance of PanOrbitCamera receives input
 //! events, which is necessary when rendering to a texture/image instead of a window/viewport.
 //!
+//! In this example, input controls the camera that is rendering the texture applied to the cube,
+//! rather than the main window camera.
+//!
 //! This example is based off Bevy's render_to_texture example.
 
 use std::f32::consts::PI;

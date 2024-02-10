@@ -80,7 +80,13 @@ fn setup_scene(
             transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            // Enable roll for demonstration purposes. Typically you wouldn't want to enable
+            // this. See documentation for `key_roll_left` / `key_roll_right` and `base_transform`
+            // for more information.
+            touch_roll_enabled: true,
+            ..default()
+        },
     ));
 }
 

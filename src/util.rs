@@ -1,5 +1,4 @@
-use bevy::math::{Quat, Vec3};
-use bevy::prelude::Transform;
+use bevy::prelude::*;
 use bevy_easings::Lerp;
 
 const EPSILON: f32 = 0.001;
@@ -26,25 +25,12 @@ pub fn update_orbit_transform(
     radius: f32,
     focus: Vec3,
     transform: &mut Transform,
+    basis: &Transform,
 ) {
-    let mut rotation = Quat::from_rotation_y(alpha);
-    rotation *= Quat::from_rotation_x(-beta);
-    transform.rotation = rotation;
-
-    // Update the translation of the camera so we are always rotating 'around'
-    // (orbiting) rather than rotating in place
-    transform.translation = focus + transform.rotation * Vec3::new(0.0, 0.0, radius);
-}
-
-pub fn apply_limits(value: f32, upper_limit: Option<f32>, lower_limit: Option<f32>) -> f32 {
-    let mut new_val = value;
-    if let Some(zoom_upper) = upper_limit {
-        new_val = f32::min(new_val, zoom_upper);
-    }
-    if let Some(zoom_lower) = lower_limit {
-        new_val = f32::max(new_val, zoom_lower);
-    }
-    new_val
+    let mut new_transform = *basis;
+    new_transform.rotation *= Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
+    new_transform.translation += focus + new_transform.rotation * Vec3::new(0.0, 0.0, radius);
+    *transform = new_transform;
 }
 
 pub fn approx_equal(a: f32, b: f32) -> bool {
@@ -123,35 +109,6 @@ mod calculate_from_translation_and_focus_tests {
         assert!(approx_eq!(f32, alpha, 2.4));
         assert!(approx_eq!(f32, beta, 1.23));
         assert_eq!(radius, 4.1);
-    }
-}
-
-#[cfg(test)]
-mod apply_limits_tests {
-    use super::*;
-
-    #[test]
-    fn both_limits_are_some() {
-        let upper_limit = Some(10.0);
-        let lower_limit = Some(5.0);
-        assert_eq!(apply_limits(7.0, upper_limit, lower_limit), 7.0);
-        assert_eq!(apply_limits(1.0, upper_limit, lower_limit), 5.0);
-    }
-
-    #[test]
-    fn lower_limit_is_some() {
-        let upper_limit = None;
-        let lower_limit = Some(5.0);
-        assert_eq!(apply_limits(500.0, upper_limit, lower_limit), 500.0);
-        assert_eq!(apply_limits(1.0, upper_limit, lower_limit), 5.0);
-    }
-
-    #[test]
-    fn upper_limit_is_some() {
-        let upper_limit = Some(10.0);
-        let lower_limit = None;
-        assert_eq!(apply_limits(15.0, upper_limit, lower_limit), 10.0);
-        assert_eq!(apply_limits(-500.0, upper_limit, lower_limit), -500.0);
     }
 }
 
