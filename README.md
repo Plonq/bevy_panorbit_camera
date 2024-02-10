@@ -19,13 +19,13 @@ Use it to quickly prototype, experiment, for model viewers, and more!
 - Works with orthographic camera projection in addition to perspective
 - Customisable controls, sensitivity, and more
 - Touch support
-  - Currently 'beta' - please report any issues!
+    - Currently 'beta' - please report any issues!
 - Works with multiple viewports and/or windows
 - Easy to control manually, e.g. for keyboard control or animation
 - Can control cameras that render to a texture
 - Supports the 'roll' axis and changing the 'up' vector, and thus controlling all 3 rotational axes
-  - Comes with caveats as explained in the documentation for `PanOrbitCamera.key_roll_left` /
-    `PanOrbitCamera.key_roll_right` and `PanOrbitCamera.base_transform`
+    - Comes with caveats as explained in the documentation for `PanOrbitCamera.key_roll_left` /
+      `PanOrbitCamera.key_roll_right` and `PanOrbitCamera.base_transform`
 
 ## Controls
 
@@ -75,14 +75,22 @@ all the possible configuration options.
 
 ## What are `alpha` and `beta`?
 
-Think of this camera as rotating around a point, and always pointing at that point (the `focus`). The sideways rotation,
-i.e. the longitudinal rotation, is `alpha`, and the latitudinal rotation is `beta`. Both are measured in radians.
-If `alpha` and `beta` are both `0.0`, then the camera will be looking directly forwards (-Z direction). Increasing
-`alpha` will rotate around the `focus` to the right, and increasing `beta` will move the camera up and over the `focus`.
+Typically you don't need to worry about the inner workings of this plugin - the defaults work well and are suitable for
+most use cases. However, if you want to customise the behaviour, for example restricting the camera movement or
+adjusting sensitivity, you probably want to know what the `alpha` and `beta` values represent.
+
+While not strictly accurate, you can think of `alpha` as yaw and `beta` as tilt. More accurately, `alpha` represents the
+angle around the _global_ Y axis, and `beta` represents the angle around the _local_ X axis (i.e. the X axis after Y
+axis rotation has been applied). When both `alpha` and `beta` are `0.0`, the camera is pointing directly forward (-Z).
+Thus, increasing `alpha` orbits around to the right (counter clockwise if looking from above), and increasing `beta`
+orbits up and over (e.g. a `beta` value of 90 degrees (`PI / 2.0`) results in the camera looking straight down).
+
+Note that if you change the up vector either by enabling roll controls or changing `PanOrbitCamera.base_transform`,
+the concept of 'up' and 'down' change, and so the above explanation changes accordingly.
 
 ## Cargo Features
 
-- `bevy_egui`: makes PanOrbitCamera ignore input when interacting with egui widgets/windows
+- `bevy_egui` (optional): makes `PanOrbitCamera` ignore any input that `egui` uses
 
 ## Version Compatibility
 
@@ -96,7 +104,7 @@ If `alpha` and `beta` are both `0.0`, then the camera will be looking directly f
 
 - [Bevy Cheat Book](https://bevy-cheatbook.github.io): For providing an example that I started from
 - [babylon.js](https://www.babylonjs.com): I referenced their arc rotate camera for some of this
-- [bevy_pancam](https://github.com/johanhelsing/bevy_pancam): For the egui-related code
+- [bevy_pancam](https://github.com/johanhelsing/bevy_pancam): For the egui feature idea
 
 ## License
 
