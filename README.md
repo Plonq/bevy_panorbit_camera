@@ -97,7 +97,7 @@ the concept of 'up' and 'down' change, and so the above explanation changes acco
 
 | bevy | bevy_panorbit_camera |
 |------|----------------------|
-| 0.12 | 0.9-0.11             |
+| 0.12 | 0.9-0.12             |
 | 0.11 | 0.6-0.8              |
 | 0.10 | 0.1-0.5              |
 
