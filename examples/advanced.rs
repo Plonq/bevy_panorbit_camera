@@ -84,7 +84,7 @@ fn setup(
             // because upside down loses its meaning when you can roll freely.
             key_roll_left: Some(KeyCode::A),
             key_roll_right: Some(KeyCode::D),
-            // roll_sensitivity: 0.5,
+            roll_sensitivity: 0.5,
             ..default()
         },
     ));
