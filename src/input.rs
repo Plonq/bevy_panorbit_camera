@@ -25,10 +25,18 @@ pub fn mouse_key_tracker(
     active_cam: Res<ActiveCameraData>,
     orbit_cameras: Query<&PanOrbitCamera>,
 ) {
+    // Always consume event reader events to prevent them building up and causing spikes
+    let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
+    let (scroll_line_delta, scroll_pixel_delta) = scroll_events
+        .read()
+        .map(|event| match event.unit {
+            MouseScrollUnit::Line => (event.y, 0.0),
+            MouseScrollUnit::Pixel => (0.0, event.y * 0.005),
+        })
+        .fold((0.0, 0.0), |acc, item| (acc.0 + item.0, acc.1 + item.1));
+
     if let Some(active_entity) = active_cam.entity {
         if let Ok(pan_orbit) = orbit_cameras.get(active_entity) {
-            let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
-
             let mut orbit = Vec2::ZERO;
             let mut pan = Vec2::ZERO;
             let mut scroll_line = 0.0;
@@ -45,21 +53,11 @@ pub fn mouse_key_tracker(
             }
 
             // Zoom
-            for ev in scroll_events.read() {
-                let delta_scroll = ev.y;
-                match ev.unit {
-                    MouseScrollUnit::Line => {
-                        scroll_line += delta_scroll;
-                    }
-                    MouseScrollUnit::Pixel => {
-                        scroll_pixel += delta_scroll * 0.005;
-                    }
-                };
-            }
+            scroll_line += scroll_line_delta;
+            scroll_pixel += scroll_pixel_delta;
 
             // Roll
             let roll_amount = TAU * 0.003;
-
             if let Some(roll_left_key) = pan_orbit.key_roll_left {
                 if key_input.pressed(roll_left_key) {
                     roll_angle -= roll_amount;
