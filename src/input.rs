@@ -16,6 +16,7 @@ pub struct MouseKeyTracker {
     pub orbit_button_changed: bool,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn mouse_key_tracker(
     mut camera_movement: ResMut<MouseKeyTracker>,
     mouse_input: Res<Input<MouseButton>>,
@@ -24,6 +25,7 @@ pub fn mouse_key_tracker(
     mut scroll_events: EventReader<MouseWheel>,
     active_cam: Res<ActiveCameraData>,
     orbit_cameras: Query<&PanOrbitCamera>,
+    time: Res<Time>,
 ) {
     // Always consume event reader events to prevent them building up and causing spikes
     let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
@@ -57,7 +59,7 @@ pub fn mouse_key_tracker(
             scroll_pixel += scroll_pixel_delta;
 
             // Roll
-            let roll_amount = TAU * 0.003;
+            let roll_amount = TAU * 0.3 * time.delta_seconds();
             if let Some(roll_left_key) = pan_orbit.key_roll_left {
                 if key_input.pressed(roll_left_key) {
                     roll_angle -= roll_amount;
