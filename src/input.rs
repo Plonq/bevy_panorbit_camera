@@ -260,3 +260,12 @@ pub fn pan_just_pressed(
             .modifier_orbit
             .map_or(true, |modifier| !key_input.pressed(modifier))
 }
+
+pub fn roll_just_pressed(pan_orbit: &PanOrbitCamera, key_input: &Res<Input<KeyCode>>) -> bool {
+    pan_orbit
+        .key_roll_left
+        .map_or(false, |key| key_input.just_pressed(key))
+        || pan_orbit
+            .key_roll_right
+            .map_or(false, |key| key_input.just_pressed(key))
+}
