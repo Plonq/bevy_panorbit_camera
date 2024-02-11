@@ -411,6 +411,7 @@ fn active_viewport_data(
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = input::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || input::roll_just_pressed(pan_orbit, &key_input)
             || !scroll_events.is_empty()
             || (touches.iter_just_pressed().count() > 0
                 && touches.iter_just_pressed().count() == touches.iter().count());
