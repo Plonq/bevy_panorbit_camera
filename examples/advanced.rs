@@ -5,7 +5,6 @@
 //!   Orbit: Middle click
 //!   Pan: Shift + Middle click
 //!   Zoom: Mousewheel
-//!   Roll: A (roll left) and D (roll right)
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -79,12 +78,6 @@ fn setup(
             modifier_pan: Some(KeyCode::ShiftLeft),
             // Reverse the zoom direction
             reversed_zoom: true,
-            // Enable roll in addition to orbit.
-            // Note: when enabling roll you probably also want to set `allow_upside_down` to `true`
-            // because upside down loses its meaning when you can roll freely.
-            key_roll_left: Some(KeyCode::A),
-            key_roll_right: Some(KeyCode::D),
-            roll_sensitivity: 0.5,
             ..default()
         },
     ));
