@@ -23,14 +23,10 @@ Use it to quickly prototype, experiment, for model viewers, and more!
 - Works with multiple viewports and/or windows
 - Easy to control manually, e.g. for keyboard control or animation
 - Can control cameras that render to a texture
-- Supports the 'roll' axis and changing the 'up' vector, and thus controlling all 3 rotational axes
-    - Comes with caveats as explained in the documentation for `PanOrbitCamera.key_roll_left` /
-      `PanOrbitCamera.key_roll_right` and `PanOrbitCamera.base_transform`
+- Supports changing the 'up' vector, which in turn allows you to implement 'roll' (see `alternate_up_vector` and
+  `roll_axis` examples)
 
 ## Controls
-
-By default, you can only orbit, pan, and zoom. Optionally, you can enable the 'roll' axis, which modifies the 'up'
-vector of the camera. You can also set the 'up' vector manually - see `PanOrbitCamera.base_transform`.
 
 Default mouse controls:
 
@@ -43,7 +39,6 @@ Touch controls:
 - One finger - Orbit
 - Two fingers - Pan
 - Pinch - Zoom
-- Two finger rotate - Roll (disabled by default)
 
 Note: touch controls are currently not customisable. Please create an issue if you would like to customise the touch
 controls.
@@ -85,8 +80,8 @@ axis rotation has been applied). When both `alpha` and `beta` are `0.0`, the cam
 Thus, increasing `alpha` orbits around to the right (counter clockwise if looking from above), and increasing `beta`
 orbits up and over (e.g. a `beta` value of 90 degrees (`PI / 2.0`) results in the camera looking straight down).
 
-Note that if you change the up vector either by enabling roll controls or changing `PanOrbitCamera.base_transform`,
-the concept of 'up' and 'down' change, and so the above explanation changes accordingly.
+Note that if you change the up vector either by changing `PanOrbitCamera.base_transform`, the concept of 'up' and
+'down' change, and so the above explanation changes accordingly.
 
 ## Cargo Features
 
