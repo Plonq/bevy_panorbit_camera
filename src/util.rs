@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_easings::Lerp;
 
 const EPSILON: f32 = 0.001;
 
@@ -39,7 +38,7 @@ pub fn approx_equal(a: f32, b: f32) -> bool {
 
 pub fn lerp_and_snap_f32(from: f32, to: f32, smoothness: f32) -> f32 {
     let t = 1.0 - smoothness;
-    let mut new_value = from.lerp(&to, &t);
+    let mut new_value = from.lerp(to, t);
     if smoothness < 1.0 && approx_equal(new_value, to) {
         new_value = to;
     }

@@ -15,8 +15,8 @@ pub struct MouseKeyTracker {
 
 pub fn mouse_key_tracker(
     mut camera_movement: ResMut<MouseKeyTracker>,
-    mouse_input: Res<Input<MouseButton>>,
-    key_input: Res<Input<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<MouseMotion>,
     mut scroll_events: EventReader<MouseWheel>,
     active_cam: Res<ActiveCameraData>,
@@ -70,8 +70,8 @@ pub fn mouse_key_tracker(
 
 pub fn orbit_pressed(
     pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+    key_input: &Res<ButtonInput<KeyCode>>,
 ) -> bool {
     let is_pressed = pan_orbit
         .modifier_orbit
@@ -86,8 +86,8 @@ pub fn orbit_pressed(
 
 pub fn orbit_just_pressed(
     pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+    key_input: &Res<ButtonInput<KeyCode>>,
 ) -> bool {
     let just_pressed = pan_orbit
         .modifier_orbit
@@ -102,8 +102,8 @@ pub fn orbit_just_pressed(
 
 pub fn orbit_just_released(
     pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+    key_input: &Res<ButtonInput<KeyCode>>,
 ) -> bool {
     let just_released = pan_orbit
         .modifier_orbit
@@ -118,8 +118,8 @@ pub fn orbit_just_released(
 
 pub fn pan_pressed(
     pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+    key_input: &Res<ButtonInput<KeyCode>>,
 ) -> bool {
     let is_pressed = pan_orbit
         .modifier_pan
@@ -134,8 +134,8 @@ pub fn pan_pressed(
 
 pub fn pan_just_pressed(
     pan_orbit: &PanOrbitCamera,
-    mouse_input: &Res<Input<MouseButton>>,
-    key_input: &Res<Input<KeyCode>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+    key_input: &Res<ButtonInput<KeyCode>>,
 ) -> bool {
     let just_pressed = pan_orbit
         .modifier_pan

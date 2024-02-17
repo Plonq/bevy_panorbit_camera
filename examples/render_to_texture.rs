@@ -10,7 +10,6 @@ use std::f32::consts::PI;
 
 use bevy::window::PrimaryWindow;
 use bevy::{
-    core_pipeline::clear_color::ClearColorConfig,
     prelude::*,
     render::{
         camera::RenderTarget,
@@ -75,7 +74,7 @@ fn setup(
 
     let image_handle = images.add(image);
 
-    let cube_handle = meshes.add(Mesh::from(shape::Cube { size: 4.0 }));
+    let cube_handle = meshes.add(Cuboid::new(4.0, 4.0, 4.0));
     let cube_material_handle = materials.add(StandardMaterial {
         base_color: Color::rgb(0.8, 0.7, 0.6),
         reflectance: 0.02,
@@ -110,12 +109,9 @@ fn setup(
     let pan_orbit_id = commands
         .spawn((
             Camera3dBundle {
-                camera_3d: Camera3d {
-                    clear_color: ClearColorConfig::Custom(Color::WHITE),
-                    ..default()
-                },
                 camera: Camera {
                     // render before the "main pass" camera
+                    clear_color: ClearColorConfig::Custom(Color::WHITE),
                     order: -1,
                     target: RenderTarget::Image(image_handle.clone()),
                     ..default()
@@ -130,7 +126,7 @@ fn setup(
         .id();
 
     let cube_size = 4.0;
-    let cube_handle = meshes.add(Mesh::from(shape::Box::new(cube_size, cube_size, cube_size)));
+    let cube_handle = meshes.add(Cuboid::new(cube_size, cube_size, cube_size));
 
     // This material has the texture that has been rendered.
     let material_handle = materials.add(StandardMaterial {

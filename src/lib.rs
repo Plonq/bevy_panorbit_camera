@@ -344,8 +344,8 @@ pub struct ActiveCameraData {
 #[allow(clippy::too_many_arguments)]
 fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
-    mouse_input: Res<Input<MouseButton>>,
-    key_input: Res<Input<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
