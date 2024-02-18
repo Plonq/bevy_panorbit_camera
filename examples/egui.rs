@@ -1,18 +1,25 @@
 //! Demonstrates the bevy_egui feature which allows bevy_panorbit_camera to ignore input events in
 //! egui windows
 
+use bevy::ecs::event::EventUpdateSignal;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins)
         .add_plugins(EguiPlugin)
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, ui_example_system)
-        .run();
+        .add_systems(Update, ui_example_system);
+
+    // Make Bevy drop unconsumed events every frame to prevent weird behaviour when moving mouse
+    // out of an egui window right after scrolling (zooming)
+    // See: https://bevyengine.org/news/bevy-0-13/#events-live-longer
+    app.world.remove_resource::<EventUpdateSignal>();
+
+    app.run();
 }
 
 fn setup(

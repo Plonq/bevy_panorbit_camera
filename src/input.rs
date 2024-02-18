@@ -22,16 +22,6 @@ pub fn mouse_key_tracker(
     active_cam: Res<ActiveCameraData>,
     orbit_cameras: Query<&PanOrbitCamera>,
 ) {
-    // Always consume event reader events to prevent them building up and causing spikes
-    let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
-    let (scroll_line_delta, scroll_pixel_delta) = scroll_events
-        .read()
-        .map(|event| match event.unit {
-            MouseScrollUnit::Line => (event.y, 0.0),
-            MouseScrollUnit::Pixel => (0.0, event.y * 0.005),
-        })
-        .fold((0.0, 0.0), |acc, item| (acc.0 + item.0, acc.1 + item.1));
-
     if let Some(active_entity) = active_cam.entity {
         if let Ok(pan_orbit) = orbit_cameras.get(active_entity) {
             let mut orbit = Vec2::ZERO;
@@ -39,6 +29,16 @@ pub fn mouse_key_tracker(
             let mut scroll_line = 0.0;
             let mut scroll_pixel = 0.0;
             let mut orbit_button_changed = false;
+
+            // Collect input deltas
+            let mouse_delta = mouse_motion.read().map(|event| event.delta).sum::<Vec2>();
+            let (scroll_line_delta, scroll_pixel_delta) = scroll_events
+                .read()
+                .map(|event| match event.unit {
+                    MouseScrollUnit::Line => (event.y, 0.0),
+                    MouseScrollUnit::Pixel => (0.0, event.y * 0.005),
+                })
+                .fold((0.0, 0.0), |acc, item| (acc.0 + item.0, acc.1 + item.1));
 
             // Orbit and pan
             if orbit_pressed(pan_orbit, &mouse_input, &key_input) {
