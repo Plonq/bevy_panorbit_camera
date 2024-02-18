@@ -2,14 +2,8 @@
 // type aliases tends to obfuscate code while offering no improvement in code cleanliness.
 #![allow(clippy::type_complexity)]
 
-use bevy::core_pipeline::clear_color::ClearColorConfig;
-use bevy::{
-    input::touch::TouchPhase,
-    log::LogPlugin,
-    prelude::*,
-    window::{ApplicationLifetime, PrimaryWindow, WindowMode},
-};
-use bevy_panorbit_camera::{ActiveCameraData, PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy::{log::LogPlugin, prelude::*, window::WindowMode};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 // the `bevy_main` proc_macro generates the required boilerplate for iOS and Android
 #[bevy_main]
@@ -32,8 +26,7 @@ fn main() {
             }),
     )
     .add_plugins(PanOrbitCameraPlugin)
-    .add_systems(Startup, setup_scene)
-    .add_systems(Update, button_handler);
+    .add_systems(Startup, setup_scene);
 
     // MSAA makes some Android devices panic, this is under investigation
     // https://github.com/bevyengine/bevy/issues/8229
@@ -48,8 +41,6 @@ fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut active_cam: ResMut<ActiveCameraData>,
-    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     // Ground
     commands.spawn(PbrBundle {
@@ -82,25 +73,4 @@ fn setup_scene(
         },
         PanOrbitCamera::default(),
     ));
-}
-
-fn button_handler(
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor),
-        (Changed<Interaction>, With<Button>),
-    >,
-) {
-    for (interaction, mut color) in &mut interaction_query {
-        match *interaction {
-            Interaction::Pressed => {
-                *color = Color::BLUE.into();
-            }
-            Interaction::Hovered => {
-                *color = Color::GRAY.into();
-            }
-            Interaction::None => {
-                *color = Color::WHITE.into();
-            }
-        }
-    }
 }

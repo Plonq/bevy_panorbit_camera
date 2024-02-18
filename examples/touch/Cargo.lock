@@ -756,10 +756,11 @@ dependencies = [
 
 [[package]]
 name = "bevy_panorbit_camera"
-version = "0.12.1"
+version = "0.13.1"
 dependencies = [
  "bevy",
  "bevy_easings",
+ "bevy_touch_gestures",
 ]
 
 [[package]]
@@ -979,6 +980,13 @@ dependencies = [
  "bevy_utils",
  "crossbeam-channel",
  "thiserror",
+]
+
+[[package]]
+name = "bevy_touch_gestures"
+version = "0.0.1"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
