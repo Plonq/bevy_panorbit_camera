@@ -11,15 +11,16 @@ use bevy::window::{PrimaryWindow, WindowRef};
 use bevy_egui::EguiSet;
 
 #[cfg(feature = "bevy_egui")]
-pub use egui::EguiWantsFocus;
-use input::TouchTracker;
-
-use crate::input::MouseKeyTracker;
+pub use crate::egui::EguiWantsFocus;
+use crate::input::{mouse_key_tracker, MouseKeyTracker};
+pub use crate::touch::TouchControls;
+use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
 use crate::traits::OptionalClamp;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
 mod input;
+mod touch;
 mod traits;
 mod util;
 
@@ -39,32 +40,16 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ActiveCameraData::default())
-            .insert_resource(MouseKeyTracker::default())
-            .insert_resource(TouchTracker::default())
+        app.init_resource::<ActiveCameraData>()
+            .init_resource::<MouseKeyTracker>()
+            .init_resource::<TouchTracker>()
             .add_systems(
                 Update,
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
                     // The order of the input systems doesn't matter
-                    (
-                        input::mouse_key_tracker,
-                        input::touch_tracker.run_if(
-                            // Run only if touch enabled in the active PanOrbitCamera (if there is one)
-                            |active_cam: Res<ActiveCameraData>,
-                             pan_orbit_q: Query<&PanOrbitCamera>| {
-                                active_cam.entity.map_or_else(
-                                    || false,
-                                    |entity| {
-                                        pan_orbit_q
-                                            .get(entity)
-                                            .map_or_else(|_| false, |po_cam| po_cam.touch_enabled)
-                                    },
-                                )
-                            },
-                        ),
-                    ),
+                    (mouse_key_tracker, touch_tracker),
                     pan_orbit_camera,
                 )
                     .chain()
@@ -250,6 +235,9 @@ pub struct PanOrbitCamera {
     /// Whether touch controls are enabled.
     /// Defaults to `true`.
     pub touch_enabled: bool,
+    /// The control scheme for touch inputs.
+    /// Defaults to `TouchControls::OneFingerOrbit`.
+    pub touch_controls: TouchControls,
     /// Whether to reverse the zoom direction.
     /// Defaults to `false`.
     pub reversed_zoom: bool,
@@ -303,6 +291,7 @@ impl Default for PanOrbitCamera {
             modifier_orbit: None,
             modifier_pan: None,
             touch_enabled: true,
+            touch_controls: TouchControls::OneFingerOrbit,
             reversed_zoom: false,
             enabled: true,
             alpha: None,
@@ -513,7 +502,6 @@ fn pan_orbit_camera(
         // it might still be moving (lerping towards target values) when the user is not
         // actively controlling it.
         if pan_orbit.enabled && active_cam.entity == Some(entity) {
-            let (touch_orbit, touch_pan, touch_zoom_pixel) = touch_tracker.calculate_movement();
             let zoom_direction = match pan_orbit.reversed_zoom {
                 true => -1.0,
                 false => 1.0,
@@ -528,6 +516,31 @@ fn pan_orbit_camera(
             orbit_button_changed = mouse_key_tracker.orbit_button_changed;
 
             if pan_orbit.touch_enabled {
+                let (touch_orbit, touch_pan, touch_zoom_pixel) = match pan_orbit.touch_controls {
+                    TouchControls::OneFingerOrbit => match touch_tracker.get_touch_gestures() {
+                        TouchGestures::None => (Vec2::ZERO, Vec2::ZERO, 0.0),
+                        TouchGestures::OneFinger(one_finger_gestures) => {
+                            (one_finger_gestures.motion, Vec2::ZERO, 0.0)
+                        }
+                        TouchGestures::TwoFinger(two_finger_gestures) => (
+                            Vec2::ZERO,
+                            two_finger_gestures.motion,
+                            two_finger_gestures.pinch * 0.015,
+                        ),
+                    },
+                    TouchControls::TwoFingerOrbit => match touch_tracker.get_touch_gestures() {
+                        TouchGestures::None => (Vec2::ZERO, Vec2::ZERO, 0.0),
+                        TouchGestures::OneFinger(one_finger_gestures) => {
+                            (Vec2::ZERO, one_finger_gestures.motion, 0.0)
+                        }
+                        TouchGestures::TwoFinger(two_finger_gestures) => (
+                            two_finger_gestures.motion,
+                            Vec2::ZERO,
+                            two_finger_gestures.pinch * 0.015,
+                        ),
+                    },
+                };
+
                 orbit += touch_orbit * pan_orbit.orbit_sensitivity;
                 pan += touch_pan * pan_orbit.pan_sensitivity;
                 scroll_pixel += touch_zoom_pixel * zoom_direction * pan_orbit.zoom_sensitivity;
