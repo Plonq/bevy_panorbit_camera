@@ -13,16 +13,13 @@ use bevy_egui::EguiSet;
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::EguiWantsFocus;
 use crate::input::{mouse_key_tracker, MouseKeyTracker};
-#[cfg(feature = "touch")]
 pub use crate::touch::TouchControls;
-#[cfg(feature = "touch")]
 use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
 use crate::traits::OptionalClamp;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
 mod input;
-#[cfg(feature = "touch")]
 mod touch;
 mod traits;
 mod util;
@@ -51,18 +48,13 @@ impl Plugin for PanOrbitCameraPlugin {
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
                     // The order of the input systems doesn't matter
-                    (
-                        mouse_key_tracker,
-                        #[cfg(feature = "touch")]
-                        touch_tracker,
-                    ),
+                    (mouse_key_tracker, touch_tracker),
                     pan_orbit_camera,
                 )
                     .chain()
                     .in_set(PanOrbitCameraSystemSet),
             );
 
-        #[cfg(feature = "touch")]
         app.init_resource::<TouchTracker>();
 
         #[cfg(feature = "bevy_egui")]
@@ -243,11 +235,9 @@ pub struct PanOrbitCamera {
     pub modifier_pan: Option<KeyCode>,
     /// Whether touch controls are enabled.
     /// Defaults to `true`.
-    #[cfg(feature = "touch")]
     pub touch_enabled: bool,
     /// The control scheme for touch inputs.
     /// Defaults to `TouchControls::OneFingerOrbit`.
-    #[cfg(feature = "touch")]
     pub touch_controls: TouchControls,
     /// Whether to reverse the zoom direction.
     /// Defaults to `false`.
@@ -301,9 +291,7 @@ impl Default for PanOrbitCamera {
             button_pan: MouseButton::Right,
             modifier_orbit: None,
             modifier_pan: None,
-            #[cfg(feature = "touch")]
             touch_enabled: true,
-            #[cfg(feature = "touch")]
             touch_controls: TouchControls::OneFingerOrbit,
             reversed_zoom: false,
             enabled: true,
@@ -430,7 +418,7 @@ fn active_viewport_data(
 fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
     mouse_key_tracker: Res<MouseKeyTracker>,
-    #[cfg(feature = "touch")] touch_tracker: Res<TouchTracker>,
+    touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
@@ -528,7 +516,6 @@ fn pan_orbit_camera(
                 mouse_key_tracker.scroll_pixel * zoom_direction * pan_orbit.zoom_sensitivity;
             orbit_button_changed = mouse_key_tracker.orbit_button_changed;
 
-            #[cfg(feature = "touch")]
             if pan_orbit.touch_enabled {
                 let (touch_orbit, touch_pan, touch_zoom_pixel) = match pan_orbit.touch_controls {
                     TouchControls::OneFingerOrbit => match touch_tracker.get_touch_gestures() {
