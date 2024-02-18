@@ -81,7 +81,8 @@ Note that if you change the up vector either by changing `PanOrbitCamera.base_tr
 
 ## Cargo Features
 
-- `bevy_egui` (optional): makes `PanOrbitCamera` ignore any input that `egui` uses, thus preventing moving the camera
+- `touch` (default): Adds touch support
+- `bevy_egui` (optional): Makes `PanOrbitCamera` ignore any input that `egui` uses, thus preventing moving the camera
   when interacting with egui windows
 
 ## Version Compatibility

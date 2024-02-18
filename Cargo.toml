@@ -12,7 +12,9 @@ homepage = "https://github.com/Plonq/bevy_panorbit_camera"
 readme = "README.md"
 
 [features]
+default = ["touch"]
 bevy_egui = ["dep:bevy_egui"]
+touch = []
 
 [dependencies]
 bevy = { version = "0.12", default-features = false }
