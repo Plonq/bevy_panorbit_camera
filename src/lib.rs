@@ -49,7 +49,6 @@ impl Plugin for PanOrbitCameraPlugin {
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    // The order of the input systems doesn't matter
                     input::mouse_key_tracker,
                     pan_orbit_camera,
                 )
