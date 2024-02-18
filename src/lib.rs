@@ -42,6 +42,7 @@ impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ActiveCameraData>()
             .init_resource::<MouseKeyTracker>()
+            .init_resource::<TouchTracker>()
             .add_systems(
                 Update,
                 (
@@ -54,8 +55,6 @@ impl Plugin for PanOrbitCameraPlugin {
                     .chain()
                     .in_set(PanOrbitCameraSystemSet),
             );
-
-        app.init_resource::<TouchTracker>();
 
         #[cfg(feature = "bevy_egui")]
         {
