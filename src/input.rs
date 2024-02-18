@@ -68,24 +68,6 @@ pub fn mouse_key_tracker(
     }
 }
 
-/// The control scheme to use for touch input. Given that some touch gestures don't make sense
-/// being changed (e.g. pinch to zoom), there is just a set if different schemes rather than
-/// full customization.
-#[derive(Default, Debug, Copy, Clone, PartialEq)]
-pub enum TouchControls {
-    /// Touch controls where single finger orbits:
-    ///  - One finger move: orbit
-    ///  - Two finger move: pan
-    ///  - Two finger pinch: zoom
-    #[default]
-    OneFingerOrbit,
-    /// Touch controls where single finger pans:
-    ///  - One finger move: pan
-    ///  - Two finger move: orbit
-    ///  - Two finger pinch: zoom
-    TwoFingerOrbit,
-}
-
 pub fn orbit_pressed(
     pan_orbit: &PanOrbitCamera,
     mouse_input: &Res<Input<MouseButton>>,

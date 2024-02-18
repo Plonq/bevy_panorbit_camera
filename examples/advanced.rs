@@ -7,7 +7,7 @@
 //!   Zoom: Mousewheel
 
 use bevy::prelude::*;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin, TouchControls};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use std::f32::consts::TAU;
 
 fn main() {
@@ -78,8 +78,6 @@ fn setup(
             modifier_pan: Some(KeyCode::ShiftLeft),
             // Reverse the zoom direction
             reversed_zoom: true,
-            // Change touch controls so that two fingers orbit and one finger pans
-            touch_controls: TouchControls::TwoFingerOrbit,
             ..default()
         },
     ));

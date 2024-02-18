@@ -20,7 +20,6 @@ touch = []
 bevy = { version = "0.12", default-features = false }
 bevy_easings = "0.12"
 bevy_egui = { version = "0.24", optional = true, default-features = false }
-bevy_touch_gestures = { path = "../bevy_touch_gestures" }
 
 [dev-dependencies]
 bevy = { version = "0.12" }

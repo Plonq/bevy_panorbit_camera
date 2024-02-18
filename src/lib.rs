@@ -9,19 +9,21 @@ use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
-#[cfg(feature = "touch")]
-use bevy_touch_gestures::{TouchGestures, TouchGesturesPlugin, TouchTracker};
 
 #[cfg(feature = "bevy_egui")]
-pub use egui::EguiWantsFocus;
-
-use crate::input::MouseKeyTracker;
-pub use crate::input::TouchControls;
+pub use crate::egui::EguiWantsFocus;
+use crate::input::{mouse_key_tracker, MouseKeyTracker};
+#[cfg(feature = "touch")]
+pub use crate::touch::TouchControls;
+#[cfg(feature = "touch")]
+use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
 use crate::traits::OptionalClamp;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
 mod input;
+#[cfg(feature = "touch")]
+mod touch;
 mod traits;
 mod util;
 
@@ -29,7 +31,7 @@ mod util;
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
-/// # use bevy_panorbit_camera::PanOrbitCameraPlugin;
+/// # use bevy_panorbit_camera::{PanOrbitCameraPlugin, PanOrbitCamera};
 /// fn main() {
 ///     App::new()
 ///         .add_plugins(DefaultPlugins)
@@ -41,14 +43,19 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ActiveCameraData::default())
-            .insert_resource(MouseKeyTracker::default())
+        app.init_resource::<ActiveCameraData>()
+            .init_resource::<MouseKeyTracker>()
             .add_systems(
                 Update,
                 (
                     active_viewport_data
                         .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    input::mouse_key_tracker,
+                    // The order of the input systems doesn't matter
+                    (
+                        mouse_key_tracker,
+                        #[cfg(feature = "touch")]
+                        touch_tracker,
+                    ),
                     pan_orbit_camera,
                 )
                     .chain()
@@ -56,7 +63,7 @@ impl Plugin for PanOrbitCameraPlugin {
             );
 
         #[cfg(feature = "touch")]
-        app.add_plugins(TouchGesturesPlugin);
+        app.init_resource::<TouchTracker>();
 
         #[cfg(feature = "bevy_egui")]
         {
