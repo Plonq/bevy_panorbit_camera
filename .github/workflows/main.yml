@@ -21,7 +21,6 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     steps:
-      - asdf
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - name: Install alsa and udev
