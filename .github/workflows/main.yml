@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo check
+      - run: cargo check --examples
+      - run: cargo check --tests
 
   build-and-test:
     name: Build and Test
