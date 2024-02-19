@@ -128,14 +128,10 @@ fn keyboard_controls(
 
             // Zoom with Z and X
             if key_input.pressed(KeyCode::Z) {
-                pan_orbit.radius = pan_orbit
-                    .radius
-                    .map(|radius| radius - 5.0 * time.delta_seconds());
+                pan_orbit.target_radius -= 5.0 * time.delta_seconds();
             }
             if key_input.pressed(KeyCode::X) {
-                pan_orbit.radius = pan_orbit
-                    .radius
-                    .map(|radius| radius + 5.0 * time.delta_seconds());
+                pan_orbit.target_radius += 5.0 * time.delta_seconds();
             }
         }
 
