@@ -18,7 +18,7 @@ jobs:
       - run: cargo check
 
   test:
-    name: Test Suite
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -26,15 +26,9 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'
-      - run: cargo test
-
-  build-examples:
-    name: Build Examples
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --verbose
       - run: cargo build --examples --verbose
+      - run: cargo test
 
   fmt:
     name: Rustfmt
