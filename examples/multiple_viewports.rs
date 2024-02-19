@@ -80,7 +80,7 @@ fn set_camera_viewports(
     mut resize_events: EventReader<WindowResized>,
     mut right_camera: Query<&mut Camera, With<MinimapCamera>>,
 ) {
-    for resize_event in resize_events.iter() {
+    for resize_event in resize_events.read() {
         let window = windows.get(resize_event.window).unwrap();
         let mut right_camera = right_camera.single_mut();
         let size = window.resolution.physical_width() / 5;
