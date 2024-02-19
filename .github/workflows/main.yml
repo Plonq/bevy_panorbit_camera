@@ -28,6 +28,14 @@ jobs:
         if: runner.os == 'linux'
       - run: cargo test
 
+  build-examples:
+    name: Build Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --examples --verbose
+
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
