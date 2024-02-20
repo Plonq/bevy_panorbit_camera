@@ -26,21 +26,20 @@ fn setup(
 ) {
     // Ground
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
         ..default()
     });
     // Cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
     // Light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
@@ -88,10 +87,10 @@ fn setup(
 // This is how you can change config at runtime.
 // Press 'T' to toggle the camera controls.
 fn toggle_camera_controls_system(
-    key_input: Res<Input<KeyCode>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     mut pan_orbit_query: Query<&mut PanOrbitCamera>,
 ) {
-    if key_input.just_pressed(KeyCode::T) {
+    if key_input.just_pressed(KeyCode::KeyT) {
         for mut pan_orbit in pan_orbit_query.iter_mut() {
             pan_orbit.enabled = !pan_orbit.enabled;
         }

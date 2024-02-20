@@ -46,10 +46,12 @@ impl Plugin for PanOrbitCameraPlugin {
             .add_systems(
                 Update,
                 (
-                    active_viewport_data
-                        .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
-                    // The order of the input systems doesn't matter
-                    (mouse_key_tracker, touch_tracker),
+                    (
+                        active_viewport_data
+                            .run_if(|active_cam: Res<ActiveCameraData>| !active_cam.manual),
+                        mouse_key_tracker,
+                        touch_tracker,
+                    ),
                     pan_orbit_camera,
                 )
                     .chain()
@@ -344,8 +346,8 @@ pub struct ActiveCameraData {
 #[allow(clippy::too_many_arguments)]
 fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
-    mouse_input: Res<Input<MouseButton>>,
-    key_input: Res<Input<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
@@ -376,6 +378,10 @@ fn active_viewport_data(
                         .expect("Must exist, since the camera is referencing it"),
                 };
 
+                // Is the cursor/touch in this window?
+                // Note: there's a bug in winit that causes `window.cursor_position()` to return
+                // a `Some` value even if the cursor is not in this window, in very specific cases.
+                // See: https://github.com/Plonq/bevy_panorbit_camera/issues/22
                 if let Some(input_position) = window.cursor_position().or(touches
                     .iter_just_pressed()
                     .collect::<Vec<_>>()

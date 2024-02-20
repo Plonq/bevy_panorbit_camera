@@ -25,21 +25,20 @@ fn setup(
 ) {
     // Ground
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
         ..default()
     });
     // Cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
     // Light
     commands.spawn(PointLightBundle {
         point_light: PointLight {
-            intensity: 1500.0,
             shadows_enabled: true,
             ..default()
         },
@@ -58,37 +57,37 @@ fn setup(
 
 fn keyboard_controls(
     time: Res<Time>,
-    key_input: Res<Input<KeyCode>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     mut pan_orbit_query: Query<(&mut PanOrbitCamera, &mut Transform)>,
 ) {
     for (mut pan_orbit, mut transform) in pan_orbit_query.iter_mut() {
         if key_input.pressed(KeyCode::ControlLeft) {
             // Jump focus point 1m using Ctrl+Shift + Arrows
             if key_input.pressed(KeyCode::ShiftLeft) {
-                if key_input.just_pressed(KeyCode::Right) {
+                if key_input.just_pressed(KeyCode::ArrowRight) {
                     pan_orbit.target_focus += Vec3::X;
                 }
-                if key_input.just_pressed(KeyCode::Left) {
+                if key_input.just_pressed(KeyCode::ArrowLeft) {
                     pan_orbit.target_focus -= Vec3::X;
                 }
-                if key_input.just_pressed(KeyCode::Up) {
+                if key_input.just_pressed(KeyCode::ArrowUp) {
                     pan_orbit.target_focus += Vec3::Y;
                 }
-                if key_input.just_pressed(KeyCode::Down) {
+                if key_input.just_pressed(KeyCode::ArrowDown) {
                     pan_orbit.target_focus -= Vec3::Y;
                 }
             } else {
                 // Jump by 45 degrees using Left Ctrl + Arrows
-                if key_input.just_pressed(KeyCode::Right) {
+                if key_input.just_pressed(KeyCode::ArrowRight) {
                     pan_orbit.target_alpha += 45f32.to_radians();
                 }
-                if key_input.just_pressed(KeyCode::Left) {
+                if key_input.just_pressed(KeyCode::ArrowLeft) {
                     pan_orbit.target_alpha -= 45f32.to_radians();
                 }
-                if key_input.just_pressed(KeyCode::Up) {
+                if key_input.just_pressed(KeyCode::ArrowUp) {
                     pan_orbit.target_beta += 45f32.to_radians();
                 }
-                if key_input.just_pressed(KeyCode::Down) {
+                if key_input.just_pressed(KeyCode::ArrowDown) {
                     pan_orbit.target_beta -= 45f32.to_radians();
                 }
             }
@@ -96,16 +95,16 @@ fn keyboard_controls(
         // Pan using Left Shift + Arrows
         else if key_input.pressed(KeyCode::ShiftLeft) {
             let mut delta_translation = Vec3::ZERO;
-            if key_input.pressed(KeyCode::Right) {
+            if key_input.pressed(KeyCode::ArrowRight) {
                 delta_translation += transform.rotation * Vec3::X * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Left) {
+            if key_input.pressed(KeyCode::ArrowLeft) {
                 delta_translation += transform.rotation * Vec3::NEG_X * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Up) {
+            if key_input.pressed(KeyCode::ArrowUp) {
                 delta_translation += transform.rotation * Vec3::Y * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Down) {
+            if key_input.pressed(KeyCode::ArrowDown) {
                 delta_translation += transform.rotation * Vec3::NEG_Y * time.delta_seconds();
             }
             transform.translation += delta_translation;
@@ -113,24 +112,24 @@ fn keyboard_controls(
         }
         // Smooth rotation using arrow keys without modifier
         else {
-            if key_input.pressed(KeyCode::Right) {
+            if key_input.pressed(KeyCode::ArrowRight) {
                 pan_orbit.target_alpha += 50f32.to_radians() * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Left) {
+            if key_input.pressed(KeyCode::ArrowLeft) {
                 pan_orbit.target_alpha -= 50f32.to_radians() * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Up) {
+            if key_input.pressed(KeyCode::ArrowUp) {
                 pan_orbit.target_beta += 50f32.to_radians() * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::Down) {
+            if key_input.pressed(KeyCode::ArrowDown) {
                 pan_orbit.target_beta -= 50f32.to_radians() * time.delta_seconds();
             }
 
             // Zoom with Z and X
-            if key_input.pressed(KeyCode::Z) {
+            if key_input.pressed(KeyCode::KeyZ) {
                 pan_orbit.target_radius -= 5.0 * time.delta_seconds();
             }
-            if key_input.pressed(KeyCode::X) {
+            if key_input.pressed(KeyCode::KeyX) {
                 pan_orbit.target_radius += 5.0 * time.delta_seconds();
             }
         }
