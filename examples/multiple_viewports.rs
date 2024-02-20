@@ -1,6 +1,6 @@
 //! Demonstrates usage with multiple viewports
 
-use bevy::core_pipeline::clear_color::ClearColorConfig;
+use bevy::core_pipeline::core_3d::Camera3dDepthLoadOp;
 use bevy::prelude::*;
 use bevy::render::camera::Viewport;
 use bevy::window::WindowResized;
@@ -22,14 +22,14 @@ fn setup(
 ) {
     // Ground
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(Plane3d::new(Vec3::new(5.0, 5.0, 0.1))),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
         ..default()
     });
     // Cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        mesh: meshes.add(Mesh::from(Cuboid::default())),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
@@ -62,7 +62,7 @@ fn setup(
             },
             camera_3d: Camera3d {
                 // Don't clear on the second camera because the first camera already cleared the window
-                clear_color: ClearColorConfig::None,
+                depth_load_op: Camera3dDepthLoadOp::Load,
                 ..default()
             },
             ..default()

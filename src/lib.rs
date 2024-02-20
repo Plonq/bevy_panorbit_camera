@@ -2,13 +2,13 @@
 #![doc = include_str!("../README.md")]
 
 use std::f32::consts::{PI, TAU};
-
 use bevy::input::mouse::MouseWheel;
+
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
-use bevy_egui::EguiSet;
+use bevy_egui_next::EguiSet;
 
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::EguiWantsFocus;
@@ -344,8 +344,8 @@ pub struct ActiveCameraData {
 #[allow(clippy::too_many_arguments)]
 fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
-    mouse_input: Res<Input<MouseButton>>,
-    key_input: Res<Input<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    key_input: Res<ButtonInput<KeyCode>>,
     scroll_events: EventReader<MouseWheel>,
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,

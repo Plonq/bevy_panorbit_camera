@@ -20,14 +20,14 @@ fn setup(
 ) {
     // Ground
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(5.0).into()),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(Plane3d::new(Vec3::new(5.0, 5.0, 0.1))),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
         ..default()
     });
     // Cube
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+        mesh: meshes.add(Mesh::from(Cuboid::default())),
+        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
@@ -60,21 +60,21 @@ fn setup(
 fn roll_controls(
     mut pan_orbit_q: Query<(&mut PanOrbitCamera, &Transform)>,
     time: Res<Time>,
-    key_input: Res<Input<KeyCode>>,
+    key_input: Res<ButtonInput<KeyCode>>,
 ) {
     if let Ok((mut pan_orbit, transform)) = pan_orbit_q.get_single_mut() {
         let mut roll_angle = 0.0;
         let roll_amount = TAU / 3.0 * time.delta_seconds();
-        if key_input.pressed(KeyCode::Left) {
+        if key_input.pressed(KeyCode::ArrowLeft) {
             roll_angle -= roll_amount;
         }
-        if key_input.pressed(KeyCode::Right) {
+        if key_input.pressed(KeyCode::ArrowRight) {
             roll_angle += roll_amount;
         }
         // Rotate the base transform by the roll amount around its current 'look' axis
         pan_orbit
             .base_transform
-            .rotate_axis(transform.local_z(), roll_angle);
+            .rotate_axis(transform.local_z().into(), roll_angle);
         // Whenever controlling the camera manually you must make it force update every frame
         pan_orbit.force_update = true;
     }
