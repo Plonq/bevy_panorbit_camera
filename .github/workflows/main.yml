@@ -9,21 +9,16 @@ on:
 name: Continuous integration
 
 jobs:
-  check:
-    name: Check
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install alsa and udev
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
-        if: runner.os == 'linux'
-      - run: cargo check
-      - run: cargo check --examples
-      - run: cargo check --tests
+      - run: cargo build
 
-  build-and-test:
-    name: Build and Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,9 +26,18 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'
-      - run: cargo build --verbose
-      - run: cargo build --examples --verbose
       - run: cargo test
+
+  build-examples:
+    name: Build Examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
+      - run: cargo build --examples
 
   fmt:
     name: Rustfmt
