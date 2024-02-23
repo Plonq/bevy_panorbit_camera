@@ -57,20 +57,21 @@ fn setup(
             // Set the starting position, relative to focus (overrides camera's transform).
             alpha: Some(TAU / 8.0),
             beta: Some(TAU / 8.0),
+            gamma: Some(0.0),
             radius: Some(5.0),
             // Set limits on rotation and zoom
             alpha_upper_limit: Some(TAU / 4.0),
             alpha_lower_limit: Some(-TAU / 4.0),
             beta_upper_limit: Some(TAU / 3.0),
             beta_lower_limit: Some(-TAU / 3.0),
+            gamma_upper_limit: Some(TAU / 8.0),
+            gamma_lower_limit: Some(-TAU / 8.0),
             zoom_upper_limit: Some(5.0),
             zoom_lower_limit: Some(1.0),
             // Adjust sensitivity of controls
             orbit_sensitivity: 1.5,
             pan_sensitivity: 0.5,
             zoom_sensitivity: 0.5,
-            // Allow the camera to go upside down
-            allow_upside_down: true,
             // Change the controls (these match Blender)
             button_orbit: MouseButton::Middle,
             button_pan: MouseButton::Middle,
