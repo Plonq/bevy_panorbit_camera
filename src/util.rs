@@ -21,15 +21,13 @@ pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (
 pub fn update_orbit_transform(
     alpha: f32,
     beta: f32,
+    gamma: f32,
     radius: f32,
     focus: Vec3,
     transform: &mut Transform,
-    basis: &Transform,
 ) {
-    let mut new_transform = *basis;
-    new_transform.rotation *= Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
-    new_transform.translation += focus + new_transform.rotation * Vec3::new(0.0, 0.0, radius);
-    *transform = new_transform;
+    transform.rotation = Quat::from_euler(EulerRot::YXZ, alpha, -beta, gamma);
+    transform.translation = focus + transform.rotation * Vec3::new(0.0, 0.0, radius);
 }
 
 pub fn approx_equal(a: f32, b: f32) -> bool {

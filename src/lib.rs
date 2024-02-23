@@ -144,6 +144,14 @@ pub struct PanOrbitCamera {
     /// You should not update this after initialization - use `target_beta` instead.
     /// Defaults to `None`.
     pub beta: Option<f32>,
+    /// Rotation in radians around the local Z axis (latitudinal). Updated automatically.
+    /// If both `alpha`, `beta` and `gamma` are `0.0`, then the camera will be looking forward, i.e. in
+    /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
+    /// If set to `None`, it will be calculated from the camera's current position during
+    /// initialization.
+    /// You should not update this after initialization - use `target_beta` instead.
+    /// Defaults to `None`.
+    pub gamma: Option<f32>,
     /// The target focus point. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
@@ -159,6 +167,11 @@ pub struct PanOrbitCamera {
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `0.0`.
     pub target_beta: f32,
+    /// The target gamma value. The camera will smoothly transition to this value Updated
+    /// automatically, but you can also update it manually to control the camera independently of
+    /// the mouse controls, e.g. with the keyboard.
+    /// Defaults to `0.0`.
+    pub target_gamma: f32,
     /// The target radius value. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
@@ -186,6 +199,14 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub beta_lower_limit: Option<f32>,
+    /// Upper limit on the `gamma` value, in radians. Use this to restrict the maximum rotation
+    /// around the local Z axis.
+    /// Defaults to `None`.
+    pub gamma_upper_limit: Option<f32>,
+    /// Lower limit on the `gamma` value, in radians. Use this to restrict the maximum rotation
+    /// around the local Z axis.
+    /// Defaults to `None`.
+    pub gamma_lower_limit: Option<f32>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
     /// camera, or the projection scale in the case of using an orthographic
     /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
@@ -249,9 +270,6 @@ pub struct PanOrbitCamera {
     /// Should not be set manually unless you know what you're doing.
     /// Defaults to `false` (but will be updated immediately).
     pub is_upside_down: bool,
-    /// Whether to allow the camera to go upside down.
-    /// Defaults to `false`.
-    pub allow_upside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
     /// Whether `PanOrbitCamera` has been initialized with the initial config.
@@ -281,7 +299,6 @@ impl Default for PanOrbitCamera {
             target_focus: Vec3::ZERO,
             radius: None,
             is_upside_down: false,
-            allow_upside_down: false,
             orbit_sensitivity: 1.0,
             orbit_smoothness: 0.8,
             pan_sensitivity: 1.0,
@@ -298,9 +315,11 @@ impl Default for PanOrbitCamera {
             enabled: true,
             alpha: None,
             beta: None,
+            gamma: None,
             scale: None,
             target_alpha: 0.0,
             target_beta: 0.0,
+            target_gamma: 0.0,
             target_radius: 1.0,
             target_scale: 1.0,
             initialized: false,
@@ -308,6 +327,8 @@ impl Default for PanOrbitCamera {
             alpha_lower_limit: None,
             beta_upper_limit: None,
             beta_lower_limit: None,
+            gamma_upper_limit: None,
+            gamma_lower_limit: None,
             zoom_upper_limit: None,
             zoom_lower_limit: None,
             force_update: false,
@@ -449,6 +470,12 @@ fn pan_orbit_camera(
             move |beta: f32| beta.clamp_optional(beta_lower_limit, beta_upper_limit)
         };
 
+        let apply_gamma_limits = {
+            let gamma_upper_limit = pan_orbit.gamma_upper_limit;
+            let gamma_lower_limit = pan_orbit.gamma_lower_limit;
+            move |gamma: f32| gamma.clamp_optional(gamma_lower_limit, gamma_upper_limit)
+        };
+
         if !pan_orbit.initialized {
             // Calculate alpha, beta, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
@@ -457,40 +484,33 @@ fn pan_orbit_camera(
                 util::calculate_from_translation_and_focus(transform.translation, pan_orbit.focus);
             let &mut mut alpha = pan_orbit.alpha.get_or_insert(alpha);
             let &mut mut beta = pan_orbit.beta.get_or_insert(beta);
+            let &mut mut gamma = pan_orbit.gamma.get_or_insert(0.0);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
 
             // Apply limits
             alpha = apply_alpha_limits(alpha);
             beta = apply_beta_limits(beta);
+            gamma = apply_gamma_limits(gamma);
             radius = apply_zoom_limits(radius);
 
             // Set initial values
             pan_orbit.alpha = Some(alpha);
             pan_orbit.beta = Some(beta);
+            pan_orbit.gamma = Some(gamma);
             pan_orbit.radius = Some(radius);
             pan_orbit.target_alpha = alpha;
             pan_orbit.target_beta = beta;
+            pan_orbit.target_gamma = gamma;
             pan_orbit.target_radius = radius;
             pan_orbit.target_focus = pan_orbit.focus;
-
-            if let Projection::Orthographic(ref mut p) = *projection {
-                // If user hasn't set initial scale value, we want to initialize it with the
-                // projection's scale, otherwise we want to override the projection's scale with
-                // the value the user provided.
-                if pan_orbit.scale.is_none() {
-                    pan_orbit.scale = Some(p.scale);
-                }
-                p.scale = apply_zoom_limits(pan_orbit.scale.expect("Just set to Some above"));
-                pan_orbit.target_scale = p.scale;
-            }
 
             util::update_orbit_transform(
                 alpha,
                 beta,
+                gamma,
                 radius,
                 pan_orbit.focus,
                 &mut transform,
-                &pan_orbit.base_transform,
             );
 
             pan_orbit.initialized = true;
@@ -632,17 +652,14 @@ fn pan_orbit_camera(
 
         pan_orbit.target_alpha = apply_alpha_limits(pan_orbit.target_alpha);
         pan_orbit.target_beta = apply_beta_limits(pan_orbit.target_beta);
+        pan_orbit.target_gamma = apply_gamma_limits(pan_orbit.target_gamma);
         pan_orbit.target_radius = apply_zoom_limits(pan_orbit.target_radius);
         pan_orbit.target_scale = apply_zoom_limits(pan_orbit.target_scale);
 
-        if !pan_orbit.allow_upside_down {
-            pan_orbit.target_beta = pan_orbit.target_beta.clamp(-PI / 2.0, PI / 2.0);
-        }
-
         // 4 - Update the camera's transform based on current values
 
-        if let (Some(alpha), Some(beta), Some(radius)) =
-            (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
+        if let (Some(alpha), Some(beta), Some(gamma), Some(radius)) =
+            (pan_orbit.alpha, pan_orbit.beta, pan_orbit.gamma, pan_orbit.radius)
         {
             if has_moved
                 // For smoothed values, we must check whether current value is different from target
@@ -651,6 +668,7 @@ fn pan_orbit_camera(
                 // of smoothly stopping
                 || pan_orbit.target_alpha != alpha
                 || pan_orbit.target_beta != beta
+                || pan_orbit.target_gamma != gamma
                 || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
                 // Scale will always be None for non-orthographic cameras, so we can't include it in
@@ -667,6 +685,11 @@ fn pan_orbit_camera(
                 let new_beta = util::lerp_and_snap_f32(
                     beta,
                     pan_orbit.target_beta,
+                    pan_orbit.orbit_smoothness,
+                );
+                let new_gamma = util::lerp_and_snap_f32(
+                    gamma,
+                    pan_orbit.target_gamma,
                     pan_orbit.orbit_smoothness,
                 );
                 let new_radius = util::lerp_and_snap_f32(
@@ -692,17 +715,17 @@ fn pan_orbit_camera(
                 util::update_orbit_transform(
                     new_alpha,
                     new_beta,
+                    new_gamma,
                     new_radius,
                     new_focus,
                     &mut transform,
-                    &pan_orbit.base_transform,
                 );
 
                 // Update the current values
                 pan_orbit.alpha = Some(new_alpha);
                 pan_orbit.beta = Some(new_beta);
+                pan_orbit.gamma = Some(new_gamma);
                 pan_orbit.radius = Some(new_radius);
-                pan_orbit.scale = Some(new_scale);
                 pan_orbit.focus = new_focus;
                 pan_orbit.force_update = false;
             }

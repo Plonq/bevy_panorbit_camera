@@ -46,22 +46,17 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
             ..default()
         },
-        PanOrbitCamera {
-            // Changing the up vector (which rolling does) changes what 'up' means, so you likely
-            // want to allow upside down when rolling.
-            allow_upside_down: true,
-            ..default()
-        },
+        PanOrbitCamera::default(),
     ));
 }
 
 /// Use left/right arrow keys to roll the camera
 fn roll_controls(
-    mut pan_orbit_q: Query<(&mut PanOrbitCamera, &Transform)>,
+    mut pan_orbit_q: Query<&mut PanOrbitCamera>,
     time: Res<Time>,
     key_input: Res<ButtonInput<KeyCode>>,
 ) {
-    if let Ok((mut pan_orbit, transform)) = pan_orbit_q.get_single_mut() {
+    if let Ok(mut pan_orbit) = pan_orbit_q.get_single_mut() {
         let mut roll_angle = 0.0;
         let roll_amount = TAU / 3.0 * time.delta_seconds();
         if key_input.pressed(KeyCode::ArrowLeft) {
@@ -71,10 +66,6 @@ fn roll_controls(
             roll_angle += roll_amount;
         }
         // Rotate the base transform by the roll amount around its current 'look' axis
-        pan_orbit
-            .base_transform
-            .rotate_axis(transform.local_z().into(), roll_angle);
-        // Whenever controlling the camera manually you must make it force update every frame
-        pan_orbit.force_update = true;
+        pan_orbit.target_gamma += roll_angle;
     }
 }
