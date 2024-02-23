@@ -658,9 +658,12 @@ fn pan_orbit_camera(
 
         // 4 - Update the camera's transform based on current values
 
-        if let (Some(alpha), Some(beta), Some(gamma), Some(radius)) =
-            (pan_orbit.alpha, pan_orbit.beta, pan_orbit.gamma, pan_orbit.radius)
-        {
+        if let (Some(alpha), Some(beta), Some(gamma), Some(radius)) = (
+            pan_orbit.alpha,
+            pan_orbit.beta,
+            pan_orbit.gamma,
+            pan_orbit.radius,
+        ) {
             if has_moved
                 // For smoothed values, we must check whether current value is different from target
                 // value. If we only checked whether the values were non-zero this frame, then
