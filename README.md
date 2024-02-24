@@ -22,8 +22,6 @@ Use it to quickly prototype, experiment, for model viewers, and more!
 - Works with multiple viewports and/or windows
 - Easy to control manually, e.g. for keyboard control or animation
 - Can control cameras that render to a texture
-- Supports changing the 'up' vector, which in turn allows you to implement 'roll' (see `alternate_up_vector` and
-  `roll_axis` examples)
 
 ## Controls
 
@@ -75,9 +73,6 @@ angle around the _global_ Y axis, and `beta` represents the angle around the _lo
 axis rotation has been applied). When both `alpha` and `beta` are `0.0`, the camera is pointing directly forward (-Z).
 Thus, increasing `alpha` orbits around to the right (counter clockwise if looking from above), and increasing `beta`
 orbits up and over (e.g. a `beta` value of 90 degrees (`PI / 2.0`) results in the camera looking straight down).
-
-Note that if you change the up vector either by changing `PanOrbitCamera.base_transform`, the concept of 'up' and
-'down' change, and so the above explanation changes accordingly.
 
 ## Cargo Features
 
