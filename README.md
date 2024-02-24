@@ -74,9 +74,6 @@ axis rotation has been applied). When both `alpha` and `beta` are `0.0`, the cam
 Thus, increasing `alpha` orbits around to the right (counter clockwise if looking from above), and increasing `beta`
 orbits up and over (e.g. a `beta` value of 90 degrees (`PI / 2.0`) results in the camera looking straight down).
 
-Note that if you change the up vector either by changing `PanOrbitCamera.base_transform`, the concept of 'up' and
-'down' change, and so the above explanation changes accordingly.
-
 ## Cargo Features
 
 - `bevy_egui` (optional): Makes `PanOrbitCamera` ignore any input that `egui` uses, thus preventing moving the camera
