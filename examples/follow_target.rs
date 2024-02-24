@@ -64,20 +64,17 @@ fn setup(
     ));
 }
 
-#[derive(Default)]
-struct AnimateAngle(f32);
-
 /// Move the cube in a circle around the Y axis
 fn animate_cube(
     time: Res<Time>,
     mut cube_q: Query<&mut Transform, With<Cube>>,
-    mut angle: Local<AnimateAngle>,
+    mut angle: Local<f32>,
 ) {
     if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
-        angle.0 += 20f32.to_radians() * time.delta_seconds() % TAU;
+        *angle += 20f32.to_radians() * time.delta_seconds() % TAU;
         // Convert angle to position
-        let pos = Vec3::new(angle.0.sin() * 1.5, 0.5, angle.0.cos() * 1.5);
+        let pos = Vec3::new(angle.sin() * 1.5, 0.5, angle.cos() * 1.5);
         cube_tfm.translation = pos;
     }
 }
