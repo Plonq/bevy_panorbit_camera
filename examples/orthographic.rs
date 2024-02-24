@@ -1,10 +1,7 @@
 //! Demonstrates usage with an orthographic camera
 
+use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
-use bevy::{
-    input::{keyboard::KeyboardInput, ButtonState},
-    prelude::*,
-};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
@@ -70,16 +67,14 @@ fn setup(
 
 fn switch_projection(
     mut next_projection: Local<Projection>,
-    mut keyboard_events: EventReader<KeyboardInput>,
+    key_input: Res<ButtonInput<KeyCode>>,
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Projection)>,
 ) {
-    for event in keyboard_events.read() {
-        if event.key_code == KeyCode::KeyR && event.state == ButtonState::Pressed {
-            let Ok((mut camera, mut projection)) = camera_query.get_single_mut() else {
-                return;
-            };
-            std::mem::swap(&mut *next_projection, &mut *projection);
-            camera.force_update = true;
-        }
+    if key_input.just_pressed(KeyCode::KeyR) {
+        let Ok((mut camera, mut projection)) = camera_query.get_single_mut() else {
+            return;
+        };
+        std::mem::swap(&mut *next_projection, &mut *projection);
+        camera.force_update = true;
     }
 }
