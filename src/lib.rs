@@ -251,15 +251,6 @@ pub struct PanOrbitCamera {
     /// This will be automatically set back to `false` after one frame.
     /// Defaults to `false`.
     pub force_update: bool,
-    /// The transform that all rotations and transforms are based upon.
-    /// Typically this will always be equal to `Transform::IDENTITY`. It can be used to implement
-    /// 'roll' controls (see `roll_axis` example), or it can be used to set a custom 'up' vector
-    /// (see `alternate_up_vector` example). If you do change this (or enable roll controls), you
-    /// probably also want to set `allow_upside_down` to `true`. Also note that alpha/beta limits
-    /// will be applied after `base_transform`, and thus may not act like you expect.
-    /// Changing the translation or scale of this transform is currently not supported.
-    /// Defaults to `Transform::IDENTITY`.
-    pub base_transform: Transform,
 }
 
 impl Default for PanOrbitCamera {
@@ -297,7 +288,6 @@ impl Default for PanOrbitCamera {
             zoom_upper_limit: None,
             zoom_lower_limit: None,
             force_update: false,
-            base_transform: Transform::IDENTITY,
         }
     }
 }
@@ -466,7 +456,6 @@ fn pan_orbit_camera(
                 pan_orbit.focus,
                 &mut transform,
                 &mut projection,
-                &pan_orbit.base_transform,
             );
 
             pan_orbit.initialized = true;
@@ -653,7 +642,6 @@ fn pan_orbit_camera(
                     new_focus,
                     &mut transform,
                     &mut projection,
-                    &pan_orbit.base_transform,
                 );
 
                 // Update the current values

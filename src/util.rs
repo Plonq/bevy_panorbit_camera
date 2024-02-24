@@ -25,9 +25,8 @@ pub fn update_orbit_transform(
     focus: Vec3,
     transform: &mut Transform,
     projection: &mut Projection,
-    basis: &Transform,
 ) {
-    let mut new_transform = *basis;
+    let mut new_transform = Transform::IDENTITY;
     if let Projection::Orthographic(ref mut p) = *projection {
         p.scale = radius;
         // (near + far) / 2.0 ensures that objects near `focus` are not clipped

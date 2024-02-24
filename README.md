@@ -22,8 +22,6 @@ Use it to quickly prototype, experiment, for model viewers, and more!
 - Works with multiple viewports and/or windows
 - Easy to control manually, e.g. for keyboard control or animation
 - Can control cameras that render to a texture
-- Supports changing the 'up' vector, which in turn allows you to implement 'roll' (see `alternate_up_vector` and
-  `roll_axis` examples)
 
 ## Controls
 
