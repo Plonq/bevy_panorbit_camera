@@ -41,18 +41,18 @@ pub fn approx_equal(a: f32, b: f32) -> bool {
     (a - b).abs() < EPSILON
 }
 
-pub fn lerp_and_snap_f32(from: f32, to: f32, smoothness: f32) -> f32 {
-    let t = 1.0 - smoothness;
-    let mut new_value = from.lerp(to, t);
+pub fn lerp_and_snap_f32(from: f32, to: f32, smoothness: f32, dt: f32) -> f32 {
+    let t = smoothness.powi(7);
+    let mut new_value = from.lerp(to, 1.0 - t.powf(dt));
     if smoothness < 1.0 && approx_equal(new_value, to) {
         new_value = to;
     }
     new_value
 }
 
-pub fn lerp_and_snap_vec3(from: Vec3, to: Vec3, smoothness: f32) -> Vec3 {
-    let t = 1.0 - smoothness;
-    let mut new_value = from.lerp(to, t);
+pub fn lerp_and_snap_vec3(from: Vec3, to: Vec3, smoothness: f32, dt: f32) -> Vec3 {
+    let t = smoothness.powi(7);
+    let mut new_value = from.lerp(to, 1.0 - t.powf(dt));
     if smoothness < 1.0 && approx_equal((new_value - to).length(), 0.0) {
         new_value.x = to.x;
     }
