@@ -142,24 +142,25 @@ mod lerp_and_snap_f32_tests {
 
     #[test]
     fn lerps_when_output_outside_snap_threshold() {
-        let out = lerp_and_snap_f32(1.0, 2.0, 0.5);
-        assert_eq!(out, 1.5);
+        let out = lerp_and_snap_f32(1.0, 2.0, 0.5, 1.0);
+        // Due to the frame rate independence, this value is not easily predictable
+        assert_eq!(out, 1.9921875);
     }
 
     #[test]
     fn snaps_to_target_when_inside_threshold() {
-        let out = lerp_and_snap_f32(1.9991, 2.0, 0.5);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.5, 1.0);
         assert_eq!(out, 2.0);
-        let out = lerp_and_snap_f32(1.9991, 2.0, 0.1);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.1, 1.0);
         assert_eq!(out, 2.0);
-        let out = lerp_and_snap_f32(1.9991, 2.0, 0.9);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 0.9, 1.0);
         assert_eq!(out, 2.0);
     }
 
     #[test]
     fn does_not_snap_if_smoothness_is_one() {
         // Smoothness of one results in the value not changing, so it doesn't make sense to snap
-        let out = lerp_and_snap_f32(1.9991, 2.0, 1.0);
+        let out = lerp_and_snap_f32(1.9991, 2.0, 1.0, 1.0);
         assert_eq!(out, 1.9991);
     }
 }
@@ -170,24 +171,25 @@ mod lerp_and_snap_vec3_tests {
 
     #[test]
     fn lerps_when_output_outside_snap_threshold() {
-        let out = lerp_and_snap_vec3(Vec3::ZERO, Vec3::X, 0.5);
-        assert_eq!(out, Vec3::X * 0.5);
+        let out = lerp_and_snap_vec3(Vec3::ZERO, Vec3::X, 0.5, 1.0);
+        // Due to the frame rate independence, this value is not easily predictable
+        assert_eq!(out, Vec3::new(0.9921875, 0.0, 0.0));
     }
 
     #[test]
     fn snaps_to_target_when_inside_threshold() {
-        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.5);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.5, 1.0);
         assert_eq!(out, Vec3::X);
-        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.1);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.1, 1.0);
         assert_eq!(out, Vec3::X);
-        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.9);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 0.9, 1.0);
         assert_eq!(out, Vec3::X);
     }
 
     #[test]
     fn does_not_snap_if_smoothness_is_one() {
         // Smoothness of one results in the value not changing, so it doesn't make sense to snap
-        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 1.0);
+        let out = lerp_and_snap_vec3(Vec3::X * 0.9991, Vec3::X, 1.0, 1.0);
         assert_eq!(out, Vec3::X * 0.9991);
     }
 }
