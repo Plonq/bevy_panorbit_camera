@@ -262,11 +262,11 @@ impl Default for PanOrbitCamera {
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
-            orbit_smoothness: 0.8,
+            orbit_smoothness: 0.1,
             pan_sensitivity: 1.0,
-            pan_smoothness: 0.6,
+            pan_smoothness: 0.02,
             zoom_sensitivity: 1.0,
-            zoom_smoothness: 0.8,
+            zoom_smoothness: 0.1,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
             modifier_orbit: None,
@@ -401,6 +401,7 @@ fn pan_orbit_camera(
     mouse_key_tracker: Res<MouseKeyTracker>,
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
+    time: Res<Time>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the alpha, beta, and zoom values
@@ -618,21 +619,25 @@ fn pan_orbit_camera(
                     alpha,
                     pan_orbit.target_alpha,
                     pan_orbit.orbit_smoothness,
+                    time.delta_seconds(),
                 );
                 let new_beta = util::lerp_and_snap_f32(
                     beta,
                     pan_orbit.target_beta,
                     pan_orbit.orbit_smoothness,
+                    time.delta_seconds(),
                 );
                 let new_radius = util::lerp_and_snap_f32(
                     radius,
                     pan_orbit.target_radius,
                     pan_orbit.zoom_smoothness,
+                    time.delta_seconds(),
                 );
                 let new_focus = util::lerp_and_snap_vec3(
                     pan_orbit.focus,
                     pan_orbit.target_focus,
                     pan_orbit.pan_smoothness,
+                    time.delta_seconds(),
                 );
 
                 util::update_orbit_transform(
