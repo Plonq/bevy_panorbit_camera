@@ -264,7 +264,7 @@ impl Default for PanOrbitCamera {
             orbit_sensitivity: 1.0,
             orbit_smoothness: 0.1,
             pan_sensitivity: 1.0,
-            pan_smoothness: 0.05,
+            pan_smoothness: 0.02,
             zoom_sensitivity: 1.0,
             zoom_smoothness: 0.1,
             button_orbit: MouseButton::Left,
