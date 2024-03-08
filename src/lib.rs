@@ -345,13 +345,12 @@ fn active_viewport_data(
             has_input = true;
             // First check if cursor is in the same window as this camera
             if let RenderTarget::Window(win_ref) = camera.target {
-                let window = match win_ref {
-                    WindowRef::Primary => primary_windows
-                        .get_single()
-                        .expect("Must exist, since the camera is referencing it"),
-                    WindowRef::Entity(entity) => other_windows
-                        .get(entity)
-                        .expect("Must exist, since the camera is referencing it"),
+                let Some(window) = (match win_ref {
+                    WindowRef::Primary => primary_windows.get_single().ok(),
+                    WindowRef::Entity(entity) => other_windows.get(entity).ok(),
+                }) else {
+                    // Window does not exist - maybe it was closed and the camera not cleaned up
+                    continue;
                 };
 
                 // Is the cursor/touch in this window?
