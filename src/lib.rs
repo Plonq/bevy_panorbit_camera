@@ -9,6 +9,8 @@ use bevy::render::camera::RenderTarget;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
+use bevy_mod_raycast::immediate::{Raycast, RaycastSettings};
+use bevy_mod_raycast::{CursorRay, DefaultRaycastingPlugin};
 
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::EguiWantsFocus;
@@ -40,7 +42,8 @@ pub struct PanOrbitCameraPlugin;
 
 impl Plugin for PanOrbitCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ActiveCameraData>()
+        app.add_plugins(DefaultRaycastingPlugin)
+            .init_resource::<ActiveCameraData>()
             .init_resource::<MouseKeyTracker>()
             .init_resource::<TouchTracker>()
             .add_systems(
@@ -398,11 +401,26 @@ fn active_viewport_data(
 fn pan_orbit_camera(
     active_cam: Res<ActiveCameraData>,
     mouse_key_tracker: Res<MouseKeyTracker>,
+    key_input: Res<ButtonInput<KeyCode>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
     time: Res<Time>,
+    mut raycast: Raycast,
+    cursor_ray: Res<CursorRay>,
+    mut gizmos: Gizmos,
+    mut pivot_point: Local<Vec3>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
+        if input::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input) {
+            if let Some(cursor_ray) = **cursor_ray {
+                let hits1 = raycast.cast_ray(cursor_ray, &default());
+                if let Some(hit) = hits1.first().map(|(_, hit)| hit) {
+                    *pivot_point = hit.position();
+                }
+            }
+        }
+
         // Closures that apply limits to the alpha, beta, and zoom values
         let apply_zoom_limits = {
             let zoom_upper_limit = pan_orbit.zoom_upper_limit;
@@ -448,11 +466,13 @@ fn pan_orbit_camera(
             pan_orbit.target_beta = beta;
             pan_orbit.target_radius = radius;
             pan_orbit.target_focus = pan_orbit.focus;
+            *pivot_point = pan_orbit.focus;
 
             util::update_orbit_transform(
                 alpha,
                 beta,
                 radius,
+                pan_orbit.focus,
                 pan_orbit.focus,
                 &mut transform,
                 &mut projection,
@@ -602,6 +622,14 @@ fn pan_orbit_camera(
         if let (Some(alpha), Some(beta), Some(radius)) =
             (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
         {
+            gizmos.sphere(
+                pan_orbit.target_focus,
+                Quat::IDENTITY,
+                0.2,
+                Color::AQUAMARINE,
+            );
+            gizmos.sphere(*pivot_point, Quat::IDENTITY, 0.2, Color::ORANGE_RED);
+
             if has_moved
                 // For smoothed values, we must check whether current value is different from target
                 // value. If we only checked whether the values were non-zero this frame, then
@@ -644,6 +672,7 @@ fn pan_orbit_camera(
                     new_beta,
                     new_radius,
                     new_focus,
+                    *pivot_point,
                     &mut transform,
                     &mut projection,
                 );

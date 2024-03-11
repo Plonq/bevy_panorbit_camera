@@ -17,6 +17,7 @@ bevy_egui = ["dep:bevy_egui"]
 [dependencies]
 bevy = { version = "0.13", default-features = false, features = ["bevy_render"] }
 bevy_egui = { version = "0.25", optional = true, default-features = false }
+bevy_mod_raycast = { version = "0.17" }
 
 [dev-dependencies]
 bevy = { version = "0.13" }

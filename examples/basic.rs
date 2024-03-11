@@ -44,6 +44,11 @@ fn setup(
             transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            orbit_smoothness: 0.0,
+            pan_smoothness: 0.0,
+            zoom_smoothness: 0.0,
+            ..default()
+        },
     ));
 }
