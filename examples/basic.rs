@@ -45,7 +45,7 @@ fn setup(
             ..default()
         },
         PanOrbitCamera {
-            orbit_smoothness: 0.0,
+            orbit_smoothness: 0.7,
             pan_smoothness: 0.0,
             zoom_smoothness: 0.0,
             ..default()

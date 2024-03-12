@@ -10,6 +10,7 @@ use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
 use bevy_mod_raycast::immediate::{Raycast, RaycastSettings};
+use bevy_mod_raycast::prelude::intersects_aabb;
 use bevy_mod_raycast::{CursorRay, DefaultRaycastingPlugin};
 
 #[cfg(feature = "bevy_egui")]
@@ -410,6 +411,7 @@ fn pan_orbit_camera(
     cursor_ray: Res<CursorRay>,
     mut gizmos: Gizmos,
     mut pivot_point: Local<Vec3>,
+    mut pivot_radius: Local<f32>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         if input::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input) {
@@ -417,6 +419,7 @@ fn pan_orbit_camera(
                 let hits1 = raycast.cast_ray(cursor_ray, &default());
                 if let Some(hit) = hits1.first().map(|(_, hit)| hit) {
                     *pivot_point = hit.position();
+                    *pivot_radius = pivot_point.distance(pan_orbit.target_focus);
                 }
             }
         }
@@ -472,7 +475,6 @@ fn pan_orbit_camera(
                 alpha,
                 beta,
                 radius,
-                pan_orbit.focus,
                 pan_orbit.focus,
                 &mut transform,
                 &mut projection,
@@ -539,6 +541,9 @@ fn pan_orbit_camera(
         }
 
         // 2 - Process input into target alpha/beta, or focus, radius
+
+        let pre_target_alpha = pan_orbit.target_alpha;
+        let pre_target_beta = pan_orbit.target_beta;
 
         if orbit_button_changed {
             // Only check for upside down when orbiting started or ended this frame,
@@ -622,6 +627,20 @@ fn pan_orbit_camera(
         if let (Some(alpha), Some(beta), Some(radius)) =
             (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
         {
+            let mut transform_temp = Transform::IDENTITY;
+            transform_temp.rotation = Quat::from_rotation_y(pan_orbit.target_alpha)
+                * Quat::from_rotation_x(-pan_orbit.target_beta);
+            transform_temp.translation +=
+                pan_orbit.target_focus + transform_temp.back() * pan_orbit.target_radius;
+            let delta_alpha = pan_orbit.target_alpha - pre_target_alpha;
+            let delta_beta = pan_orbit.target_beta - pre_target_beta;
+            let yaw = Quat::from_rotation_y(delta_alpha);
+            let pitch = Quat::from_rotation_x(-delta_beta);
+            let pitch_global = transform_temp.rotation * pitch * transform_temp.rotation.inverse();
+            transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
+            pan_orbit.target_focus =
+                transform_temp.translation + (transform_temp.forward() * pan_orbit.target_radius);
+
             gizmos.sphere(
                 pan_orbit.target_focus,
                 Quat::IDENTITY,
@@ -641,6 +660,10 @@ fn pan_orbit_camera(
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
+                // If orbiting around a different pivot point, the pan smoothness must match the
+                // orbit smoothness, as they are both used
+                let pan_smoothing = pan_orbit.orbit_smoothness;
+
                 // Interpolate towards the target values
                 let new_alpha = util::lerp_and_snap_f32(
                     alpha,
@@ -660,19 +683,49 @@ fn pan_orbit_camera(
                     pan_orbit.zoom_smoothness,
                     time.delta_seconds(),
                 );
-                let new_focus = util::lerp_and_snap_vec3(
+                let mut new_focus = util::lerp_and_snap_vec3(
                     pan_orbit.focus,
                     pan_orbit.target_focus,
-                    pan_orbit.pan_smoothness,
+                    pan_smoothing,
                     time.delta_seconds(),
                 );
+                // FAILED ATTEMPT - spherical interpolation between current focus and target focus
+                // let t = 1.0 - pan_smoothing.powi(7).powf(time.delta_seconds());
+                // new_focus = circular_lerp(pan_orbit.focus, pan_orbit.target_focus, *pivot_point, t);
+
+                gizmos.sphere(pan_orbit.focus, Quat::IDENTITY, 0.1, Color::AQUAMARINE);
+
+                let mut transform_temp = Transform::IDENTITY;
+                transform_temp.rotation =
+                    Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
+                transform_temp.translation += pan_orbit.focus + transform_temp.back() * radius;
+                let delta_alpha = new_alpha - alpha;
+                let delta_beta = new_beta - beta;
+                let yaw = Quat::from_rotation_y(delta_alpha);
+                let pitch = Quat::from_rotation_x(-delta_beta);
+                let pitch_global =
+                    transform_temp.rotation * pitch * transform_temp.rotation.inverse();
+                transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
+                new_focus = transform_temp.translation + (transform_temp.forward() * radius);
+
+                // FAILED ATTEMPT - naively force focus to stay consistent distance from pivot,
+                // where that distance is calculated when you click somewhere
+                // let dist_to_pivot = new_focus.distance(*pivot_point);
+                // println!("Pivot radius: {}", *pivot_radius);
+                // println!("Dist from actual focus to pivot: {}", dist_to_pivot);
+                // if dist_to_pivot < *pivot_radius {
+                //     let diff = *pivot_radius - dist_to_pivot;
+                //     println!("Diff: {}", diff);
+                //     let dir_to_focus = (new_focus - *pivot_point).normalize_or_zero();
+                //     new_focus += dir_to_focus * diff;
+                //     println!("New dist to pivot: {}", new_focus.distance(*pivot_point));
+                // }
 
                 util::update_orbit_transform(
                     new_alpha,
                     new_beta,
                     new_radius,
                     new_focus,
-                    *pivot_point,
                     &mut transform,
                     &mut projection,
                 );
@@ -686,4 +739,31 @@ fn pan_orbit_camera(
             }
         }
     }
+}
+
+fn circular_lerp(start_point: Vec3, end_point: Vec3, pivot_point: Vec3, t: f32) -> Vec3 {
+    // Compute vectors from pivot to start and end points
+    let start_to_pivot = pivot_point - start_point;
+    let end_to_pivot = pivot_point - end_point;
+
+    let angle = start_to_pivot.angle_between(end_to_pivot);
+
+    // Interpolate along the circular arc
+    // todo: this doesn't quite follow the correct arc
+    let interpolated_angle = angle * t;
+    let rotation = Quat::from_axis_angle(
+        start_to_pivot.cross(end_to_pivot).normalize_or_zero(),
+        interpolated_angle,
+    );
+    let interpolated_vector = rotation.mul_vec3(start_to_pivot);
+
+    // Compute the interpolated point
+    pivot_point - interpolated_vector
+}
+
+fn rotate(v: Vec3, axis: Vec3, angle: f32) -> Vec3 {
+    let cos_theta = angle.cos();
+    let sin_theta = angle.sin();
+    let cross = v.cross(axis);
+    v * cos_theta + cross * sin_theta + axis * axis.dot(v) * (1.0 - cos_theta)
 }

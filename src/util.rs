@@ -23,7 +23,6 @@ pub fn update_orbit_transform(
     beta: f32,
     mut radius: f32,
     focus: Vec3,
-    pivot: Vec3,
     transform: &mut Transform,
     projection: &mut Projection,
 ) {
@@ -33,8 +32,7 @@ pub fn update_orbit_transform(
         // (near + far) / 2.0 ensures that objects near `focus` are not clipped
         radius = (p.near + p.far) / 2.0;
     }
-    let rotation = Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
-    new_transform.rotate_around(pivot - focus, rotation);
+    new_transform.rotation = Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
     new_transform.translation += focus + new_transform.back() * radius;
     *transform = new_transform;
 }
