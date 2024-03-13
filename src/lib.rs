@@ -627,19 +627,33 @@ fn pan_orbit_camera(
         if let (Some(alpha), Some(beta), Some(radius)) =
             (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
         {
-            let mut transform_temp = Transform::IDENTITY;
-            transform_temp.rotation = Quat::from_rotation_y(pan_orbit.target_alpha)
-                * Quat::from_rotation_x(-pan_orbit.target_beta);
-            transform_temp.translation +=
-                pan_orbit.target_focus + transform_temp.back() * pan_orbit.target_radius;
-            let delta_alpha = pan_orbit.target_alpha - pre_target_alpha;
-            let delta_beta = pan_orbit.target_beta - pre_target_beta;
-            let yaw = Quat::from_rotation_y(delta_alpha);
-            let pitch = Quat::from_rotation_x(-delta_beta);
-            let pitch_global = transform_temp.rotation * pitch * transform_temp.rotation.inverse();
-            transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
-            pan_orbit.target_focus =
-                transform_temp.translation + (transform_temp.forward() * pan_orbit.target_radius);
+            if input::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input) {
+                pan_orbit.target_focus = pan_orbit.focus;
+            }
+            if input::pan_just_pressed(&pan_orbit, &mouse_input, &key_input) {
+                pan_orbit.target_alpha = alpha;
+                pan_orbit.target_beta = beta;
+            }
+
+            let is_orbiting = (pan_orbit.target_alpha - alpha).abs() > 0.0
+                || (pan_orbit.target_beta - beta).abs() > 0.0;
+
+            if is_orbiting {
+                let mut transform_temp = Transform::IDENTITY;
+                transform_temp.rotation = Quat::from_rotation_y(pan_orbit.target_alpha)
+                    * Quat::from_rotation_x(-pan_orbit.target_beta);
+                transform_temp.translation +=
+                    pan_orbit.focus + transform_temp.back() * pan_orbit.target_radius;
+                let delta_alpha = pan_orbit.target_alpha - pre_target_alpha;
+                let delta_beta = pan_orbit.target_beta - pre_target_beta;
+                let yaw = Quat::from_rotation_y(delta_alpha);
+                let pitch = Quat::from_rotation_x(-delta_beta);
+                let pitch_global =
+                    transform_temp.rotation * pitch * transform_temp.rotation.inverse();
+                transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
+                pan_orbit.target_focus = transform_temp.translation
+                    + (transform_temp.forward() * pan_orbit.target_radius);
+            }
 
             gizmos.sphere(
                 pan_orbit.target_focus,
@@ -647,6 +661,7 @@ fn pan_orbit_camera(
                 0.2,
                 Color::AQUAMARINE,
             );
+            gizmos.sphere(pan_orbit.focus, Quat::IDENTITY, 0.1, Color::AQUAMARINE);
             gizmos.sphere(*pivot_point, Quat::IDENTITY, 0.2, Color::ORANGE_RED);
 
             if has_moved
@@ -693,20 +708,20 @@ fn pan_orbit_camera(
                 // let t = 1.0 - pan_smoothing.powi(7).powf(time.delta_seconds());
                 // new_focus = circular_lerp(pan_orbit.focus, pan_orbit.target_focus, *pivot_point, t);
 
-                gizmos.sphere(pan_orbit.focus, Quat::IDENTITY, 0.1, Color::AQUAMARINE);
-
-                let mut transform_temp = Transform::IDENTITY;
-                transform_temp.rotation =
-                    Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
-                transform_temp.translation += pan_orbit.focus + transform_temp.back() * radius;
-                let delta_alpha = new_alpha - alpha;
-                let delta_beta = new_beta - beta;
-                let yaw = Quat::from_rotation_y(delta_alpha);
-                let pitch = Quat::from_rotation_x(-delta_beta);
-                let pitch_global =
-                    transform_temp.rotation * pitch * transform_temp.rotation.inverse();
-                transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
-                new_focus = transform_temp.translation + (transform_temp.forward() * radius);
+                if is_orbiting {
+                    let mut transform_temp = Transform::IDENTITY;
+                    transform_temp.rotation =
+                        Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
+                    transform_temp.translation += pan_orbit.focus + transform_temp.back() * radius;
+                    let delta_alpha = new_alpha - alpha;
+                    let delta_beta = new_beta - beta;
+                    let yaw = Quat::from_rotation_y(delta_alpha);
+                    let pitch = Quat::from_rotation_x(-delta_beta);
+                    let pitch_global =
+                        transform_temp.rotation * pitch * transform_temp.rotation.inverse();
+                    transform_temp.rotate_around(*pivot_point, yaw * pitch_global);
+                    new_focus = transform_temp.translation + (transform_temp.forward() * radius);
+                }
 
                 // FAILED ATTEMPT - naively force focus to stay consistent distance from pivot,
                 // where that distance is calculated when you click somewhere
