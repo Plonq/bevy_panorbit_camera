@@ -411,7 +411,6 @@ fn pan_orbit_camera(
     cursor_ray: Res<CursorRay>,
     mut gizmos: Gizmos,
     mut pivot_point: Local<Vec3>,
-    mut pivot_radius: Local<f32>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         if input::orbit_just_pressed(&pan_orbit, &mouse_input, &key_input) {
@@ -419,7 +418,10 @@ fn pan_orbit_camera(
                 let hits1 = raycast.cast_ray(cursor_ray, &default());
                 if let Some(hit) = hits1.first().map(|(_, hit)| hit) {
                     *pivot_point = hit.position();
-                    *pivot_radius = pivot_point.distance(pan_orbit.target_focus);
+                } else {
+                    let factor = transform.forward().dot(cursor_ray.direction.into());
+                    *pivot_point = cursor_ray.origin
+                        + cursor_ray.direction * (pan_orbit.radius.unwrap() / factor);
                 }
             }
         }
