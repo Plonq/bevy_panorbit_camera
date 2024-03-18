@@ -440,9 +440,19 @@ fn pan_orbit_camera(
                 if let Some(hit) = hits1.first().map(|(_, hit)| hit) {
                     *pivot_point = hit.position();
                 } else {
-                    let factor = transform.forward().dot(cursor_ray.direction.into());
-                    *pivot_point = cursor_ray.origin
-                        + cursor_ray.direction * (pan_orbit.radius.unwrap() / factor);
+                    *pivot_point = match *projection {
+                        // NOTE: cursor_ray.origin is not the camera position
+                        // it is probably on the near plane
+                        Projection::Perspective(_) => {
+                            let factor = transform.forward().dot(cursor_ray.direction.into());
+                            transform.translation
+                                + cursor_ray.direction * (pan_orbit.radius.unwrap() / factor)
+                        }
+                        Projection::Orthographic(ref p) => {
+                            let radius_minus_near = (p.far - p.near) / 2.0;
+                            cursor_ray.origin + cursor_ray.direction * radius_minus_near
+                        }
+                    };
                 }
 
                 // Prevent overshooting max zoom/radius
@@ -692,9 +702,6 @@ fn pan_orbit_camera(
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
-                // If orbiting around a different pivot point, the pan smoothness must match the
-                // orbit smoothness, as they are both used
-
                 // Interpolate towards the target values
                 let new_alpha = util::lerp_and_snap_f32(
                     alpha,
@@ -721,15 +728,6 @@ fn pan_orbit_camera(
                     time.delta_seconds(),
                 );
 
-                util::update_orbit_transform(
-                    new_alpha,
-                    new_beta,
-                    new_radius,
-                    new_focus,
-                    &mut transform,
-                    &mut projection,
-                );
-
                 if is_orbiting {
                     let mut transform_temp = Transform::IDENTITY;
                     transform_temp.rotation =
@@ -751,7 +749,19 @@ fn pan_orbit_camera(
                     pan_orbit.target_radius = apply_zoom_limits(new_radius);
                     new_focus =
                         transform_temp.translation + (transform_temp.forward() * new_radius);
+                    if let Projection::Orthographic(_) = *projection {
+                        new_radius = radius;
+                    }
                 }
+
+                util::update_orbit_transform(
+                    new_alpha,
+                    new_beta,
+                    new_radius,
+                    new_focus,
+                    &mut transform,
+                    &mut projection,
+                );
 
                 // Update the current values
                 pan_orbit.alpha = Some(new_alpha);

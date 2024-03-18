@@ -33,7 +33,7 @@ pub fn update_orbit_transform(
         radius = (p.near + p.far) / 2.0;
     }
     new_transform.rotation = Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
-    new_transform.translation += focus + new_transform.back() * radius;
+    new_transform.translation = focus + new_transform.back() * radius;
     *transform = new_transform;
 }
 
