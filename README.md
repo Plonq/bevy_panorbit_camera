@@ -62,18 +62,6 @@ This will set up a camera with good defaults.
 Check out the [advanced example](https://github.com/Plonq/bevy_panorbit_camera/tree/master/examples/advanced.rs) to see
 all the possible configuration options.
 
-## What are `alpha` and `beta`?
-
-Typically you don't need to worry about the inner workings of this plugin - the defaults work well and are suitable for
-most use cases. However, if you want to customise the behaviour, for example restricting the camera movement or
-adjusting sensitivity, you probably want to know what the `alpha` and `beta` values represent.
-
-While not strictly accurate, you can think of `alpha` as yaw and `beta` as tilt. More accurately, `alpha` represents the
-angle around the _global_ Y axis, and `beta` represents the angle around the _local_ X axis (i.e. the X axis after Y
-axis rotation has been applied). When both `alpha` and `beta` are `0.0`, the camera is pointing directly forward (-Z).
-Thus, increasing `alpha` orbits around to the right (counter clockwise if looking from above), and increasing `beta`
-orbits up and over (e.g. a `beta` value of 90 degrees (`PI / 2.0`) results in the camera looking straight down).
-
 ## Cargo Features
 
 - `bevy_egui` (optional): Makes `PanOrbitCamera` ignore any input that `egui` uses, thus preventing moving the camera
