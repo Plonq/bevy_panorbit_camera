@@ -59,9 +59,9 @@ fn setup(
 // Animate the camera's position
 fn animate(time: Res<Time>, mut pan_orbit_query: Query<&mut PanOrbitCamera>) {
     for mut pan_orbit in pan_orbit_query.iter_mut() {
-        // Must set target values, not alpha/beta directly
-        pan_orbit.target_alpha += 15f32.to_radians() * time.delta_seconds();
-        pan_orbit.target_beta = time.elapsed_seconds_wrapped().sin() * TAU * 0.1;
+        // Must set target values, not yaw/pitch directly
+        pan_orbit.target_yaw += 15f32.to_radians() * time.delta_seconds();
+        pan_orbit.target_pitch = time.elapsed_seconds_wrapped().sin() * TAU * 0.1;
         pan_orbit.radius =
             Some((((time.elapsed_seconds_wrapped() * 2.0).cos() + 1.0) * 0.5) * 2.0 + 4.0);
 

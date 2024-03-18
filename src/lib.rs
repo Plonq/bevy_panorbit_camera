@@ -123,57 +123,57 @@ pub struct PanOrbitCamera {
     /// Defaults to `None`.
     pub radius: Option<f32>,
     /// Rotation in radians around the global Y axis (longitudinal). Updated automatically.
-    /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
+    /// If both `yaw` and `pitch` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
     /// If set to `None`, it will be calculated from the camera's current position during
     /// initialization.
-    /// You should not update this after initialization - use `target_alpha` instead.
+    /// You should not update this after initialization - use `target_yaw` instead.
     /// Defaults to `None`.
-    pub alpha: Option<f32>,
+    pub yaw: Option<f32>,
     /// Rotation in radians around the local X axis (latitudinal). Updated automatically.
-    /// If both `alpha` and `beta` are `0.0`, then the camera will be looking forward, i.e. in
+    /// If both `yaw` and `pitch` are `0.0`, then the camera will be looking forward, i.e. in
     /// the `Vec3::NEG_Z` direction, with up being `Vec3::Y`.
     /// If set to `None`, it will be calculated from the camera's current position during
     /// initialization.
-    /// You should not update this after initialization - use `target_beta` instead.
+    /// You should not update this after initialization - use `target_pitch` instead.
     /// Defaults to `None`.
-    pub beta: Option<f32>,
+    pub pitch: Option<f32>,
     /// The target focus point. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `Vec3::ZERO`.
     pub target_focus: Vec3,
-    /// The target alpha value. The camera will smoothly transition to this value. Updated
+    /// The target yaw value. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `0.0`.
-    pub target_alpha: f32,
-    /// The target beta value. The camera will smoothly transition to this value Updated
+    pub target_yaw: f32,
+    /// The target pitch value. The camera will smoothly transition to this value Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `0.0`.
-    pub target_beta: f32,
+    pub target_pitch: f32,
     /// The target radius value. The camera will smoothly transition to this value. Updated
     /// automatically, but you can also update it manually to control the camera independently of
     /// the mouse controls, e.g. with the keyboard.
     /// Defaults to `1.0`.
     pub target_radius: f32,
-    /// Upper limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
+    /// Upper limit on the `yaw` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
     /// Defaults to `None`.
-    pub alpha_upper_limit: Option<f32>,
-    /// Lower limit on the `alpha` value, in radians. Use this to restrict the maximum rotation
+    pub yaw_upper_limit: Option<f32>,
+    /// Lower limit on the `yaw` value, in radians. Use this to restrict the maximum rotation
     /// around the global Y axis.
     /// Defaults to `None`.
-    pub alpha_lower_limit: Option<f32>,
-    /// Upper limit on the `beta` value, in radians. Use this to restrict the maximum rotation
+    pub yaw_lower_limit: Option<f32>,
+    /// Upper limit on the `pitch` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
     /// Defaults to `None`.
-    pub beta_upper_limit: Option<f32>,
-    /// Lower limit on the `beta` value, in radians. Use this to restrict the maximum rotation
+    pub pitch_upper_limit: Option<f32>,
+    /// Lower limit on the `pitch` value, in radians. Use this to restrict the maximum rotation
     /// around the local X axis.
     /// Defaults to `None`.
-    pub beta_lower_limit: Option<f32>,
+    pub pitch_lower_limit: Option<f32>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
     /// camera, or the projection scale in the case of using an orthographic
     /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
@@ -275,16 +275,16 @@ impl Default for PanOrbitCamera {
             touch_controls: TouchControls::OneFingerOrbit,
             reversed_zoom: false,
             enabled: true,
-            alpha: None,
-            beta: None,
-            target_alpha: 0.0,
-            target_beta: 0.0,
+            yaw: None,
+            pitch: None,
+            target_yaw: 0.0,
+            target_pitch: 0.0,
             target_radius: 1.0,
             initialized: false,
-            alpha_upper_limit: None,
-            alpha_lower_limit: None,
-            beta_upper_limit: None,
-            beta_lower_limit: None,
+            yaw_upper_limit: None,
+            yaw_lower_limit: None,
+            pitch_upper_limit: None,
+            pitch_lower_limit: None,
             zoom_upper_limit: None,
             zoom_lower_limit: None,
             force_update: false,
@@ -403,7 +403,7 @@ fn pan_orbit_camera(
     time: Res<Time>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
-        // Closures that apply limits to the alpha, beta, and zoom values
+        // Closures that apply limits to the yaw, pitch, and zoom values
         let apply_zoom_limits = {
             let zoom_upper_limit = pan_orbit.zoom_upper_limit;
             let zoom_lower_limit = pan_orbit.zoom_lower_limit;
@@ -413,45 +413,45 @@ fn pan_orbit_camera(
             }
         };
 
-        let apply_alpha_limits = {
-            let alpha_upper_limit = pan_orbit.alpha_upper_limit;
-            let alpha_lower_limit = pan_orbit.alpha_lower_limit;
-            move |alpha: f32| alpha.clamp_optional(alpha_lower_limit, alpha_upper_limit)
+        let apply_yaw_limits = {
+            let yaw_upper_limit = pan_orbit.yaw_upper_limit;
+            let yaw_lower_limit = pan_orbit.yaw_lower_limit;
+            move |yaw: f32| yaw.clamp_optional(yaw_lower_limit, yaw_upper_limit)
         };
 
-        let apply_beta_limits = {
-            let beta_upper_limit = pan_orbit.beta_upper_limit;
-            let beta_lower_limit = pan_orbit.beta_lower_limit;
-            move |beta: f32| beta.clamp_optional(beta_lower_limit, beta_upper_limit)
+        let apply_pitch_limits = {
+            let pitch_upper_limit = pan_orbit.pitch_upper_limit;
+            let pitch_lower_limit = pan_orbit.pitch_lower_limit;
+            move |pitch: f32| pitch.clamp_optional(pitch_lower_limit, pitch_upper_limit)
         };
 
         if !pan_orbit.initialized {
-            // Calculate alpha, beta, and radius from the camera's position. If user sets all
+            // Calculate yaw, pitch, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
             // once on init.
-            let (alpha, beta, radius) =
+            let (yaw, pitch, radius) =
                 util::calculate_from_translation_and_focus(transform.translation, pan_orbit.focus);
-            let &mut mut alpha = pan_orbit.alpha.get_or_insert(alpha);
-            let &mut mut beta = pan_orbit.beta.get_or_insert(beta);
+            let &mut mut yaw = pan_orbit.yaw.get_or_insert(yaw);
+            let &mut mut pitch = pan_orbit.pitch.get_or_insert(pitch);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
 
             // Apply limits
-            alpha = apply_alpha_limits(alpha);
-            beta = apply_beta_limits(beta);
+            yaw = apply_yaw_limits(yaw);
+            pitch = apply_pitch_limits(pitch);
             radius = apply_zoom_limits(radius);
 
             // Set initial values
-            pan_orbit.alpha = Some(alpha);
-            pan_orbit.beta = Some(beta);
+            pan_orbit.yaw = Some(yaw);
+            pan_orbit.pitch = Some(pitch);
             pan_orbit.radius = Some(radius);
-            pan_orbit.target_alpha = alpha;
-            pan_orbit.target_beta = beta;
+            pan_orbit.target_yaw = yaw;
+            pan_orbit.target_pitch = pitch;
             pan_orbit.target_radius = radius;
             pan_orbit.target_focus = pan_orbit.focus;
 
             util::update_orbit_transform(
-                alpha,
-                beta,
+                yaw,
+                pitch,
                 radius,
                 pan_orbit.focus,
                 &mut transform,
@@ -518,13 +518,13 @@ fn pan_orbit_camera(
             }
         }
 
-        // 2 - Process input into target alpha/beta, or focus, radius
+        // 2 - Process input into target yaw/pitch, or focus, radius
 
         if orbit_button_changed {
             // Only check for upside down when orbiting started or ended this frame,
-            // so we don't reverse the alpha direction while the user is still dragging
-            let wrapped_beta = (pan_orbit.target_beta % TAU).abs();
-            pan_orbit.is_upside_down = wrapped_beta > TAU / 4.0 && wrapped_beta < 3.0 * TAU / 4.0;
+            // so we don't reverse the yaw direction while the user is still dragging
+            let wrapped_pitch = (pan_orbit.target_pitch % TAU).abs();
+            pan_orbit.is_upside_down = wrapped_pitch > TAU / 4.0 && wrapped_pitch < 3.0 * TAU / 4.0;
         }
 
         let mut has_moved = false;
@@ -541,8 +541,8 @@ fn pan_orbit_camera(
                     }
                 };
                 let delta_y = orbit.y / win_size.y * PI;
-                pan_orbit.target_alpha -= delta_x;
-                pan_orbit.target_beta += delta_y;
+                pan_orbit.target_yaw -= delta_x;
+                pan_orbit.target_pitch += delta_y;
 
                 has_moved = true;
             }
@@ -589,40 +589,40 @@ fn pan_orbit_camera(
 
         // 3 - Apply constraints
 
-        pan_orbit.target_alpha = apply_alpha_limits(pan_orbit.target_alpha);
-        pan_orbit.target_beta = apply_beta_limits(pan_orbit.target_beta);
+        pan_orbit.target_yaw = apply_yaw_limits(pan_orbit.target_yaw);
+        pan_orbit.target_pitch = apply_pitch_limits(pan_orbit.target_pitch);
         pan_orbit.target_radius = apply_zoom_limits(pan_orbit.target_radius);
 
         if !pan_orbit.allow_upside_down {
-            pan_orbit.target_beta = pan_orbit.target_beta.clamp(-PI / 2.0, PI / 2.0);
+            pan_orbit.target_pitch = pan_orbit.target_pitch.clamp(-PI / 2.0, PI / 2.0);
         }
 
         // 4 - Update the camera's transform based on current values
 
-        if let (Some(alpha), Some(beta), Some(radius)) =
-            (pan_orbit.alpha, pan_orbit.beta, pan_orbit.radius)
+        if let (Some(yaw), Some(pitch), Some(radius)) =
+            (pan_orbit.yaw, pan_orbit.pitch, pan_orbit.radius)
         {
             if has_moved
                 // For smoothed values, we must check whether current value is different from target
                 // value. If we only checked whether the values were non-zero this frame, then
                 // the camera would instantly stop moving as soon as you stopped moving it, instead
                 // of smoothly stopping
-                || pan_orbit.target_alpha != alpha
-                || pan_orbit.target_beta != beta
+                || pan_orbit.target_yaw != yaw
+                || pan_orbit.target_pitch != pitch
                 || pan_orbit.target_radius != radius
                 || pan_orbit.target_focus != pan_orbit.focus
                 || pan_orbit.force_update
             {
                 // Interpolate towards the target values
-                let new_alpha = util::lerp_and_snap_f32(
-                    alpha,
-                    pan_orbit.target_alpha,
+                let new_yaw = util::lerp_and_snap_f32(
+                    yaw,
+                    pan_orbit.target_yaw,
                     pan_orbit.orbit_smoothness,
                     time.delta_seconds(),
                 );
-                let new_beta = util::lerp_and_snap_f32(
-                    beta,
-                    pan_orbit.target_beta,
+                let new_pitch = util::lerp_and_snap_f32(
+                    pitch,
+                    pan_orbit.target_pitch,
                     pan_orbit.orbit_smoothness,
                     time.delta_seconds(),
                 );
@@ -640,8 +640,8 @@ fn pan_orbit_camera(
                 );
 
                 util::update_orbit_transform(
-                    new_alpha,
-                    new_beta,
+                    new_yaw,
+                    new_pitch,
                     new_radius,
                     new_focus,
                     &mut transform,
@@ -649,8 +649,8 @@ fn pan_orbit_camera(
                 );
 
                 // Update the current values
-                pan_orbit.alpha = Some(new_alpha);
-                pan_orbit.beta = Some(new_beta);
+                pan_orbit.yaw = Some(new_yaw);
+                pan_orbit.pitch = Some(new_pitch);
                 pan_orbit.radius = Some(new_radius);
                 pan_orbit.focus = new_focus;
                 pan_orbit.force_update = false;

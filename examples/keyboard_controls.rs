@@ -79,16 +79,16 @@ fn keyboard_controls(
             } else {
                 // Jump by 45 degrees using Left Ctrl + Arrows
                 if key_input.just_pressed(KeyCode::ArrowRight) {
-                    pan_orbit.target_alpha += 45f32.to_radians();
+                    pan_orbit.target_yaw += 45f32.to_radians();
                 }
                 if key_input.just_pressed(KeyCode::ArrowLeft) {
-                    pan_orbit.target_alpha -= 45f32.to_radians();
+                    pan_orbit.target_yaw -= 45f32.to_radians();
                 }
                 if key_input.just_pressed(KeyCode::ArrowUp) {
-                    pan_orbit.target_beta += 45f32.to_radians();
+                    pan_orbit.target_pitch += 45f32.to_radians();
                 }
                 if key_input.just_pressed(KeyCode::ArrowDown) {
-                    pan_orbit.target_beta -= 45f32.to_radians();
+                    pan_orbit.target_pitch -= 45f32.to_radians();
                 }
             }
         }
@@ -113,16 +113,16 @@ fn keyboard_controls(
         // Smooth rotation using arrow keys without modifier
         else {
             if key_input.pressed(KeyCode::ArrowRight) {
-                pan_orbit.target_alpha += 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_yaw += 50f32.to_radians() * time.delta_seconds();
             }
             if key_input.pressed(KeyCode::ArrowLeft) {
-                pan_orbit.target_alpha -= 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_yaw -= 50f32.to_radians() * time.delta_seconds();
             }
             if key_input.pressed(KeyCode::ArrowUp) {
-                pan_orbit.target_beta += 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_pitch += 50f32.to_radians() * time.delta_seconds();
             }
             if key_input.pressed(KeyCode::ArrowDown) {
-                pan_orbit.target_beta -= 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_pitch -= 50f32.to_radians() * time.delta_seconds();
             }
 
             // Zoom with Z and X

@@ -8,19 +8,19 @@ pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (
     if radius == 0.0 {
         radius = 0.05; // Radius 0 causes problems
     }
-    let alpha = if comp_vec.x == 0.0 && comp_vec.z >= 0.0 {
+    let yaw = if comp_vec.x == 0.0 && comp_vec.z >= 0.0 {
         0.0
     } else {
         (comp_vec.z / (comp_vec.x.powi(2) + comp_vec.z.powi(2)).sqrt()).acos()
     };
-    let beta = (comp_vec.y / radius).asin();
-    (alpha, beta, radius)
+    let pitch = (comp_vec.y / radius).asin();
+    (yaw, pitch, radius)
 }
 
-/// Update `transform` based on alpha, beta, and the camera's focus and radius
+/// Update `transform` based on yaw, pitch, and the camera's focus and radius
 pub fn update_orbit_transform(
-    alpha: f32,
-    beta: f32,
+    yaw: f32,
+    pitch: f32,
     mut radius: f32,
     focus: Vec3,
     transform: &mut Transform,
@@ -32,7 +32,7 @@ pub fn update_orbit_transform(
         // (near + far) / 2.0 ensures that objects near `focus` are not clipped
         radius = (p.near + p.far) / 2.0;
     }
-    new_transform.rotation *= Quat::from_rotation_y(alpha) * Quat::from_rotation_x(-beta);
+    new_transform.rotation *= Quat::from_rotation_y(yaw) * Quat::from_rotation_x(-pitch);
     new_transform.translation += focus + new_transform.rotation * Vec3::new(0.0, 0.0, radius);
     *transform = new_transform;
 }
@@ -69,9 +69,9 @@ mod calculate_from_translation_and_focus_tests {
     fn zero() {
         let translation = Vec3::new(0.0, 0.0, 0.0);
         let focus = Vec3::ZERO;
-        let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
-        assert_eq!(alpha, 0.0);
-        assert_eq!(beta, 0.0);
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert_eq!(yaw, 0.0);
+        assert_eq!(pitch, 0.0);
         assert_eq!(radius, 0.05);
     }
 
@@ -79,9 +79,9 @@ mod calculate_from_translation_and_focus_tests {
     fn in_front() {
         let translation = Vec3::new(0.0, 0.0, 5.0);
         let focus = Vec3::ZERO;
-        let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
-        assert_eq!(alpha, 0.0);
-        assert_eq!(beta, 0.0);
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert_eq!(yaw, 0.0);
+        assert_eq!(pitch, 0.0);
         assert_eq!(radius, 5.0);
     }
 
@@ -89,9 +89,9 @@ mod calculate_from_translation_and_focus_tests {
     fn to_the_side() {
         let translation = Vec3::new(5.0, 0.0, 0.0);
         let focus = Vec3::ZERO;
-        let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
-        assert!(approx_eq!(f32, alpha, PI / 2.0));
-        assert_eq!(beta, 0.0);
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert!(approx_eq!(f32, yaw, PI / 2.0));
+        assert_eq!(pitch, 0.0);
         assert_eq!(radius, 5.0);
     }
 
@@ -99,9 +99,9 @@ mod calculate_from_translation_and_focus_tests {
     fn above() {
         let translation = Vec3::new(0.0, 5.0, 0.0);
         let focus = Vec3::ZERO;
-        let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
-        assert_eq!(alpha, 0.0);
-        assert!(approx_eq!(f32, beta, PI / 2.0));
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert_eq!(yaw, 0.0);
+        assert!(approx_eq!(f32, pitch, PI / 2.0));
         assert_eq!(radius, 5.0);
     }
 
@@ -109,9 +109,9 @@ mod calculate_from_translation_and_focus_tests {
     fn arbitrary() {
         let translation = Vec3::new(0.92563736, 3.864204, -1.0105048);
         let focus = Vec3::ZERO;
-        let (alpha, beta, radius) = calculate_from_translation_and_focus(translation, focus);
-        assert!(approx_eq!(f32, alpha, 2.4));
-        assert!(approx_eq!(f32, beta, 1.23));
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert!(approx_eq!(f32, yaw, 2.4));
+        assert!(approx_eq!(f32, pitch, 1.23));
         assert_eq!(radius, 4.1);
     }
 }

@@ -48,21 +48,21 @@ fn setup(
     });
     // Camera
     commands.spawn((
-        // Note we're setting the initial position below with alpha, beta, and radius, hence
+        // Note we're setting the initial position below with yaw, pitch, and radius, hence
         // we don't set transform on the camera.
         Camera3dBundle::default(),
         PanOrbitCamera {
             // Set focal point (what the camera should look at)
             focus: Vec3::new(0.0, 1.0, 0.0),
             // Set the starting position, relative to focus (overrides camera's transform).
-            alpha: Some(TAU / 8.0),
-            beta: Some(TAU / 8.0),
+            yaw: Some(TAU / 8.0),
+            pitch: Some(TAU / 8.0),
             radius: Some(5.0),
             // Set limits on rotation and zoom
-            alpha_upper_limit: Some(TAU / 4.0),
-            alpha_lower_limit: Some(-TAU / 4.0),
-            beta_upper_limit: Some(TAU / 3.0),
-            beta_lower_limit: Some(-TAU / 3.0),
+            yaw_upper_limit: Some(TAU / 4.0),
+            yaw_lower_limit: Some(-TAU / 4.0),
+            pitch_upper_limit: Some(TAU / 3.0),
+            pitch_lower_limit: Some(-TAU / 3.0),
             zoom_upper_limit: Some(5.0),
             zoom_lower_limit: Some(1.0),
             // Adjust sensitivity of controls
