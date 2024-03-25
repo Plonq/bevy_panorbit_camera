@@ -60,20 +60,12 @@ impl Plugin for PanOrbitCameraPlugin {
 
         #[cfg(feature = "bevy_egui")]
         {
-            app.init_resource::<EguiWantsFocus>()
-                .add_systems(
-                    Update,
-                    egui::check_egui_wants_focus
-                        .after(EguiSet::InitContexts)
-                        .before(PanOrbitCameraSystemSet),
-                )
-                .configure_sets(
-                    Update,
-                    PanOrbitCameraSystemSet.run_if(resource_equals(EguiWantsFocus {
-                        prev: false,
-                        curr: false,
-                    })),
-                );
+            app.init_resource::<EguiWantsFocus>().add_systems(
+                Update,
+                egui::check_egui_wants_focus
+                    .after(EguiSet::InitContexts)
+                    .before(PanOrbitCameraSystemSet),
+            );
         }
     }
 }
@@ -81,6 +73,10 @@ impl Plugin for PanOrbitCameraPlugin {
 /// Base system set to allow ordering of `PanOrbitCamera`
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct PanOrbitCameraSystemSet;
+
+/// Base system set to allow ordering of `PanOrbitCamera`
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct InputSystemSet;
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
 /// camera's behaviour and controls.
@@ -401,6 +397,7 @@ fn pan_orbit_camera(
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
     time: Res<Time>,
+    #[cfg(feature = "bevy_egui")] egui_wants_focus: Res<EguiWantsFocus>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the yaw, pitch, and zoom values
@@ -469,10 +466,17 @@ fn pan_orbit_camera(
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
 
+        #[allow(unused_mut, unused_assignments)]
+        let mut should_get_input = true;
+        #[cfg(feature = "bevy_egui")]
+        {
+            should_get_input = !egui_wants_focus.prev && !egui_wants_focus.curr;
+        }
+
         // The reason we only skip getting input if the camera is inactive/disabled is because
         // it might still be moving (lerping towards target values) when the user is not
         // actively controlling it.
-        if pan_orbit.enabled && active_cam.entity == Some(entity) {
+        if pan_orbit.enabled && active_cam.entity == Some(entity) && should_get_input {
             let zoom_direction = match pan_orbit.reversed_zoom {
                 true => -1.0,
                 false => 1.0,
