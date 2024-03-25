@@ -74,10 +74,6 @@ impl Plugin for PanOrbitCameraPlugin {
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct PanOrbitCameraSystemSet;
 
-/// Base system set to allow ordering of `PanOrbitCamera`
-#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct InputSystemSet;
-
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
 /// camera's behaviour and controls.
 /// The entity must have `Transform` and `Projection` components. Typically you would add a
