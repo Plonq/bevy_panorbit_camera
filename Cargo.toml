@@ -16,12 +16,12 @@ bevy_egui = ["dep:bevy_egui"]
 
 [dependencies]
 bevy = { version = "0.13", default-features = false, features = ["bevy_render"] }
-bevy_egui = { version = "0.25", optional = true, default-features = false }
+bevy_egui = { version = "0.27", optional = true, default-features = false }
 
 [dev-dependencies]
 bevy = { version = "0.13" }
 float-cmp = "0.9.0"
-bevy_egui = { version = "0.25", default-features = false, features = ["render", "default_fonts"] }
+bevy_egui = { version = "0.27", default-features = false, features = ["render", "default_fonts"] }
 
 [[example]]
 name = "egui"
