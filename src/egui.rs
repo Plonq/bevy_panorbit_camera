@@ -23,6 +23,16 @@ pub struct EguiWantsFocus {
     pub include_hover: bool,
 }
 
+impl EguiWantsFocus {
+    /// Creates `EguiWantsFocus` with `include_hover` set to `true`
+    pub fn include_hover() -> Self {
+        EguiWantsFocus {
+            include_hover: true,
+            ..default()
+        }
+    }
+}
+
 pub fn check_egui_wants_focus(
     mut contexts: bevy_egui::EguiContexts,
     mut wants_focus: ResMut<EguiWantsFocus>,
