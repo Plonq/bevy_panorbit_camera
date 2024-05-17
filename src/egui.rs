@@ -46,6 +46,9 @@ pub fn check_egui_wants_focus(
         }
         value
     });
-    wants_focus.prev = wants_focus.curr;
-    wants_focus.curr = new_wants_focus;
+    let new_res = EguiWantsFocus {
+        prev: wants_focus.curr,
+        curr: new_wants_focus,
+    };
+    wants_focus.set_if_neq(new_res);
 }
