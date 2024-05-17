@@ -15,7 +15,11 @@ pub struct EguiWantsFocus {
     pub curr: bool,
     /// When true, just hovering over an egui panel/window will prevent PanOrbitCamera
     /// from reacting to input events. This is an optional, and hopefully temporary,
-    /// workaround to this issue: https://github.com/Plonq/bevy_panorbit_camera/issues/75
+    /// workaround to this issue: https://github.com/Plonq/bevy_panorbit_camera/issues/75.
+    /// Note that this will prevent PanOrbitCamera using reacting to input whenever the cursor
+    /// is over an egui area, even if you're in the middle of dragging to rotate, so only use
+    /// this if you use egui Panels (as opposed to Windows). If you use Windows exclusively
+    /// then no workaround is required.
     pub include_hover: bool,
 }
 
