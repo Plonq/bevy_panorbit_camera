@@ -1,20 +1,22 @@
 use bevy::prelude::*;
 
-/// A resource that tracks whether egui wants focus on the current and previous frames.
+/// A resource that tracks whether egui wants focus on the current and previous frames,
+/// in order to determine whether PanOrbitCamera should react to input events.
 ///
 /// The reason the previous frame's value is saved is because when you click inside an
 /// egui window, Context::wants_pointer_input() still returns false once before returning
 /// true. If the camera stops taking input only when it returns false, there's one frame
 /// where both egui and the camera are using the input events, which is not desirable.
-///
-/// This is re-exported in case it's useful. I recommend only using input events if both
-/// `prev` and `curr` are false.
 #[derive(Resource, PartialEq, Eq, Default)]
 pub struct EguiWantsFocus {
     /// Whether egui wanted focus on the previous frame
     pub prev: bool,
     /// Whether egui wants focus on the current frame
     pub curr: bool,
+    /// When true, just hovering over an egui panel/window will prevent PanOrbitCamera
+    /// from reacting to input events. This is an optional, and hopefully temporary,
+    /// workaround to this issue: https://github.com/Plonq/bevy_panorbit_camera/issues/75
+    pub include_hover: bool,
 }
 
 pub fn check_egui_wants_focus(
@@ -28,11 +30,12 @@ pub fn check_egui_wants_focus(
     // interacting with.
     let new_wants_focus = windows.iter().any(|window| {
         let ctx = contexts.ctx_for_window_mut(window);
-        ctx.wants_pointer_input() || ctx.wants_keyboard_input()
+        let mut value = ctx.wants_pointer_input() || ctx.wants_keyboard_input();
+        if wants_focus.include_hover {
+            value |= ctx.is_pointer_over_area()
+        }
+        value
     });
-    let new_res = EguiWantsFocus {
-        prev: wants_focus.curr,
-        curr: new_wants_focus,
-    };
-    wants_focus.set_if_neq(new_res);
+    wants_focus.prev = wants_focus.curr;
+    wants_focus.curr = new_wants_focus;
 }
