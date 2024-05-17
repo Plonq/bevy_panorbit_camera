@@ -1,11 +1,13 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
+use bevy::ecs::system::Command;
 use std::f32::consts::{PI, TAU};
 
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
+use bevy::transform::TransformSystem;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiSet;
@@ -44,7 +46,7 @@ impl Plugin for PanOrbitCameraPlugin {
             .init_resource::<MouseKeyTracker>()
             .init_resource::<TouchTracker>()
             .add_systems(
-                Update,
+                PostUpdate,
                 (
                     (
                         active_viewport_data
@@ -55,13 +57,14 @@ impl Plugin for PanOrbitCameraPlugin {
                     pan_orbit_camera,
                 )
                     .chain()
-                    .in_set(PanOrbitCameraSystemSet),
+                    .in_set(PanOrbitCameraSystemSet)
+                    .before(TransformSystem::TransformPropagate),
             );
 
         #[cfg(feature = "bevy_egui")]
         {
             app.init_resource::<EguiWantsFocus>().add_systems(
-                Update,
+                PostUpdate,
                 egui::check_egui_wants_focus
                     .after(EguiSet::InitContexts)
                     .before(PanOrbitCameraSystemSet),
