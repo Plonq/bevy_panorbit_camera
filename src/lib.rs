@@ -12,7 +12,7 @@ use bevy::window::{PrimaryWindow, WindowRef};
 use bevy_egui::EguiSet;
 
 #[cfg(feature = "bevy_egui")]
-pub use crate::egui::EguiWantsFocus;
+pub use crate::egui::{EguiFocusIncludesHover, EguiWantsFocus};
 use crate::input::{mouse_key_tracker, MouseKeyTracker};
 pub use crate::touch::TouchControls;
 use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
@@ -62,12 +62,14 @@ impl Plugin for PanOrbitCameraPlugin {
 
         #[cfg(feature = "bevy_egui")]
         {
-            app.init_resource::<EguiWantsFocus>().add_systems(
-                PostUpdate,
-                egui::check_egui_wants_focus
-                    .after(EguiSet::InitContexts)
-                    .before(PanOrbitCameraSystemSet),
-            );
+            app.init_resource::<EguiWantsFocus>()
+                .init_resource::<EguiFocusIncludesHover>()
+                .add_systems(
+                    PostUpdate,
+                    egui::check_egui_wants_focus
+                        .after(EguiSet::InitContexts)
+                        .before(PanOrbitCameraSystemSet),
+                );
         }
     }
 }
