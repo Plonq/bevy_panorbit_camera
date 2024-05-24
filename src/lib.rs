@@ -5,7 +5,7 @@ use std::f32::consts::{PI, TAU};
 
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy::render::camera::RenderTarget;
+use bevy::render::camera::{CameraUpdateSystem, RenderTarget};
 use bevy::transform::TransformSystem;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
@@ -57,7 +57,8 @@ impl Plugin for PanOrbitCameraPlugin {
                 )
                     .chain()
                     .in_set(PanOrbitCameraSystemSet)
-                    .before(TransformSystem::TransformPropagate),
+                    .before(TransformSystem::TransformPropagate)
+                    .before(CameraUpdateSystem),
             );
 
         #[cfg(feature = "bevy_egui")]
