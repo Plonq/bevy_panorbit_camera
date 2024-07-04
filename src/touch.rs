@@ -1,4 +1,3 @@
-use crate::traits::Midpoint;
 use bevy::input::touch::Touch;
 use bevy::math::Vec2;
 use bevy::prelude::{Res, ResMut, Resource, Touches};
@@ -51,6 +50,7 @@ pub struct TwoFingerGestures {
     pub pinch: f32,
     /// The delta angle of the two touches.
     /// Positive values correspond to rotating clockwise.
+    #[allow(dead_code)]
     pub rotation: f32,
 }
 
