@@ -9,7 +9,6 @@ pub struct MouseKeyTracker {
     pub pan: Vec2,
     pub scroll_line: f32,
     pub scroll_pixel: f32,
-    pub rotation_angle: f32,
     pub orbit_button_changed: bool,
 }
 

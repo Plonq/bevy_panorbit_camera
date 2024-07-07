@@ -1,24 +1,3 @@
-use bevy::math::Vec2;
-use std::ops::{Add, Sub};
-
-pub trait Midpoint {
-    type V: Add + Sub;
-
-    /// Return the value exact halfway between two values
-    fn midpoint(&self, other: Self::V) -> Self::V;
-}
-
-impl Midpoint for Vec2 {
-    type V = Vec2;
-
-    /// Return the vector exact halfway between two vectors
-    fn midpoint(&self, other: Self::V) -> Self::V {
-        let vec_to_other = other - *self;
-        let half = vec_to_other / 2.0;
-        *self + half
-    }
-}
-
 pub trait OptionalClamp {
     type N: PartialOrd;
 
