@@ -1,7 +1,6 @@
 //! Demonstrates the bevy_egui feature which allows bevy_panorbit_camera to ignore input events in
 //! egui windows
 
-use bevy::ecs::event::EventUpdateSignal;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
@@ -14,11 +13,6 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, ui_example_system);
 
-    // Make Bevy drop unconsumed events every frame to prevent weird behaviour when moving mouse
-    // out of an egui window right after scrolling (zooming)
-    // See: https://bevyengine.org/news/bevy-0-13/#events-live-longer
-    app.world.remove_resource::<EventUpdateSignal>();
-
     app.run();
 }
 
@@ -30,13 +24,13 @@ fn setup(
     // Ground
     commands.spawn(PbrBundle {
         mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3)),
+        material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
         ..default()
     });
     // Cube
     commands.spawn(PbrBundle {
         mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-        material: materials.add(Color::rgb(0.8, 0.7, 0.6)),
+        material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
         ..default()
     });
