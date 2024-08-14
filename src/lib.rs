@@ -326,6 +326,7 @@ fn active_viewport_data(
     primary_windows: Query<&Window, With<PrimaryWindow>>,
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
+    #[cfg(feature = "bevy_egui")] egui_wants_focus: Res<EguiWantsFocus>,
 ) {
     let mut new_resource = ActiveCameraData::default();
     let mut max_cam_order = 0;
@@ -340,45 +341,53 @@ fn active_viewport_data(
 
         if input_just_activated {
             has_input = true;
-            // First check if cursor is in the same window as this camera
-            if let RenderTarget::Window(win_ref) = camera.target {
-                let Some(window) = (match win_ref {
-                    WindowRef::Primary => primary_windows.get_single().ok(),
-                    WindowRef::Entity(entity) => other_windows.get(entity).ok(),
-                }) else {
-                    // Window does not exist - maybe it was closed and the camera not cleaned up
-                    continue;
-                };
+            #[allow(unused_mut, unused_assignments)]
+            let mut should_get_input = true;
+            #[cfg(feature = "bevy_egui")]
+            {
+                should_get_input = !egui_wants_focus.prev && !egui_wants_focus.curr;
+            }
+            if should_get_input {
+                // First check if cursor is in the same window as this camera
+                if let RenderTarget::Window(win_ref) = camera.target {
+                    let Some(window) = (match win_ref {
+                        WindowRef::Primary => primary_windows.get_single().ok(),
+                        WindowRef::Entity(entity) => other_windows.get(entity).ok(),
+                    }) else {
+                        // Window does not exist - maybe it was closed and the camera not cleaned up
+                        continue;
+                    };
 
-                // Is the cursor/touch in this window?
-                // Note: there's a bug in winit that causes `window.cursor_position()` to return
-                // a `Some` value even if the cursor is not in this window, in very specific cases.
-                // See: https://github.com/Plonq/bevy_panorbit_camera/issues/22
-                if let Some(input_position) = window.cursor_position().or(touches
-                    .iter_just_pressed()
-                    .collect::<Vec<_>>()
-                    .first()
-                    .map(|touch| touch.position()))
-                {
-                    // Now check if cursor is within this camera's viewport
-                    if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
-                        // Window coordinates have Y starting at the bottom, so we need to reverse
-                        // the y component before comparing with the viewport rect
-                        let cursor_in_vp = input_position.x > min.x
-                            && input_position.x < max.x
-                            && input_position.y > min.y
-                            && input_position.y < max.y;
+                    // Is the cursor/touch in this window?
+                    // Note: there's a bug in winit that causes `window.cursor_position()` to return
+                    // a `Some` value even if the cursor is not in this window, in very specific cases.
+                    // See: https://github.com/Plonq/bevy_panorbit_camera/issues/22
+                    if let Some(input_position) = window.cursor_position().or(touches
+                        .iter_just_pressed()
+                        .collect::<Vec<_>>()
+                        .first()
+                        .map(|touch| touch.position()))
+                    {
+                        // Now check if cursor is within this camera's viewport
+                        if let Some(Rect { min, max }) = camera.logical_viewport_rect() {
+                            // Window coordinates have Y starting at the bottom, so we need to reverse
+                            // the y component before comparing with the viewport rect
+                            let cursor_in_vp = input_position.x > min.x
+                                && input_position.x < max.x
+                                && input_position.y > min.y
+                                && input_position.y < max.y;
 
-                        // Only set if camera order is higher. This may overwrite a previous value
-                        // in the case the viewport is overlapping another viewport.
-                        if cursor_in_vp && camera.order >= max_cam_order {
-                            new_resource = ActiveCameraData {
-                                entity: Some(entity),
-                                viewport_size: camera.logical_viewport_size(),
-                                window_size: Some(Vec2::new(window.width(), window.height())),
-                                manual: false,
-                            };
-                            max_cam_order = camera.order;
+                            // Only set if camera order is higher. This may overwrite a previous value
+                            // in the case the viewport is overlapping another viewport.
+                            if cursor_in_vp && camera.order >= max_cam_order {
+                                new_resource = ActiveCameraData {
+                                    entity: Some(entity),
+                                    viewport_size: camera.logical_viewport_size(),
+                                    window_size: Some(Vec2::new(window.width(), window.height())),
+                                    manual: false,
+                                };
+                                max_cam_order = camera.order;
+                            }
                         }
                     }
                 }
@@ -398,7 +407,6 @@ fn pan_orbit_camera(
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
     time: Res<Time>,
-    #[cfg(feature = "bevy_egui")] egui_wants_focus: Res<EguiWantsFocus>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the yaw, pitch, and zoom values
@@ -467,17 +475,10 @@ fn pan_orbit_camera(
         let mut scroll_pixel = 0.0;
         let mut orbit_button_changed = false;
 
-        #[allow(unused_mut, unused_assignments)]
-        let mut should_get_input = true;
-        #[cfg(feature = "bevy_egui")]
-        {
-            should_get_input = !egui_wants_focus.prev && !egui_wants_focus.curr;
-        }
-
         // The reason we only skip getting input if the camera is inactive/disabled is because
         // it might still be moving (lerping towards target values) when the user is not
         // actively controlling it.
-        if pan_orbit.enabled && active_cam.entity == Some(entity) && should_get_input {
+        if pan_orbit.enabled && active_cam.entity == Some(entity) {
             let zoom_direction = match pan_orbit.reversed_zoom {
                 true => -1.0,
                 false => 1.0,
