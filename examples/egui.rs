@@ -54,9 +54,19 @@ fn setup(
 }
 
 fn ui_example_system(mut contexts: EguiContexts) {
-    egui::Window::new("Hello")
+    egui::SidePanel::left("left_panel")
+        .resizable(true)
+        .show(contexts.ctx_mut(), |ui| {
+            ui.label("Left resizeable panel");
+        });
+
+    egui::Window::new("Movable Window").show(contexts.ctx_mut(), |ui| {
+        ui.label("Hello world");
+    });
+
+    egui::Window::new("Immovable Window")
         .movable(false)
         .show(contexts.ctx_mut(), |ui| {
-            ui.label("world");
+            ui.label("Hello world");
         });
 }
