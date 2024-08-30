@@ -79,7 +79,7 @@ fn setup(
 
 fn ui_example_system(mut contexts: EguiContexts, windows: Query<Entity, With<Window>>) {
     for window in windows.iter() {
-        egui::Window::new("Hello").show(contexts.ctx_for_window_mut(window), |ui| {
+        egui::Window::new("Hello").show(contexts.ctx_for_entity_mut(window), |ui| {
             ui.label("world");
         });
     }
