@@ -1,3 +1,7 @@
+## 0.19.3
+
+- Update `bevy_egui` dependency to 0.29
+
 ## 0.19.2
 
 - Fix bug with how egui feature deals with egui side panels and immovable windows. It should now act more
