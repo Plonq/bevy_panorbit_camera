@@ -1,3 +1,7 @@
+## 0.19.4
+
+- Re-fix bug that was fixed in 0.19.1 (see below for explanation).
+
 ## 0.19.3
 
 - Update `bevy_egui` dependency to 0.29
