@@ -1,3 +1,7 @@
+## 0.19.5
+
+- Update `bevy_egui` to 0.30 in order to resolve an issue with `bevy-inspector-egui` 0.27 ([#85](https://github.com/Plonq/bevy_panorbit_camera/pull/85))
+
 ## 0.19.4
 
 - Re-fix bug that was fixed in 0.19.1 (see below for explanation).
