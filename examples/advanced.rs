@@ -64,7 +64,7 @@ fn setup(
             pitch_upper_limit: Some(TAU / 3.0),
             pitch_lower_limit: Some(-TAU / 3.0),
             zoom_upper_limit: Some(5.0),
-            zoom_lower_limit: Some(1.0),
+            zoom_lower_limit: 1.0,
             // Adjust sensitivity of controls
             orbit_sensitivity: 1.5,
             pan_sensitivity: 0.5,
