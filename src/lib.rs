@@ -172,15 +172,14 @@ pub struct PanOrbitCamera {
     /// Defaults to `None`.
     pub pitch_lower_limit: Option<f32>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
-    /// camera, or the projection scale in the case of using an orthographic
-    /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
+    /// camera, or the projection's scale in the case of using an orthographic camera.
     /// Defaults to `None`.
     pub zoom_upper_limit: Option<f32>,
     /// Lower limit on the zoom. This applies to `radius`, in the case of using a perspective
-    /// camera, or the projection scale in the case of using an orthographic
-    /// camera. Note that the zoom value (radius or scale) will never go below `0.02`.
-    /// Defaults to `None`.
-    pub zoom_lower_limit: Option<f32>,
+    /// camera, or the projection's scale in the case of using an orthographic camera.
+    /// Should always be >0 otherwise you'll get stuck at 0.
+    /// Defaults to `0.05`.
+    pub zoom_lower_limit: f32,
     /// The sensitivity of the orbiting motion.
     /// Defaults to `1.0`.
     pub orbit_sensitivity: f32,
@@ -283,7 +282,7 @@ impl Default for PanOrbitCamera {
             pitch_upper_limit: None,
             pitch_lower_limit: None,
             zoom_upper_limit: None,
-            zoom_lower_limit: None,
+            zoom_lower_limit: 0.05,
             force_update: false,
         }
     }
@@ -413,10 +412,7 @@ fn pan_orbit_camera(
         let apply_zoom_limits = {
             let zoom_upper_limit = pan_orbit.zoom_upper_limit;
             let zoom_lower_limit = pan_orbit.zoom_lower_limit;
-            move |zoom: f32| {
-                zoom.clamp_optional(zoom_lower_limit, zoom_upper_limit)
-                    .max(0.05)
-            }
+            move |zoom: f32| zoom.clamp_optional(Some(zoom_lower_limit), zoom_upper_limit)
         };
 
         let apply_yaw_limits = {
