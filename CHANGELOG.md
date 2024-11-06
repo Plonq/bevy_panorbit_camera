@@ -1,3 +1,8 @@
+## 0.20
+
+- Change `zoom_lower_limit` from `Option<f32>` to `f32`, defaulting to `0.05`, and remove the hard coded lower zoom limit of `0.05`.
+  This allows the lower limit to be lowered below 0.05, in case there is a need to work at very small scales.
+
 ## 0.19.5
 
 - Update `bevy_egui` to 0.30 in order to resolve an issue with `bevy-inspector-egui` 0.27 ([#85](https://github.com/Plonq/bevy_panorbit_camera/pull/85))
