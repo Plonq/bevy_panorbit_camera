@@ -19,9 +19,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // help
-    commands.spawn(
-        Text::new("Press R to switch projection".to_string())
-    );
+    commands.spawn(Text::new("Press R to switch projection".to_string()));
     // Ground
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
@@ -46,7 +44,9 @@ fn setup(
         Camera3d::default(),
         Transform::from_translation(Vec3::new(0.0, 1.5, 6.0)),
         Projection::from(OrthographicProjection {
-            scaling_mode: ScalingMode::FixedVertical { viewport_height: 1.0 },
+            scaling_mode: ScalingMode::FixedVertical {
+                viewport_height: 1.0,
+            },
             ..OrthographicProjection::default_3d()
         }),
         PanOrbitCamera::default(),

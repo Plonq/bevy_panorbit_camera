@@ -97,7 +97,7 @@ fn setup(
     // Light
     // NOTE: Currently lights are shared between passes - see https://github.com/bevyengine/bevy/issues/3462
     commands.spawn((
-       PointLight::default(),
+        PointLight::default(),
         Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
     ));
 
@@ -113,8 +113,7 @@ fn setup(
                 target: RenderTarget::Image(image_handle.clone()),
                 ..default()
             },
-            Transform::from_translation(Vec3::new(0.0, 0.0, 15.0))
-                .looking_at(Vec3::ZERO, Vec3::Y),
+            Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
             PanOrbitCamera::default(),
             first_pass_layer,
         ))
@@ -135,8 +134,7 @@ fn setup(
     commands.spawn((
         Mesh3d(cube_handle),
         MeshMaterial3d(material_handle),
-        Transform::from_xyz(0.0, 0.0, 1.5)
-            .with_rotation(Quat::from_rotation_x(-PI / 5.0)),
+        Transform::from_xyz(0.0, 0.0, 1.5).with_rotation(Quat::from_rotation_x(-PI / 5.0)),
         MainPassCube,
     ));
 
