@@ -180,7 +180,7 @@ pub struct PanOrbitCamera {
     /// Should always be >0 otherwise you'll get stuck at 0.
     /// Defaults to `0.05`.
     pub zoom_lower_limit: f32,
-    /// The sensitivity of the orbiting motion.
+    /// The sensitivity of the orbiting motion. A value of `0.0` disables orbiting.
     /// Defaults to `1.0`.
     pub orbit_sensitivity: f32,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
@@ -188,7 +188,7 @@ pub struct PanOrbitCamera {
     /// smoothing.
     /// Defaults to `0.8`.
     pub orbit_smoothness: f32,
-    /// The sensitivity of the panning motion.
+    /// The sensitivity of the panning motion. A value of `0.0` disables panning.
     /// Defaults to `1.0`.
     pub pan_sensitivity: f32,
     /// How much smoothing is applied to the panning motion. A value of `0.0` disables smoothing,
@@ -197,6 +197,7 @@ pub struct PanOrbitCamera {
     /// Defaults to `0.6`.
     pub pan_smoothness: f32,
     /// The sensitivity of moving the camera closer or further way using the scroll wheel.
+    /// A value of `0.0` disables zooming.
     /// Defaults to `1.0`.
     pub zoom_sensitivity: f32,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
