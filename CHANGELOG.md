@@ -1,7 +1,3 @@
-## 0.21
-
-- Update to Bevy 0.15
-
 ## 0.20
 
 - Change `zoom_lower_limit` from `Option<f32>` to `f32`, defaulting to `0.05`, and remove the hard coded lower zoom limit of `0.05`.
