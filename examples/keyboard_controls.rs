@@ -57,7 +57,7 @@ fn keyboard_controls(
 ) {
     for (mut pan_orbit, mut transform) in pan_orbit_query.iter_mut() {
         if key_input.pressed(KeyCode::ControlLeft) {
-            // Jump to focus point 1m using Ctrl+Shift + Arrows
+            // Jump focus point 1m using Ctrl+Shift + Arrows
             if key_input.pressed(KeyCode::ShiftLeft) {
                 if key_input.just_pressed(KeyCode::ArrowRight) {
                     pan_orbit.target_focus += Vec3::X;
