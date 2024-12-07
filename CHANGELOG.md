@@ -1,3 +1,7 @@
+## 0.21
+
+- Update to Bevy 0.15
+
 ## 0.20.1
 
 - Update docs, explaining that setting sensitivity values to 0 will disable the respective control
