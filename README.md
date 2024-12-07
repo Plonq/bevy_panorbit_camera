@@ -49,10 +49,8 @@ Add `PanOrbitCamera` to a camera:
 
 ```rust ignore
 commands.spawn((
-    Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-        ..default()
-    },
+    Camera3d::default(),
+    Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
     PanOrbitCamera::default(),
 ));
 ```

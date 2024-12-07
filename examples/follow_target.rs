@@ -22,35 +22,30 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Ground
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
-        material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
+    ));
     // Cube
     commands
-        .spawn(PbrBundle {
-            mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-            material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..default()
-        })
+        .spawn((
+            Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+            MeshMaterial3d(materials.add(Color::srgb(0.8, 0.7, 0.6))),
+            Transform::from_xyz(0.0, 0.5, 0.0),
+        ))
         .insert(Cube);
     // Light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
+    commands.spawn((
+        PointLight {
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+        Transform::from_xyz(4.0, 8.0, 4.0),
+    ));
     // Camera
     commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-            ..default()
-        },
+        Camera3d::default(),
+        Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         PanOrbitCamera {
             // Panning the camera changes the focus, and so you most likely want to disable
             // panning when setting the focus manually
@@ -72,7 +67,7 @@ fn animate_cube(
 ) {
     if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
-        *angle += 20f32.to_radians() * time.delta_seconds() % TAU;
+        *angle += 20f32.to_radians() * time.delta_secs() % TAU;
         // Convert angle to position
         let pos = Vec3::new(angle.sin() * 1.5, 0.5, angle.cos() * 1.5);
         cube_tfm.translation = pos;

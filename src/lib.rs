@@ -621,25 +621,25 @@ fn pan_orbit_camera(
                     yaw,
                     pan_orbit.target_yaw,
                     pan_orbit.orbit_smoothness,
-                    time.delta_seconds(),
+                    time.delta_secs(),
                 );
                 let new_pitch = util::lerp_and_snap_f32(
                     pitch,
                     pan_orbit.target_pitch,
                     pan_orbit.orbit_smoothness,
-                    time.delta_seconds(),
+                    time.delta_secs(),
                 );
                 let new_radius = util::lerp_and_snap_f32(
                     radius,
                     pan_orbit.target_radius,
                     pan_orbit.zoom_smoothness,
-                    time.delta_seconds(),
+                    time.delta_secs(),
                 );
                 let new_focus = util::lerp_and_snap_vec3(
                     pan_orbit.focus,
                     pan_orbit.target_focus,
                     pan_orbit.pan_smoothness,
-                    time.delta_seconds(),
+                    time.delta_secs(),
                 );
 
                 util::update_orbit_transform(

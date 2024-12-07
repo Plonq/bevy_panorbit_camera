@@ -24,33 +24,28 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Ground
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
-        material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
+    ));
     // Cube
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-        material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.8, 0.7, 0.6))),
+        Transform::from_xyz(0.0, 0.5, 0.0),
+    ));
     // Light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
+    commands.spawn((
+        PointLight {
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+        Transform::from_xyz(4.0, 8.0, 4.0),
+    ));
     // Camera
     commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-            ..default()
-        },
+        Camera3d::default(),
+        Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         PanOrbitCamera::default(),
     ));
 }
@@ -96,16 +91,16 @@ fn keyboard_controls(
         else if key_input.pressed(KeyCode::ShiftLeft) {
             let mut delta_translation = Vec3::ZERO;
             if key_input.pressed(KeyCode::ArrowRight) {
-                delta_translation += transform.rotation * Vec3::X * time.delta_seconds();
+                delta_translation += transform.rotation * Vec3::X * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowLeft) {
-                delta_translation += transform.rotation * Vec3::NEG_X * time.delta_seconds();
+                delta_translation += transform.rotation * Vec3::NEG_X * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowUp) {
-                delta_translation += transform.rotation * Vec3::Y * time.delta_seconds();
+                delta_translation += transform.rotation * Vec3::Y * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowDown) {
-                delta_translation += transform.rotation * Vec3::NEG_Y * time.delta_seconds();
+                delta_translation += transform.rotation * Vec3::NEG_Y * time.delta_secs();
             }
             transform.translation += delta_translation;
             pan_orbit.target_focus += delta_translation;
@@ -113,24 +108,24 @@ fn keyboard_controls(
         // Smooth rotation using arrow keys without modifier
         else {
             if key_input.pressed(KeyCode::ArrowRight) {
-                pan_orbit.target_yaw += 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_yaw += 50f32.to_radians() * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowLeft) {
-                pan_orbit.target_yaw -= 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_yaw -= 50f32.to_radians() * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowUp) {
-                pan_orbit.target_pitch += 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_pitch += 50f32.to_radians() * time.delta_secs();
             }
             if key_input.pressed(KeyCode::ArrowDown) {
-                pan_orbit.target_pitch -= 50f32.to_radians() * time.delta_seconds();
+                pan_orbit.target_pitch -= 50f32.to_radians() * time.delta_secs();
             }
 
             // Zoom with Z and X
             if key_input.pressed(KeyCode::KeyZ) {
-                pan_orbit.target_radius -= 5.0 * time.delta_seconds();
+                pan_orbit.target_radius -= 5.0 * time.delta_secs();
             }
             if key_input.pressed(KeyCode::KeyX) {
-                pan_orbit.target_radius += 5.0 * time.delta_seconds();
+                pan_orbit.target_radius += 5.0 * time.delta_secs();
             }
         }
 
