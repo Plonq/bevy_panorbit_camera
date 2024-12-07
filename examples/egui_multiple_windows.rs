@@ -25,33 +25,28 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // Ground
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(5.0, 5.0)),
-        material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(5.0, 5.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.5, 0.3))),
+    ));
     // Cube
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid::new(1.0, 1.0, 1.0)),
-        material: materials.add(Color::srgb(0.8, 0.7, 0.6)),
-        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..default()
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.8, 0.7, 0.6))),
+        Transform::from_xyz(0.0, 0.5, 0.0),
+    ));
     // Light
-    commands.spawn(PointLightBundle {
-        point_light: PointLight {
+    commands.spawn((
+        PointLight {
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..default()
-    });
+        Transform::from_xyz(4.0, 8.0, 4.0),
+    ));
     // Camera
     commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-            ..default()
-        },
+        Camera3d::default(),
+        Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         PanOrbitCamera::default(),
     ));
 
@@ -65,14 +60,12 @@ fn setup(
 
     // second window camera
     commands.spawn((
-        Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
-            camera: Camera {
-                target: RenderTarget::Window(WindowRef::Entity(second_window)),
-                ..default()
-            },
+        Camera3d::default(),
+        Camera {
+            target: RenderTarget::Window(WindowRef::Entity(second_window)),
             ..default()
         },
+        Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
         PanOrbitCamera::default(),
     ));
 }
