@@ -49,7 +49,6 @@ Add `PanOrbitCamera` to a camera:
 
 ```rust ignore
 commands.spawn((
-    Camera3d::default(),
     Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
     PanOrbitCamera::default(),
 ));
@@ -68,7 +67,7 @@ all the possible configuration options.
 ## Version Compatibility
 
 | bevy | bevy_panorbit_camera |
-|------|----------------------|
+| ---- | -------------------- |
 | 0.15 | 0.21                 |
 | 0.14 | 0.19-0.20            |
 | 0.13 | 0.14-0.18            |

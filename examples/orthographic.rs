@@ -41,7 +41,6 @@ fn setup(
     ));
     // Camera
     commands.spawn((
-        Camera3d::default(),
         Transform::from_translation(Vec3::new(0.0, 1.5, 6.0)),
         Projection::from(OrthographicProjection {
             scaling_mode: ScalingMode::FixedVertical {
