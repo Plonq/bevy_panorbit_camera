@@ -81,8 +81,6 @@ pub struct PanOrbitCameraSystemSet;
 
 /// Tags an entity as capable of panning and orbiting, and provides a way to configure the
 /// camera's behaviour and controls.
-/// The entity must have `Transform` and `Projection` components. Typically you would add a
-/// `Camera3dBundle` which already contains these.
 /// # Example
 /// ```no_run
 /// # use bevy::prelude::*;
@@ -97,15 +95,13 @@ pub struct PanOrbitCameraSystemSet;
 /// fn setup(mut commands: Commands) {
 ///     commands
 ///         .spawn((
-///             Camera3dBundle {
-///                 transform: Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
-///                 ..default()
-///             },
+///             Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
 ///             PanOrbitCamera::default(),
 ///         ));
 ///  }
 /// ```
 #[derive(Component, Copy, Clone, Debug, PartialEq)]
+#[require(Camera3d)]
 pub struct PanOrbitCamera {
     /// The point to orbit around, and what the camera looks at. Updated automatically.
     /// If you want to change the focus programmatically after initialization, set `target_focus`

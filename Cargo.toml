@@ -16,6 +16,7 @@ bevy_egui = ["dep:bevy_egui"]
 
 [dependencies]
 bevy = { version = "0.15", default-features = false, features = [
+    "bevy_core_pipeline", 
     "bevy_render",
     "bevy_window"
 ] }
