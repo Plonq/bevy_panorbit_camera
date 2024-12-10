@@ -45,7 +45,7 @@ Add the plugin:
 .add_plugins(PanOrbitCameraPlugin)
 ```
 
-Add `PanOrbitCamera` to a camera:
+Add `PanOrbitCamera` (this will automatically add a `Camera3d` but you can add it manually if necessary):
 
 ```rust ignore
 commands.spawn((
