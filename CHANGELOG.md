@@ -1,3 +1,8 @@
+## 0.21.1
+
+- Add `Camera3d` as a required component (new feature of Bevy 0.15) of `PanOrbitCamera`, so it doesn't need to be added
+  manually
+
 ## 0.21
 
 - Update to Bevy 0.15
