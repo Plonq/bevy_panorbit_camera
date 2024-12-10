@@ -39,7 +39,6 @@ fn setup(
     ));
     // Camera
     commands.spawn((
-        Camera3d::default(),
         Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         PanOrbitCamera {
             // Disable smoothing, since the animation takes care of that

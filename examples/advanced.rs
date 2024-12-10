@@ -47,7 +47,6 @@ fn setup(
     commands.spawn((
         // Note we're setting the initial position below with yaw, pitch, and radius, hence
         // we don't set transform on the camera.
-        Camera3d::default(),
         PanOrbitCamera {
             // Set focal point (what the camera should look at)
             focus: Vec3::new(0.0, 1.0, 0.0),
