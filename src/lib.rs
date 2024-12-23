@@ -100,7 +100,7 @@ pub struct PanOrbitCameraSystemSet;
 ///         ));
 ///  }
 /// ```
-#[derive(Component, Copy, Clone, Debug, PartialEq)]
+#[derive(Component, Reflect, Copy, Clone, Debug, PartialEq)]
 #[require(Camera3d)]
 pub struct PanOrbitCamera {
     /// The point to orbit around, and what the camera looks at. Updated automatically.
