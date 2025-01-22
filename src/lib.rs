@@ -9,7 +9,7 @@ use bevy::render::camera::{CameraUpdateSystem, RenderTarget};
 use bevy::transform::TransformSystem;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
-use bevy_egui::EguiSet;
+use bevy_egui::EguiPreUpdateSet;
 
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::{EguiFocusIncludesHover, EguiWantsFocus};
@@ -68,7 +68,7 @@ impl Plugin for PanOrbitCameraPlugin {
                 .add_systems(
                     PostUpdate,
                     egui::check_egui_wants_focus
-                        .after(EguiSet::InitContexts)
+                        .after(EguiPreUpdateSet::InitContexts)
                         .before(PanOrbitCameraSystemSet),
                 );
         }
