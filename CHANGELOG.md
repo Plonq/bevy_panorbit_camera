@@ -1,3 +1,7 @@
+## 0.22
+
+- Update `bevy_egui` to 0.32
+
 ## 0.21.2
 
 - Derive `Reflect` on `PanOrbitCamera`
