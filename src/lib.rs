@@ -167,12 +167,13 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub pitch_lower_limit: Option<f32>,
-    /// Upper bound for focus point. Used to limit camera movement in a box.
+    /// The origin for a shape to restrict the cameras `focus` position.
+    /// Defaults to `Vec3::ZERO`.
+    pub focus_bounds_origin: Vec3,
+    /// The shape (Sphere or Cuboid) that the `focus` is restricted by. Centered on the
+    /// `focus_bounds_origin`.
     /// Defaults to `None`.
-    pub focus_upper_limit: Option<Vec3>,
-    /// Lower bound for focus point. Used to limit camera movement in a box.
-    /// Defaults to `None`.
-    pub focus_lower_limit: Option<Vec3>,
+    pub focus_bounds_shape: Option<FocusBoundsShape>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
     /// camera, or the projection's scale in the case of using an orthographic camera.
     /// Defaults to `None`.
@@ -284,8 +285,8 @@ impl Default for PanOrbitCamera {
             yaw_lower_limit: None,
             pitch_upper_limit: None,
             pitch_lower_limit: None,
-            focus_upper_limit: None,
-            focus_lower_limit: None,
+            focus_bounds_origin: Vec3::ZERO,
+            focus_bounds_shape: None,
             zoom_upper_limit: None,
             zoom_lower_limit: 0.05,
             force_update: false,
@@ -316,6 +317,27 @@ pub struct ActiveCameraData {
     /// Note that setting this to `true` will effectively break multiple viewport/window support
     /// unless you manually reimplement it.
     pub manual: bool,
+}
+
+/// The shape to restrict the camera's focus inside.
+#[derive(Clone, PartialEq, Debug, Reflect, Copy)]
+pub enum FocusBoundsShape {
+    /// Restrain the camera's focus in a sphere centered on `focus_bounds_origin`.
+    Sphere(Sphere),
+    /// Restrain the camera's focus in a cuboid centered on `focus_bounds_origin`.
+    Cuboid(Cuboid),
+}
+
+impl From<Sphere> for FocusBoundsShape {
+    fn from(value: Sphere) -> Self {
+        Self::Sphere(value)
+    }
+}
+
+impl From<Cuboid> for FocusBoundsShape {
+    fn from(value: Cuboid) -> Self {
+        Self::Cuboid(value)
+    }
 }
 
 /// Gather data about the active viewport, i.e. the viewport the user is interacting with.
@@ -433,18 +455,18 @@ fn pan_orbit_camera(
         };
 
         let apply_focus_limits = {
-            let min = pan_orbit.focus_lower_limit;
-            let max = pan_orbit.focus_upper_limit;
+            let origin = pan_orbit.focus_bounds_origin;
+            let shape = pan_orbit.focus_bounds_shape;
 
             move |focus: Vec3| {
-                let mut new_focus = focus;
-                if let Some(max) = max {
-                    new_focus = new_focus.min(max);
+                let Some(shape) = shape else {
+                    return focus;
+                };
+
+                match shape {
+                    FocusBoundsShape::Cuboid(shape) => shape.closest_point(focus - origin) + origin,
+                    FocusBoundsShape::Sphere(shape) => shape.closest_point(focus - origin) + origin,
                 }
-                if let Some(min) = min {
-                    new_focus = new_focus.max(min);
-                }
-                new_focus
             }
         };
 
