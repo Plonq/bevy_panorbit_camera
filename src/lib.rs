@@ -167,6 +167,12 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub pitch_lower_limit: Option<f32>,
+    /// Upper bound for focus point. Used to limit camera movement in a box.
+    /// Defaults to `None`.
+    pub focus_upper_limit: Option<Vec3>,
+    /// Lower bound for focus point. Used to limit camera movement in a box.
+    /// Defaults to `None`.
+    pub focus_lower_limit: Option<Vec3>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
     /// camera, or the projection's scale in the case of using an orthographic camera.
     /// Defaults to `None`.
@@ -278,6 +284,8 @@ impl Default for PanOrbitCamera {
             yaw_lower_limit: None,
             pitch_upper_limit: None,
             pitch_lower_limit: None,
+            focus_upper_limit: None,
+            focus_lower_limit: None,
             zoom_upper_limit: None,
             zoom_lower_limit: 0.05,
             force_update: false,
@@ -424,6 +432,22 @@ fn pan_orbit_camera(
             move |pitch: f32| pitch.clamp_optional(pitch_lower_limit, pitch_upper_limit)
         };
 
+        let apply_focus_limits = {
+            let min = pan_orbit.focus_lower_limit;
+            let max = pan_orbit.focus_upper_limit;
+
+            move |focus: Vec3| {
+                let mut new_focus = focus;
+                if let Some(max) = max {
+                    new_focus = new_focus.min(max);
+                }
+                if let Some(min) = min {
+                    new_focus = new_focus.max(min);
+                }
+                new_focus
+            }
+        };
+
         if !pan_orbit.initialized {
             // Calculate yaw, pitch, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
@@ -433,11 +457,13 @@ fn pan_orbit_camera(
             let &mut mut yaw = pan_orbit.yaw.get_or_insert(yaw);
             let &mut mut pitch = pan_orbit.pitch.get_or_insert(pitch);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
+            let mut focus = pan_orbit.focus;
 
             // Apply limits
             yaw = apply_yaw_limits(yaw);
             pitch = apply_pitch_limits(pitch);
             radius = apply_zoom_limits(radius);
+            focus = apply_focus_limits(focus);
 
             // Set initial values
             pan_orbit.yaw = Some(yaw);
@@ -446,13 +472,13 @@ fn pan_orbit_camera(
             pan_orbit.target_yaw = yaw;
             pan_orbit.target_pitch = pitch;
             pan_orbit.target_radius = radius;
-            pan_orbit.target_focus = pan_orbit.focus;
+            pan_orbit.target_focus = focus;
 
             util::update_orbit_transform(
                 yaw,
                 pitch,
                 radius,
-                pan_orbit.focus,
+                focus,
                 &mut transform,
                 &mut projection,
             );
@@ -591,6 +617,7 @@ fn pan_orbit_camera(
         pan_orbit.target_yaw = apply_yaw_limits(pan_orbit.target_yaw);
         pan_orbit.target_pitch = apply_pitch_limits(pan_orbit.target_pitch);
         pan_orbit.target_radius = apply_zoom_limits(pan_orbit.target_radius);
+        pan_orbit.target_focus = apply_focus_limits(pan_orbit.target_focus);
 
         if !pan_orbit.allow_upside_down {
             pan_orbit.target_pitch = pan_orbit.target_pitch.clamp(-PI / 2.0, PI / 2.0);
