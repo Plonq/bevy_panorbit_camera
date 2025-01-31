@@ -1,3 +1,7 @@
+## 0.22.1
+
+- Add ability to limit the cameras `focus` to a cube or sphere shape (thanks @bytemunch)
+
 ## 0.22
 
 - Update `bevy_egui` to 0.32
