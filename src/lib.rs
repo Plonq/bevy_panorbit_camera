@@ -322,9 +322,9 @@ pub struct ActiveCameraData {
 /// The shape to restrict the camera's focus inside.
 #[derive(Clone, PartialEq, Debug, Reflect, Copy)]
 pub enum FocusBoundsShape {
-    /// Restrain the camera's focus in a sphere centered on `focus_bounds_origin`.
+    /// Limit the camera's focus to a sphere centered on `focus_bounds_origin`.
     Sphere(Sphere),
-    /// Restrain the camera's focus in a cuboid centered on `focus_bounds_origin`.
+    /// Limit the camera's focus to a cuboid centered on `focus_bounds_origin`.
     Cuboid(Cuboid),
 }
 
