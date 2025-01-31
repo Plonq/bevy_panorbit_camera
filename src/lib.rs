@@ -167,6 +167,13 @@ pub struct PanOrbitCamera {
     /// around the local X axis.
     /// Defaults to `None`.
     pub pitch_lower_limit: Option<f32>,
+    /// The origin for a shape to restrict the cameras `focus` position.
+    /// Defaults to `Vec3::ZERO`.
+    pub focus_bounds_origin: Vec3,
+    /// The shape (Sphere or Cuboid) that the `focus` is restricted by. Centered on the
+    /// `focus_bounds_origin`.
+    /// Defaults to `None`.
+    pub focus_bounds_shape: Option<FocusBoundsShape>,
     /// Upper limit on the zoom. This applies to `radius`, in the case of using a perspective
     /// camera, or the projection's scale in the case of using an orthographic camera.
     /// Defaults to `None`.
@@ -278,6 +285,8 @@ impl Default for PanOrbitCamera {
             yaw_lower_limit: None,
             pitch_upper_limit: None,
             pitch_lower_limit: None,
+            focus_bounds_origin: Vec3::ZERO,
+            focus_bounds_shape: None,
             zoom_upper_limit: None,
             zoom_lower_limit: 0.05,
             force_update: false,
@@ -308,6 +317,27 @@ pub struct ActiveCameraData {
     /// Note that setting this to `true` will effectively break multiple viewport/window support
     /// unless you manually reimplement it.
     pub manual: bool,
+}
+
+/// The shape to restrict the camera's focus inside.
+#[derive(Clone, PartialEq, Debug, Reflect, Copy)]
+pub enum FocusBoundsShape {
+    /// Restrain the camera's focus in a sphere centered on `focus_bounds_origin`.
+    Sphere(Sphere),
+    /// Restrain the camera's focus in a cuboid centered on `focus_bounds_origin`.
+    Cuboid(Cuboid),
+}
+
+impl From<Sphere> for FocusBoundsShape {
+    fn from(value: Sphere) -> Self {
+        Self::Sphere(value)
+    }
+}
+
+impl From<Cuboid> for FocusBoundsShape {
+    fn from(value: Cuboid) -> Self {
+        Self::Cuboid(value)
+    }
 }
 
 /// Gather data about the active viewport, i.e. the viewport the user is interacting with.
@@ -424,6 +454,22 @@ fn pan_orbit_camera(
             move |pitch: f32| pitch.clamp_optional(pitch_lower_limit, pitch_upper_limit)
         };
 
+        let apply_focus_limits = {
+            let origin = pan_orbit.focus_bounds_origin;
+            let shape = pan_orbit.focus_bounds_shape;
+
+            move |focus: Vec3| {
+                let Some(shape) = shape else {
+                    return focus;
+                };
+
+                match shape {
+                    FocusBoundsShape::Cuboid(shape) => shape.closest_point(focus - origin) + origin,
+                    FocusBoundsShape::Sphere(shape) => shape.closest_point(focus - origin) + origin,
+                }
+            }
+        };
+
         if !pan_orbit.initialized {
             // Calculate yaw, pitch, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
@@ -433,11 +479,13 @@ fn pan_orbit_camera(
             let &mut mut yaw = pan_orbit.yaw.get_or_insert(yaw);
             let &mut mut pitch = pan_orbit.pitch.get_or_insert(pitch);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
+            let mut focus = pan_orbit.focus;
 
             // Apply limits
             yaw = apply_yaw_limits(yaw);
             pitch = apply_pitch_limits(pitch);
             radius = apply_zoom_limits(radius);
+            focus = apply_focus_limits(focus);
 
             // Set initial values
             pan_orbit.yaw = Some(yaw);
@@ -446,13 +494,13 @@ fn pan_orbit_camera(
             pan_orbit.target_yaw = yaw;
             pan_orbit.target_pitch = pitch;
             pan_orbit.target_radius = radius;
-            pan_orbit.target_focus = pan_orbit.focus;
+            pan_orbit.target_focus = focus;
 
             util::update_orbit_transform(
                 yaw,
                 pitch,
                 radius,
-                pan_orbit.focus,
+                focus,
                 &mut transform,
                 &mut projection,
             );
@@ -591,6 +639,7 @@ fn pan_orbit_camera(
         pan_orbit.target_yaw = apply_yaw_limits(pan_orbit.target_yaw);
         pan_orbit.target_pitch = apply_pitch_limits(pan_orbit.target_pitch);
         pan_orbit.target_radius = apply_zoom_limits(pan_orbit.target_radius);
+        pan_orbit.target_focus = apply_focus_limits(pan_orbit.target_focus);
 
         if !pan_orbit.allow_upside_down {
             pan_orbit.target_pitch = pan_orbit.target_pitch.clamp(-PI / 2.0, PI / 2.0);
