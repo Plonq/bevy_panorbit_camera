@@ -8,11 +8,7 @@ pub fn calculate_from_translation_and_focus(translation: Vec3, focus: Vec3) -> (
     if radius == 0.0 {
         radius = 0.05; // Radius 0 causes problems
     }
-    let yaw = if comp_vec.x == 0.0 && comp_vec.z >= 0.0 {
-        0.0
-    } else {
-        (comp_vec.z / (comp_vec.x.powi(2) + comp_vec.z.powi(2)).sqrt()).acos()
-    };
+    let yaw = comp_vec.x.atan2(comp_vec.z);
     let pitch = (comp_vec.y / radius).asin();
     (yaw, pitch, radius)
 }
@@ -113,6 +109,16 @@ mod calculate_from_translation_and_focus_tests {
         assert!(approx_eq!(f32, yaw, 2.4));
         assert!(approx_eq!(f32, pitch, 1.23));
         assert_eq!(radius, 4.1);
+    }
+
+    #[test]
+    fn negative_x() {
+        let translation = Vec3::new(-5.0, 5.0, 9.0);
+        let focus = Vec3::ZERO;
+        let (yaw, pitch, radius) = calculate_from_translation_and_focus(translation, focus);
+        assert!(approx_eq!(f32, yaw, -0.5070985));
+        assert!(approx_eq!(f32, pitch, 0.45209613));
+        assert!(approx_eq!(f32, radius, 11.445523));
     }
 }
 
