@@ -1,3 +1,7 @@
+## 0.22.2
+
+- Fix initial calculation of yaw from the camera's transform (translation)
+
 ## 0.22.1
 
 - Add ability to limit the cameras `focus` to a cube or sphere shape (thanks @bytemunch)
