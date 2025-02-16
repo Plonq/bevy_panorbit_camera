@@ -479,6 +479,7 @@ fn pan_orbit_camera(
             let &mut mut yaw = pan_orbit.yaw.get_or_insert(yaw);
             let &mut mut pitch = pan_orbit.pitch.get_or_insert(pitch);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
+            println!("{},{},{}", yaw, pitch, radius);
             let mut focus = pan_orbit.focus;
 
             // Apply limits
@@ -506,6 +507,12 @@ fn pan_orbit_camera(
             );
 
             pan_orbit.initialized = true;
+
+            println!("Initial translation: {:?}", &transform.translation);
+            println!(
+                "Initial rotation: {:?}",
+                &transform.rotation.to_euler(EulerRot::XZY)
+            );
         }
 
         // 1 - Get Input

@@ -37,7 +37,7 @@ fn setup(
     ));
     // Camera
     commands.spawn((
-        Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
+        Transform::from_xyz(0.0, 1.5, 5.0),
         PanOrbitCamera::default(),
     ));
 }
