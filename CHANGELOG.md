@@ -1,3 +1,7 @@
+## 0.23
+
+- Update `bevy_egui` to 0.33
+
 ## 0.22.2
 
 - Fix initial calculation of yaw from the camera's transform (translation)
