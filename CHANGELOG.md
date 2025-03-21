@@ -1,3 +1,7 @@
+## 0.24
+
+- Add ability to change the base axes, e.g. to make Z up instead of Y up
+
 ## 0.23
 
 - Update `bevy_egui` to 0.33
