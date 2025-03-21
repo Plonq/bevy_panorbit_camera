@@ -251,6 +251,10 @@ pub struct PanOrbitCamera {
     /// This will be automatically set back to `false` after one frame.
     /// Defaults to `false`.
     pub force_update: bool,
+    /// Axis order definition. This can be used to e.g. define a different default
+    /// up direction. The default up is Y, but if you want the camera rotated.
+    /// The axis can be switched. Default is [Vec3::X, Vec3::Y, Vec3::Z]
+    pub axis: [Vec3; 3],
 }
 
 impl Default for PanOrbitCamera {
@@ -290,6 +294,7 @@ impl Default for PanOrbitCamera {
             zoom_upper_limit: None,
             zoom_lower_limit: 0.05,
             force_update: false,
+            axis: [Vec3::X, Vec3::Y, Vec3::Z],
         }
     }
 }
@@ -474,8 +479,11 @@ fn pan_orbit_camera(
             // Calculate yaw, pitch, and radius from the camera's position. If user sets all
             // these explicitly, this calculation is wasted, but that's okay since it will only run
             // once on init.
-            let (yaw, pitch, radius) =
-                util::calculate_from_translation_and_focus(transform.translation, pan_orbit.focus);
+            let (yaw, pitch, radius) = util::calculate_from_translation_and_focus(
+                transform.translation,
+                pan_orbit.focus,
+                pan_orbit.axis,
+            );
             let &mut mut yaw = pan_orbit.yaw.get_or_insert(yaw);
             let &mut mut pitch = pan_orbit.pitch.get_or_insert(pitch);
             let &mut mut radius = pan_orbit.radius.get_or_insert(radius);
@@ -503,6 +511,7 @@ fn pan_orbit_camera(
                 focus,
                 &mut transform,
                 &mut projection,
+                pan_orbit.axis,
             );
 
             pan_orbit.initialized = true;
@@ -611,8 +620,8 @@ fn pan_orbit_camera(
                     }
                 }
                 // Translate by local axes
-                let right = transform.rotation * Vec3::X * -pan.x;
-                let up = transform.rotation * Vec3::Y * pan.y;
+                let right = transform.rotation * pan_orbit.axis[0] * -pan.x;
+                let up = transform.rotation * pan_orbit.axis[1] * pan.y;
                 let translation = (right + up) * multiplier;
                 pan_orbit.target_focus += translation;
                 has_moved = true;
@@ -694,6 +703,7 @@ fn pan_orbit_camera(
                     new_focus,
                     &mut transform,
                     &mut projection,
+                    pan_orbit.axis,
                 );
 
                 // Update the current values
