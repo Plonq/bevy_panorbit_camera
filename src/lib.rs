@@ -237,9 +237,15 @@ pub struct PanOrbitCamera {
     /// Should not be set manually unless you know what you're doing.
     /// Defaults to `false` (but will be updated immediately).
     pub is_upside_down: bool,
-    /// Whether to allow the camera to go upside down.
+    /// Whether to allow the camera below the default presentation plane. The presentation plane is
+    /// spanned by the first two axis for the `axis` setting.
     /// Defaults to `false`.
     pub allow_upside_down: bool,
+    /// Whether to revert the orbiting directon if the camera is upside down.
+    /// The camera is upside down if it is below the default presentation plane.
+    /// The presentation plane is spanned by the first two axis for the `axis` setting.
+    /// Default value is false.
+    pub reverse_orbiting_direction_if_uspside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
     /// Whether `PanOrbitCamera` has been initialized with the initial config.
@@ -265,6 +271,7 @@ impl Default for PanOrbitCamera {
             radius: None,
             is_upside_down: false,
             allow_upside_down: false,
+            reverse_orbiting_direction_if_uspside_down: true,
             orbit_sensitivity: 1.0,
             orbit_smoothness: 0.1,
             pan_sensitivity: 1.0,
@@ -590,7 +597,9 @@ fn pan_orbit_camera(
             if let Some(win_size) = active_cam.window_size {
                 let delta_x = {
                     let delta = orbit.x / win_size.x * PI * 2.0;
-                    if pan_orbit.is_upside_down {
+                    if pan_orbit.reverse_orbiting_direction_if_uspside_down
+                        && pan_orbit.is_upside_down
+                    {
                         -delta
                     } else {
                         delta
