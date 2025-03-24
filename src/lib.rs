@@ -244,7 +244,7 @@ pub struct PanOrbitCamera {
     /// Whether to revert the orbiting directon if the camera is upside down.
     /// The camera is upside down if it is below the default presentation plane.
     /// The presentation plane is spanned by the first and last axis for the `axis` setting.
-    /// Default value is false.
+    /// Default value is true.
     pub reverse_orbiting_direction_if_uspside_down: bool,
     /// If `false`, disable control of the camera. Defaults to `true`.
     pub enabled: bool,
