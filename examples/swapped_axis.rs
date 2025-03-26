@@ -16,7 +16,7 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // Rotation to mimick a rotated world.
+    // Rotation to mimic a rotated world.
     let rotate = Transform::from_rotation(Quat::from_rotation_x(90.0f32.to_radians()));
     // Ground
     commands.spawn((
@@ -39,7 +39,7 @@ fn setup(
         rotate * Transform::from_xyz(4.0, 8.0, 4.0),
     ));
     // Camera
-    // Swaps the axis of the camera to use Z as up insteaed of Y as up which is the default.
+    // Swaps the axis of the camera to use Z as up instead of Y as up which is the default.
     let swapped_axis = [Vec3::X, Vec3::Z, Vec3::Y];
     let camera = PanOrbitCamera {
         axis: swapped_axis,

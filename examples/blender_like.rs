@@ -46,13 +46,13 @@ fn setup(
         // Note we're setting the initial position below with yaw, pitch, and radius, hence
         // we don't set transform on the camera.
         PanOrbitCamera {
-            // // Set focal point (what the camera should look at)
+            // Set focal point (what the camera should look at)
             focus: Vec3::new(0.0, 1.0, 0.0),
-            // // Set the starting position, relative to focus (overrides camera's transform).
+            // Set the starting position, relative to focus (overrides camera's transform).
             yaw: Some(TAU / 8.0),
             pitch: Some(TAU / 8.0),
             radius: Some(5.0),
-            // // Allow the camera to go upside down
+            // Allow the camera to go upside down
             allow_upside_down: true,
             // Change the controls (these match Blender)
             button_orbit: MouseButton::Middle,
@@ -61,7 +61,7 @@ fn setup(
             // camera responds to trackpad as in Blender
             // if you don't want to write out both modifiers,
             // you can use this helper method:
-            // trackpad_behavior: TrackpadBehavior::blender_default(),
+            // `trackpad_behavior: TrackpadBehavior::blender_default(),`
             trackpad_behavior: TrackpadBehavior::BlenderLike {
                 modifier_pan: Some(KeyCode::ShiftLeft),
                 modifier_zoom: Some(KeyCode::ControlLeft),
