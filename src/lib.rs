@@ -236,7 +236,7 @@ pub struct PanOrbitCamera {
     /// For `BlenderLike` zooming, add `ControlLeft` in `modifier_zoom` field.
     pub trackpad_behavior: TrackpadBehavior,
     /// Whether to enable pinch-to-zoom functionality on trackpads.
-    /// Defaults to `false
+    /// Defaults to `false`.
     pub trackpad_pinch_to_zoom_enabled: bool,
     /// The sensitivity of trackpad gestures when using BlenderLike behavior. A value of `0.0`
     /// effectively disables trackpad orbit/pan functionality. This applies to both orbit and pan
