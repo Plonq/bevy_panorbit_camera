@@ -381,7 +381,7 @@ pub enum TrackpadBehavior {
 }
 
 impl TrackpadBehavior {
-    /// Creates a BlenderLike variant with default modifiers (Shift for pan, Ctrl for zoom)
+    /// Creates a `BlenderLike` variant with default modifiers (Shift for pan, Ctrl for zoom)
     pub fn blender_default() -> Self {
         Self::BlenderLike {
             modifier_pan: Some(KeyCode::ShiftLeft),
