@@ -363,9 +363,9 @@ impl From<Cuboid> for FocusBoundsShape {
     }
 }
 
-/// Allows for changing the TrackpadBehavior from default to the way it works in Blender.
-/// In Blender the trackpad orbits when scrolling. If you hold down the ShiftLeft, it Pans and
-/// holding down ControlLeft will Zoom.
+/// Allows for changing the `TrackpadBehavior` from default to the way it works in Blender.
+/// In Blender the trackpad orbits when scrolling. If you hold down the `ShiftLeft`, it Pans and
+/// holding down `ControlLeft` will Zoom.
 #[derive(Clone, PartialEq, Debug, Reflect, Copy)]
 pub enum TrackpadBehavior {
     /// Default bevy_panorbit_camera behavior is to zoom
