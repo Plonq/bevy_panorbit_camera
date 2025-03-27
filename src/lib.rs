@@ -368,8 +368,8 @@ impl From<Cuboid> for FocusBoundsShape {
 /// holding down `ControlLeft` will Zoom.
 #[derive(Clone, PartialEq, Debug, Reflect, Copy)]
 pub enum TrackpadBehavior {
-    /// Default bevy_panorbit_camera behavior is to zoom
-    DefaultZoom,
+    /// Default touchpad behavior. I.e., no special gesture support, scrolling on the touchpad (vertically) will zoom, as it does with a mouse.
+    Default,
     /// Switch trackpad behavior to work like Blender
     BlenderLike {
         /// Modifier key that enables panning while scrolling
