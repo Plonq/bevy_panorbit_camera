@@ -370,7 +370,7 @@ impl From<Cuboid> for FocusBoundsShape {
 pub enum TrackpadBehavior {
     /// Default touchpad behavior. I.e., no special gesture support, scrolling on the touchpad (vertically) will zoom, as it does with a mouse.
     Default,
-    /// Switch trackpad behavior to work like Blender
+    /// Blender-like touchpad behavior. Scrolling on the touchpad will orbit, and you can pinch to zoom. Optionally you can pan, or switch scroll to zoom, by holding down a modifier.
     BlenderLike {
         /// Modifier key that enables panning while scrolling
         modifier_pan: Option<KeyCode>,
