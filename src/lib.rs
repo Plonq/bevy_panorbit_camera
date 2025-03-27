@@ -292,7 +292,7 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             touch_enabled: true,
             touch_controls: TouchControls::OneFingerOrbit,
-            trackpad_behavior: TrackpadBehavior::DefaultZoom,
+            trackpad_behavior: TrackpadBehavior::Default,
             trackpad_pinch_to_zoom_enabled: false,
             trackpad_sensitivity: 1.0,
             reversed_zoom: false,
