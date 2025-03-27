@@ -238,7 +238,7 @@ pub struct PanOrbitCamera {
     /// Whether to enable pinch-to-zoom functionality on trackpads.
     /// Defaults to `false`.
     pub trackpad_pinch_to_zoom_enabled: bool,
-    /// The sensitivity of trackpad gestures when using BlenderLike behavior. A value of `0.0`
+    /// The sensitivity of trackpad gestures when using `BlenderLike` behavior. A value of `0.0`
     /// effectively disables trackpad orbit/pan functionality. This applies to both orbit and pan.
     /// operations when using a trackpad with the BlenderLike behavior mode.
     /// Defaults to `1.0`.
