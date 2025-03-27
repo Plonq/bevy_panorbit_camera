@@ -233,7 +233,7 @@ pub struct PanOrbitCamera {
     /// Defaults to `TrackpadBehavior::DefaultZoom`.
     /// To enable orbit behavior similar to Blender, change this to TrackpadBehavior::BlenderLike.
     /// For BlenderLike panning, add ShiftLeft to the modifier_pan field.
-    /// For BlenderLike zooming,add ControlLeft in modifier_zoom field.
+    /// For `BlenderLike` zooming, add `ControlLeft` in `modifier_zoom` field.
     pub trackpad_behavior: TrackpadBehavior,
     /// Whether to enable pinch-to-zoom functionality on trackpads.
     /// Defaults to `false
