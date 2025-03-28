@@ -8,6 +8,8 @@
 
 use std::f32::consts::PI;
 
+use bevy::math::FloatOrd;
+use bevy::render::camera::ImageRenderTarget;
 use bevy::window::PrimaryWindow;
 use bevy::{
     prelude::*,
@@ -109,7 +111,10 @@ fn setup(
                 // render before the "main pass" camera
                 clear_color: ClearColorConfig::Custom(Color::WHITE),
                 order: -1,
-                target: RenderTarget::Image(image_handle.clone()),
+                target: RenderTarget::Image(ImageRenderTarget {
+                    handle: image_handle.clone(),
+                    scale_factor: FloatOrd(1.0),
+                }),
                 ..default()
             },
             Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
@@ -148,7 +153,7 @@ fn setup(
     // Note: you probably want to update the `viewport_size` and `window_size` whenever they change,
     // I haven't done this here for simplicity.
     let primary_window = windows
-        .get_single()
+        .single()
         .expect("There is only ever one primary window");
     active_cam.set_if_neq(ActiveCameraData {
         // Set the entity to the entity ID of the camera you want to control. In this case, it's
