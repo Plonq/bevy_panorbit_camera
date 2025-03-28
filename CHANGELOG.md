@@ -1,3 +1,7 @@
+## 0.25
+
+- Adds better trackpad support, with Blender-style controls (thanks @natepiano)
+
 ## 0.24
 
 - Add ability to change the base axes, e.g. to make Z up instead of Y up
