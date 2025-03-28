@@ -58,7 +58,7 @@ fn switch_projection(
     mut camera_query: Query<(&mut PanOrbitCamera, &mut Projection)>,
 ) {
     if key_input.just_pressed(KeyCode::KeyR) {
-        let Ok((mut camera, mut projection)) = camera_query.get_single_mut() else {
+        let Ok((mut camera, mut projection)) = camera_query.single_mut() else {
             return;
         };
         std::mem::swap(&mut *next_projection, &mut *projection);

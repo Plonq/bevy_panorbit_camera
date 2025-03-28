@@ -64,7 +64,7 @@ fn animate_cube(
     mut cube_q: Query<&mut Transform, With<Cube>>,
     mut angle: Local<f32>,
 ) {
-    if let Ok(mut cube_tfm) = cube_q.get_single_mut() {
+    if let Ok(mut cube_tfm) = cube_q.single_mut() {
         // Rotate 20 degrees a second, wrapping around to 0 after a full rotation
         *angle += 20f32.to_radians() * time.delta_secs() % TAU;
         // Convert angle to position
@@ -75,8 +75,8 @@ fn animate_cube(
 
 /// Set the camera's focus to the cube's position
 fn cam_follow(mut pan_orbit_q: Query<&mut PanOrbitCamera>, cube_q: Query<&Transform, With<Cube>>) {
-    if let Ok(mut pan_orbit) = pan_orbit_q.get_single_mut() {
-        if let Ok(cube_tfm) = cube_q.get_single() {
+    if let Ok(mut pan_orbit) = pan_orbit_q.single_mut() {
+        if let Ok(cube_tfm) = cube_q.single() {
             pan_orbit.target_focus = cube_tfm.translation;
             // Whenever changing properties manually like this, it's necessary to force
             // PanOrbitCamera to update this frame (by default it only updates when there are

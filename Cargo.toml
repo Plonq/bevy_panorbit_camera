@@ -12,10 +12,11 @@ homepage = "https://github.com/Plonq/bevy_panorbit_camera"
 readme = "README.md"
 
 [features]
+default = ["bevy/std"]
 bevy_egui = ["dep:bevy_egui"]
 
 [dependencies]
-bevy = { version = "0.15", default-features = false, features = [
+bevy = { version = "0.16.0-rc.2", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_window",
@@ -23,7 +24,7 @@ bevy = { version = "0.15", default-features = false, features = [
 bevy_egui = { version = "0.33", optional = true, default-features = false }
 
 [dev-dependencies]
-bevy = { version = "0.15" }
+bevy = { version = "0.16.0-rc.2" }
 float-cmp = "0.10.0"
 bevy_egui = { version = "0.33", default-features = false, features = [
     "render",
