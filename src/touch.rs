@@ -110,7 +110,7 @@ impl TouchTracker {
                 // but we want the answer to be +2deg (or -2deg if swapped). Therefore, we calculate
                 // two angles - one from UP and one from DOWN, and use the one with the smallest
                 // absolute value. This is necessary to get a predictable result when the two touches
-                // swap sides (i.e mobile 1's X position being less than the other, to the other way
+                // swap sides (i.e. mobile 1's X position being less than the other, to the other way
                 // round).
                 let rotation = if rotate_angle_negy.abs() < rotate_angle_posy.abs() {
                     rotate_angle_negy

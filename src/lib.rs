@@ -3,6 +3,7 @@
 
 use std::f32::consts::{PI, TAU};
 
+use bevy::input::gestures::PinchGesture;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::render::camera::{CameraUpdateSystem, RenderTarget};
@@ -228,6 +229,20 @@ pub struct PanOrbitCamera {
     /// The control scheme for touch inputs.
     /// Defaults to `TouchControls::OneFingerOrbit`.
     pub touch_controls: TouchControls,
+    /// The behavior for trackpad inputs.
+    /// Defaults to `TrackpadBehavior::DefaultZoom`.
+    /// To enable orbit behavior similar to Blender, change this to TrackpadBehavior::BlenderLike.
+    /// For `BlenderLike` panning, add `ShiftLeft` to the `modifier_pan` field.
+    /// For `BlenderLike` zooming, add `ControlLeft` in `modifier_zoom` field.
+    pub trackpad_behavior: TrackpadBehavior,
+    /// Whether to enable pinch-to-zoom functionality on trackpads.
+    /// Defaults to `false`.
+    pub trackpad_pinch_to_zoom_enabled: bool,
+    /// The sensitivity of trackpad gestures when using `BlenderLike` behavior. A value of `0.0`
+    /// effectively disables trackpad orbit/pan functionality. This applies to both orbit and pan.
+    /// operations when using a trackpad with the `BlenderLike` behavior mode.
+    /// Defaults to `1.0`.
+    pub trackpad_sensitivity: f32,
     /// Whether to reverse the zoom direction.
     /// Defaults to `false`.
     pub reversed_zoom: bool,
@@ -277,6 +292,9 @@ impl Default for PanOrbitCamera {
             modifier_pan: None,
             touch_enabled: true,
             touch_controls: TouchControls::OneFingerOrbit,
+            trackpad_behavior: TrackpadBehavior::Default,
+            trackpad_pinch_to_zoom_enabled: false,
+            trackpad_sensitivity: 1.0,
             reversed_zoom: false,
             enabled: true,
             yaw: None,
@@ -345,6 +363,33 @@ impl From<Cuboid> for FocusBoundsShape {
     }
 }
 
+/// Allows for changing the `TrackpadBehavior` from default to the way it works in Blender.
+/// In Blender the trackpad orbits when scrolling. If you hold down the `ShiftLeft`, it Pans and
+/// holding down `ControlLeft` will Zoom.
+#[derive(Clone, PartialEq, Debug, Reflect, Copy)]
+pub enum TrackpadBehavior {
+    /// Default touchpad behavior. I.e., no special gesture support, scrolling on the touchpad (vertically) will zoom, as it does with a mouse.
+    Default,
+    /// Blender-like touchpad behavior. Scrolling on the touchpad will orbit, and you can pinch to zoom. Optionally you can pan, or switch scroll to zoom, by holding down a modifier.
+    BlenderLike {
+        /// Modifier key that enables panning while scrolling
+        modifier_pan: Option<KeyCode>,
+
+        /// Modifier key that enables panning while scrolling
+        modifier_zoom: Option<KeyCode>,
+    },
+}
+
+impl TrackpadBehavior {
+    /// Creates a `BlenderLike` variant with default modifiers (Shift for pan, Ctrl for zoom)
+    pub fn blender_default() -> Self {
+        Self::BlenderLike {
+            modifier_pan: Some(KeyCode::ShiftLeft),
+            modifier_zoom: Some(KeyCode::ControlLeft),
+        }
+    }
+}
+
 /// Gather data about the active viewport, i.e. the viewport the user is interacting with.
 /// Enables multiple viewports/windows.
 #[allow(clippy::too_many_arguments)]
@@ -352,6 +397,7 @@ fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     key_input: Res<ButtonInput<KeyCode>>,
+    pinch_events: EventReader<PinchGesture>,
     scroll_events: EventReader<MouseWheel>,
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
@@ -366,6 +412,7 @@ fn active_viewport_data(
     for (entity, camera, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = input::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
+            || !pinch_events.is_empty()
             || !scroll_events.is_empty()
             || (touches.iter_just_pressed().count() > 0
                 && touches.iter_just_pressed().count() == touches.iter().count());
