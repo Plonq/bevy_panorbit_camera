@@ -1,6 +1,2 @@
 /target
 /Cargo.lock
-/.idea/.gitignore
-/.idea/bevy_panorbit_camera.iml
-/.idea/modules.xml
-/.idea/vcs.xml
