@@ -665,7 +665,7 @@ fn pan_orbit_camera(
                     Projection::Orthographic(ref p) => {
                         pan *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
                     }
-                    Projection::Custom(_) => todo!()
+                    Projection::Custom(_) => todo!(),
                 }
                 // Translate by local axes
                 let right = transform.rotation * pan_orbit.axis[0] * -pan.x;

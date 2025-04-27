@@ -12,9 +12,7 @@ use bevy::window::PrimaryWindow;
 use bevy::{
     prelude::*,
     render::{
-        camera::{
-            ImageRenderTarget, RenderTarget,
-        },
+        camera::{ImageRenderTarget, RenderTarget},
         render_resource::{
             Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
         },
