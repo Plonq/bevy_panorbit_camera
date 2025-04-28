@@ -429,7 +429,7 @@ fn active_viewport_data(
                 // First check if cursor is in the same window as this camera
                 if let RenderTarget::Window(win_ref) = camera.target {
                     let Some(window) = (match win_ref {
-                        WindowRef::Primary => primary_windows.get_single().ok(),
+                        WindowRef::Primary => primary_windows.single().ok(),
                         WindowRef::Entity(entity) => other_windows.get(entity).ok(),
                     }) else {
                         // Window does not exist - maybe it was closed and the camera not cleaned up
@@ -665,6 +665,7 @@ fn pan_orbit_camera(
                     Projection::Orthographic(ref p) => {
                         pan *= Vec2::new(p.area.width(), p.area.height()) / vp_size;
                     }
+                    Projection::Custom(_) => todo!(),
                 }
                 // Translate by local axes
                 let right = transform.rotation * pan_orbit.axis[0] * -pan.x;

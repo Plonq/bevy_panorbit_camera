@@ -1,6 +1,6 @@
 [package]
 name = "bevy_panorbit_camera"
-version = "0.25.0"
+version = "0.26.0"
 authors = ["Plonq"]
 edition = "2021"
 description = "A basic pan and orbit camera in Bevy"
@@ -15,17 +15,17 @@ readme = "README.md"
 bevy_egui = ["dep:bevy_egui"]
 
 [dependencies]
-bevy = { version = "0.15", default-features = false, features = [
+bevy = { version = "0.16", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
     "bevy_window",
 ] }
-bevy_egui = { version = "0.33", optional = true, default-features = false }
+bevy_egui = { version = "0.34", optional = true, default-features = false }
 
 [dev-dependencies]
-bevy = { version = "0.15" }
+bevy = { version = "0.16" }
 float-cmp = "0.10.0"
-bevy_egui = { version = "0.33", default-features = false, features = [
+bevy_egui = { version = "0.34", default-features = false, features = [
     "render",
     "default_fonts",
 ] }
