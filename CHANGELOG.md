@@ -1,3 +1,7 @@
+## 0.26
+
+- Update to Bevy 0.16
+
 ## 0.25
 
 - Adds better trackpad support, with Blender-style controls (thanks @natepiano)
