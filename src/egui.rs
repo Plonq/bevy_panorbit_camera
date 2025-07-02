@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_egui::EguiContext;
 
 /// A resource that tracks whether egui wants focus on the current and previous frames,
 /// in order to determine whether PanOrbitCamera should react to input events.
@@ -29,29 +30,27 @@ pub struct EguiWantsFocus {
 pub struct EguiFocusIncludesHover(pub bool);
 
 pub fn check_egui_wants_focus(
-    mut contexts: bevy_egui::EguiContexts,
+    mut contexts: Query<&mut EguiContext>,
     mut wants_focus: ResMut<EguiWantsFocus>,
     include_hover: Res<EguiFocusIncludesHover>,
-    windows: Query<Entity, With<Window>>,
-) {
-    // The window that the user is interacting with and the window that contains the egui context
-    // that the user is interacting with are always going to be the same. Therefore, we can assume
-    // that if any of the egui contexts want focus, then it must be the one that the user is
-    // interacting with.
-    let new_wants_focus = windows.iter().any(|window| {
-        if let Some(ctx) = contexts.try_ctx_for_entity_mut(window) {
-            let mut value = ctx.wants_pointer_input() || ctx.wants_keyboard_input();
-            if include_hover.0 {
-                value |= ctx.is_pointer_over_area()
-            }
-            value
-        } else {
-            false
+) -> Result {
+    // Check all egui contexts to see if any of them want focus. If any context wants focus,
+    // we assume that's the one the user is interacting with and prevent camera input.
+    let mut new_wants_focus = false;
+    for mut context in contexts.iter_mut() {
+        let context = context.get_mut();
+        let mut context_wants_focus =
+            context.wants_pointer_input() || context.wants_keyboard_input();
+        if include_hover.0 {
+            context_wants_focus |= context.is_pointer_over_area();
         }
-    });
+        new_wants_focus |= context_wants_focus;
+    }
+
     let new_res = EguiWantsFocus {
         prev: wants_focus.curr,
         curr: new_wants_focus,
     };
     wants_focus.set_if_neq(new_res);
+    Ok(())
 }
