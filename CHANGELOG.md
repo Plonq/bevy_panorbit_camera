@@ -1,3 +1,7 @@
+## 0.27
+
+- Update `bevy_egui` to 0.35 (#115 thanks @kiperz)
+
 ## 0.26
 
 - Update to Bevy 0.16
