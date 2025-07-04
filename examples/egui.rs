@@ -2,18 +2,16 @@
 //! egui windows
 
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
-        .add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: false,
-        })
+        .add_plugins(EguiPlugin::default())
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, ui_example_system);
+        .add_systems(EguiPrimaryContextPass, ui_example_system);
 
     app.run();
 }
@@ -49,20 +47,21 @@ fn setup(
     ));
 }
 
-fn ui_example_system(mut contexts: EguiContexts) {
+fn ui_example_system(mut contexts: EguiContexts) -> Result {
     egui::SidePanel::left("left_panel")
         .resizable(true)
-        .show(contexts.ctx_mut(), |ui| {
+        .show(contexts.ctx_mut()?, |ui| {
             ui.label("Left resizeable panel");
         });
 
-    egui::Window::new("Movable Window").show(contexts.ctx_mut(), |ui| {
+    egui::Window::new("Movable Window").show(contexts.ctx_mut()?, |ui| {
         ui.label("Hello world");
     });
 
     egui::Window::new("Immovable Window")
         .movable(false)
-        .show(contexts.ctx_mut(), |ui| {
+        .show(contexts.ctx_mut()?, |ui| {
             ui.label("Hello world");
         });
+    Ok(())
 }

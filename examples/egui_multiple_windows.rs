@@ -2,21 +2,26 @@
 //! This is a combination of the egui and multiple_windows examples, and doesn't show anything new,
 //! it's primarily here for easy e2e testing.
 
-use bevy::prelude::*;
 use bevy::render::camera::RenderTarget;
 use bevy::window::WindowRef;
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
+use bevy_egui::{
+    egui, EguiContext, EguiMultipassSchedule, EguiPlugin, EguiPrimaryContextPass,
+    PrimaryEguiContext,
+};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SecondWindowContextPass;
 
 fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins)
-        .add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: false,
-        })
+        .add_plugins(EguiPlugin::default())
         .add_plugins(PanOrbitCameraPlugin)
         .add_systems(Startup, setup)
-        .add_systems(Update, ui_example_system);
+        .add_systems(EguiPrimaryContextPass, ui_example_system_first_window)
+        .add_systems(SecondWindowContextPass, ui_example_system_second_window);
 
     app.run();
 }
@@ -49,6 +54,7 @@ fn setup(
     commands.spawn((
         Transform::from_translation(Vec3::new(0.0, 1.5, 5.0)),
         PanOrbitCamera::default(),
+        PrimaryEguiContext,
     ));
 
     // Spawn a second window
@@ -67,13 +73,24 @@ fn setup(
         },
         Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
         PanOrbitCamera::default(),
+        EguiMultipassSchedule::new(SecondWindowContextPass),
     ));
 }
 
-fn ui_example_system(mut contexts: EguiContexts, windows: Query<Entity, With<Window>>) {
-    for window in windows.iter() {
-        egui::Window::new("Hello").show(contexts.ctx_for_entity_mut(window), |ui| {
-            ui.label("world");
-        });
-    }
+fn ui_example_system_first_window(
+    mut egui_ctx: Single<&mut EguiContext, With<PrimaryEguiContext>>,
+) -> Result {
+    egui::Window::new("Hello").show(egui_ctx.get_mut(), |ui| {
+        ui.label("world");
+    });
+    Ok(())
+}
+
+fn ui_example_system_second_window(
+    mut egui_ctx: Single<&mut EguiContext, Without<PrimaryEguiContext>>,
+) -> Result {
+    egui::Window::new("Hello").show(egui_ctx.get_mut(), |ui| {
+        ui.label("world2");
+    });
+    Ok(())
 }
