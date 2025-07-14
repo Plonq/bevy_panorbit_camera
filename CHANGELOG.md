@@ -1,7 +1,3 @@
-## 0.28
-
-- Fixed bug that lead to wrong rotations due to wrong upside down identification if non-default axes are used.
-
 ## 0.27
 
 - Update `bevy_egui` to 0.35 (#115 thanks @kiperz)
