@@ -623,10 +623,13 @@ fn pan_orbit_camera(
 
         // 2 - Process input into target yaw/pitch, or focus, radius
 
+        // Only check for upside down when orbiting started or ended this frame,
+        // so we don't reverse the yaw direction while the user is still dragging
         if orbit_button_changed {
-            // Only check for upside down when orbiting started or ended this frame,
-            // so we don't reverse the yaw direction while the user is still dragging
-            let wrapped_pitch = (pan_orbit.target_pitch % TAU).abs();
+            // To account for swapped or different axis to identify whether the world is upside down.
+            let pitch_axis_rotation = Vec3::X.dot(pan_orbit.axis[0]);
+            let target_pitch = pan_orbit.target_pitch + pitch_axis_rotation;
+            let wrapped_pitch = (target_pitch % TAU).abs();
             pan_orbit.is_upside_down = wrapped_pitch > TAU / 4.0 && wrapped_pitch < 3.0 * TAU / 4.0;
         }
 
