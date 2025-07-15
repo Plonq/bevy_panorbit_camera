@@ -1,3 +1,7 @@
+## 0.27.1
+
+- Fixes upside down detection when using a custom axis (#118 thanks @guija)
+
 ## 0.27
 
 - Update `bevy_egui` to 0.35 (#115 thanks @kiperz)
