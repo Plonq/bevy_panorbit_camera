@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-use std::f32::consts::{PI, TAU};
+use std::f32::consts::PI;
 
 use bevy::input::gestures::PinchGesture;
 use bevy::input::mouse::MouseWheel;
@@ -626,11 +626,8 @@ fn pan_orbit_camera(
         // Only check for upside down when orbiting started or ended this frame,
         // so we don't reverse the yaw direction while the user is still dragging
         if orbit_button_changed {
-            // To account for swapped or different axis to identify whether the world is upside down.
-            let pitch_axis_rotation = Vec3::X.dot(pan_orbit.axis[0]);
-            let target_pitch = pan_orbit.target_pitch + pitch_axis_rotation;
-            let wrapped_pitch = (target_pitch % TAU).abs();
-            pan_orbit.is_upside_down = wrapped_pitch > TAU / 4.0 && wrapped_pitch < 3.0 * TAU / 4.0;
+            let world_up = pan_orbit.axis[1];
+            pan_orbit.is_upside_down = transform.up().dot(world_up) < 0.0;
         }
 
         let mut has_moved = false;
