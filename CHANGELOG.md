@@ -1,3 +1,7 @@
+## 0.27.2
+
+- Simplifies the upside down detection
+
 ## 0.27.1
 
 - Fixes upside down detection when using a custom axis (#118 thanks @guija)
