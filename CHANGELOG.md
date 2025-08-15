@@ -1,3 +1,7 @@
+## 0.28.0
+
+- Update `bevy_egui` to 0.36 (#120)
+
 ## 0.27.2
 
 - Simplifies the upside down detection
@@ -6,23 +10,23 @@
 
 - Fixes upside down detection when using a custom axis (#118 thanks @guija)
 
-## 0.27
+## 0.27.0
 
 - Update `bevy_egui` to 0.35 (#115 thanks @kiperz)
 
-## 0.26
+## 0.26.0
 
 - Update to Bevy 0.16
 
-## 0.25
+## 0.25.0
 
 - Adds better trackpad support, with Blender-style controls (thanks @natepiano)
 
-## 0.24
+## 0.24.0
 
 - Add ability to change the base axes, e.g. to make Z up instead of Y up
 
-## 0.23
+## 0.23.0
 
 - Update `bevy_egui` to 0.33
 
@@ -34,7 +38,7 @@
 
 - Add ability to limit the cameras `focus` to a cube or sphere shape (thanks @bytemunch)
 
-## 0.22
+## 0.22.0
 
 - Update `bevy_egui` to 0.32
 
@@ -47,7 +51,7 @@
 - Add `Camera3d` as a required component (new feature of Bevy 0.15) of `PanOrbitCamera`, so it doesn't need to be added
   manually
 
-## 0.21
+## 0.21.0
 
 - Update to Bevy 0.15
 
@@ -55,7 +59,7 @@
 
 - Update docs, explaining that setting sensitivity values to 0 will disable the respective control
 
-## 0.20
+## 0.20.0
 
 - Change `zoom_lower_limit` from `Option<f32>` to `f32`, defaulting to `0.05`, and remove the hard coded lower zoom
   limit of `0.05`.
@@ -85,7 +89,7 @@
 
 - Fix panic if egui context for window doesn't exist. For example if a new window is created after startup.
 
-## 0.19
+## 0.19.0
 
 - Update to Bevy 0.14
 
