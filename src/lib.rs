@@ -3,11 +3,11 @@
 
 use std::f32::consts::PI;
 
+use bevy::camera::{CameraUpdateSystems, RenderTarget};
 use bevy::input::gestures::PinchGesture;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
-use bevy::render::camera::{CameraUpdateSystem, RenderTarget};
-use bevy::transform::TransformSystem;
+use bevy::transform::TransformSystems;
 use bevy::window::{PrimaryWindow, WindowRef};
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiPreUpdateSet;
@@ -58,8 +58,8 @@ impl Plugin for PanOrbitCameraPlugin {
                 )
                     .chain()
                     .in_set(PanOrbitCameraSystemSet)
-                    .before(TransformSystem::TransformPropagate)
-                    .before(CameraUpdateSystem),
+                    .before(TransformSystems::Propagate)
+                    .before(CameraUpdateSystems),
             );
 
         #[cfg(feature = "bevy_egui")]
@@ -397,8 +397,8 @@ fn active_viewport_data(
     mut active_cam: ResMut<ActiveCameraData>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     key_input: Res<ButtonInput<KeyCode>>,
-    pinch_events: EventReader<PinchGesture>,
-    scroll_events: EventReader<MouseWheel>,
+    pinch_events: MessageReader<PinchGesture>,
+    scroll_events: MessageReader<MouseWheel>,
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
     other_windows: Query<&Window, Without<PrimaryWindow>>,
