@@ -2,7 +2,7 @@
 //! This is a combination of the egui and multiple_windows examples, and doesn't show anything new,
 //! it's primarily here for easy e2e testing.
 
-use bevy::render::camera::RenderTarget;
+use bevy::camera::RenderTarget;
 use bevy::window::WindowRef;
 use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 use bevy_egui::{
