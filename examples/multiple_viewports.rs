@@ -1,8 +1,7 @@
 //! Demonstrates usage with multiple viewports
 
-use bevy::prelude::*;
-use bevy::render::camera::Viewport;
 use bevy::window::WindowResized;
+use bevy::{camera::Viewport, prelude::*};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
@@ -63,7 +62,7 @@ struct MinimapCamera;
 
 fn set_camera_viewports(
     windows: Query<&Window>,
-    mut resize_events: EventReader<WindowResized>,
+    mut resize_events: MessageReader<WindowResized>,
     mut right_camera: Query<&mut Camera, With<MinimapCamera>>,
 ) {
     for resize_event in resize_events.read() {

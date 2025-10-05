@@ -18,9 +18,9 @@ pub fn mouse_key_tracker(
     mut camera_movement: ResMut<MouseKeyTracker>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     key_input: Res<ButtonInput<KeyCode>>,
-    mut mouse_motion: EventReader<MouseMotion>,
-    mut pinch_events: EventReader<PinchGesture>,
-    mut scroll_events: EventReader<MouseWheel>,
+    mut mouse_motion: MessageReader<MouseMotion>,
+    mut pinch_events: MessageReader<PinchGesture>,
+    mut scroll_events: MessageReader<MouseWheel>,
     active_cam: Res<ActiveCameraData>,
     orbit_cameras: Query<&PanOrbitCamera>,
 ) {
@@ -140,7 +140,7 @@ fn process_scroll_events(
 }
 
 fn process_pinch_events(
-    pinch_events: &mut EventReader<PinchGesture>,
+    pinch_events: &mut MessageReader<PinchGesture>,
     pan_orbit: &PanOrbitCamera,
     key_input: &Res<ButtonInput<KeyCode>>,
 ) -> f32 {
