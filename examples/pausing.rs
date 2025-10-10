@@ -67,7 +67,7 @@ fn pause_game_system(key_input: Res<ButtonInput<KeyCode>>, mut time: ResMut<Time
 }
 
 // Rotates the cube so you can see the effect of pausing time
-// Note the default time for the Update schedule is Time<Virtual>
+// Note the default time for the Update schedule is `Time<Virtual>`
 fn cube_rotator_system(time: Res<Time>, mut query: Query<&mut Transform, With<Cube>>) {
     for mut transform in &mut query {
         transform.rotate_y(1.0 * time.delta_secs());
