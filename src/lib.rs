@@ -270,6 +270,9 @@ pub struct PanOrbitCamera {
     /// up direction. The default up is Y, but if you want the camera rotated.
     /// The axis can be switched. Default is [Vec3::X, Vec3::Y, Vec3::Z]
     pub axis: [Vec3; 3],
+    /// Use real time instead of virtual time. Set this to `true` if you want to pause virtual
+    /// time without affecting the camera, for example in a game.
+    pub use_real_time: bool,
 }
 
 impl Default for PanOrbitCamera {
@@ -313,6 +316,7 @@ impl Default for PanOrbitCamera {
             zoom_lower_limit: 0.05,
             force_update: false,
             axis: [Vec3::X, Vec3::Y, Vec3::Z],
+            use_real_time: false,
         }
     }
 }
@@ -484,7 +488,8 @@ fn pan_orbit_camera(
     mouse_key_tracker: Res<MouseKeyTracker>,
     touch_tracker: Res<TouchTracker>,
     mut orbit_cameras: Query<(Entity, &mut PanOrbitCamera, &mut Transform, &mut Projection)>,
-    time: Res<Time>,
+    time_real: Res<Time<Real>>,
+    time_virt: Res<Time<Virtual>>,
 ) {
     for (entity, mut pan_orbit, mut transform, mut projection) in orbit_cameras.iter_mut() {
         // Closures that apply limits to the yaw, pitch, and zoom values
@@ -704,6 +709,12 @@ fn pan_orbit_camera(
 
         // 4 - Update the camera's transform based on current values
 
+        let delta = if pan_orbit.use_real_time {
+            time_real.delta_secs()
+        } else {
+            time_virt.delta_secs()
+        };
+
         if let (Some(yaw), Some(pitch), Some(radius)) =
             (pan_orbit.yaw, pan_orbit.pitch, pan_orbit.radius)
         {
@@ -723,25 +734,25 @@ fn pan_orbit_camera(
                     yaw,
                     pan_orbit.target_yaw,
                     pan_orbit.orbit_smoothness,
-                    time.delta_secs(),
+                    delta,
                 );
                 let new_pitch = util::lerp_and_snap_f32(
                     pitch,
                     pan_orbit.target_pitch,
                     pan_orbit.orbit_smoothness,
-                    time.delta_secs(),
+                    delta,
                 );
                 let new_radius = util::lerp_and_snap_f32(
                     radius,
                     pan_orbit.target_radius,
                     pan_orbit.zoom_smoothness,
-                    time.delta_secs(),
+                    delta,
                 );
                 let new_focus = util::lerp_and_snap_vec3(
                     pan_orbit.focus,
                     pan_orbit.target_focus,
                     pan_orbit.pan_smoothness,
-                    time.delta_secs(),
+                    delta,
                 );
 
                 util::update_orbit_transform(
