@@ -268,7 +268,8 @@ pub struct PanOrbitCamera {
     pub force_update: bool,
     /// Axis order definition. This can be used to e.g. define a different default
     /// up direction. The default up is Y, but if you want the camera rotated.
-    /// The axis can be switched. Default is [Vec3::X, Vec3::Y, Vec3::Z]
+    /// The axis can be switched.
+    /// Defaults to `[Vec3::X, Vec3::Y, Vec3::Z]`.
     pub axis: [Vec3; 3],
     /// Use real time instead of virtual time. Set this to `true` if you want to pause virtual
     /// time without affecting the camera, for example in a game.
