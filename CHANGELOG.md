@@ -1,7 +1,10 @@
+## 0.30.0
+
+- Add option to use real time instead of virtual time (#125)
+
 ## 0.29.0
 
 - Update to Bevy 0.17
--
 
 ## 0.28.0
 
