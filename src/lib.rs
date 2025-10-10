@@ -272,6 +272,7 @@ pub struct PanOrbitCamera {
     pub axis: [Vec3; 3],
     /// Use real time instead of virtual time. Set this to `true` if you want to pause virtual
     /// time without affecting the camera, for example in a game.
+    /// Defaults to `false`.
     pub use_real_time: bool,
 }
 
