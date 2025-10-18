@@ -1,6 +1,6 @@
 [package]
 name = "bevy_panorbit_camera"
-version = "0.30.0"
+version = "0.31.0"
 authors = ["Plonq"]
 edition = "2021"
 description = "A basic pan and orbit camera in Bevy"

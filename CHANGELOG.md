@@ -1,3 +1,7 @@
+## 0.28.0
+
+- Update `bevy_egui` to 0.38 (#126)
+
 ## 0.30.0
 
 - Add option to use real time instead of virtual time (#125)
