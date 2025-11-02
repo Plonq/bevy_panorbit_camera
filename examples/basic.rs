@@ -1,7 +1,7 @@
 //! Demonstrates the simplest usage
 
 use bevy::prelude::*;
-use bevy_panorbit_camera::{ButtonZoomAxis, PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 fn main() {
     App::new()
