@@ -53,10 +53,7 @@ pub fn mouse_key_tracker(
     let pinch_zoom = process_pinch_events(&mut pinch_events, pan_orbit, &key_input);
 
     // If zoom button set, apply zoom based on mouse movement
-    let mouse_zoom = if pan_orbit
-        .button_zoom
-        .is_some_and(|btn| mouse_input.pressed(btn))
-    {
+    let mouse_zoom = if button_zoom_pressed(pan_orbit, &mouse_input) {
         let delta = match pan_orbit.button_zoom_axis {
             ButtonZoomAxis::X => mouse_delta.x,
             ButtonZoomAxis::Y => -mouse_delta.y,
@@ -278,4 +275,22 @@ pub fn pan_just_pressed(
         && pan_orbit
             .modifier_orbit
             .is_none_or(|modifier| !key_input.pressed(modifier))
+}
+
+pub fn button_zoom_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+) -> bool {
+    pan_orbit
+        .button_zoom
+        .is_some_and(|btn| mouse_input.pressed(btn))
+}
+
+pub fn button_zoom_just_pressed(
+    pan_orbit: &PanOrbitCamera,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
+) -> bool {
+    pan_orbit
+        .button_zoom
+        .is_some_and(|btn| mouse_input.just_pressed(btn))
 }

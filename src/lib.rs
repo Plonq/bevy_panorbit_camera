@@ -14,7 +14,7 @@ use bevy_egui::EguiPreUpdateSet;
 
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::{EguiFocusIncludesHover, EguiWantsFocus};
-use crate::input::{mouse_key_tracker, MouseKeyTracker};
+use crate::input::{button_zoom_just_pressed, mouse_key_tracker, MouseKeyTracker};
 pub use crate::touch::TouchControls;
 use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
 use crate::traits::OptionalClamp;
@@ -439,9 +439,7 @@ fn active_viewport_data(
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !pinch_events.is_empty()
             || !scroll_events.is_empty()
-            || pan_orbit
-                .button_zoom
-                .is_some_and(|btn| mouse_input.just_pressed(btn))
+            || button_zoom_just_pressed(pan_orbit, &mouse_input)
             || (touches.iter_just_pressed().count() > 0
                 && touches.iter_just_pressed().count() == touches.iter().count());
 
