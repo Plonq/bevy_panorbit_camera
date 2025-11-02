@@ -4,7 +4,7 @@
 //! Controls:
 //!   Orbit: Middle click
 //!   Pan: Shift + Middle click
-//!   Zoom: Mousewheel
+//!   Zoom: Mousewheel OR Right click + move mouse up/down
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{ButtonZoomAxis, PanOrbitCamera, PanOrbitCameraPlugin, TouchControls};
