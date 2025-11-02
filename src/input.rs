@@ -2,7 +2,7 @@ use bevy::input::gestures::PinchGesture;
 use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 
-use crate::{ActiveCameraData, PanOrbitCamera, TrackpadBehavior};
+use crate::{ActiveCameraData, ButtonZoomAxis, PanOrbitCamera, TrackpadBehavior};
 
 #[derive(Resource, Default, Debug)]
 pub struct MouseKeyTracker {
@@ -52,6 +52,21 @@ pub fn mouse_key_tracker(
     // Process pinch events
     let pinch_zoom = process_pinch_events(&mut pinch_events, pan_orbit, &key_input);
 
+    // If zoom button set, apply zoom based on mouse movement
+    let mouse_zoom = if pan_orbit
+        .button_zoom
+        .is_some_and(|btn| mouse_input.pressed(btn))
+    {
+        let delta = match pan_orbit.button_zoom_axis {
+            ButtonZoomAxis::X => mouse_delta.x,
+            ButtonZoomAxis::Y => -mouse_delta.y,
+            ButtonZoomAxis::XY => mouse_delta.x + -mouse_delta.y,
+        };
+        delta * 0.03
+    } else {
+        0.0
+    };
+
     // Handle mouse movement for orbiting and panning
     if orbit_pressed(pan_orbit, &mouse_input, &key_input) {
         orbit += mouse_delta;
@@ -67,7 +82,7 @@ pub fn mouse_key_tracker(
     camera_movement.orbit = orbit;
     camera_movement.pan = pan;
     camera_movement.scroll_line = scroll_result.scroll_line;
-    camera_movement.scroll_pixel = scroll_result.scroll_pixel + pinch_zoom;
+    camera_movement.scroll_pixel = scroll_result.scroll_pixel + pinch_zoom + mouse_zoom;
     camera_movement.orbit_button_changed = orbit_button_changed;
 }
 

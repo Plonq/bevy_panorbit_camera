@@ -217,6 +217,12 @@ pub struct PanOrbitCamera {
     /// Button used to pan the camera.
     /// Defaults to `Button::Right`.
     pub button_pan: MouseButton,
+    /// Button used to zoom the camera, by holding it down and moving the mouse forward and back.
+    /// Defaults to `None`.
+    pub button_zoom: Option<MouseButton>,
+    /// Which axis should zoom the camera when using `button_zoom`.
+    /// Defaults to `ButtonZoomAxis::Y`.
+    pub button_zoom_axis: ButtonZoomAxis,
     /// Key that must be pressed for `button_orbit` to work.
     /// Defaults to `None` (no modifier).
     pub modifier_orbit: Option<KeyCode>,
@@ -293,6 +299,8 @@ impl Default for PanOrbitCamera {
             zoom_smoothness: 0.1,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
+            button_zoom: None,
+            button_zoom_axis: ButtonZoomAxis::Y,
             modifier_orbit: None,
             modifier_pan: None,
             touch_enabled: true,
@@ -355,6 +363,17 @@ pub enum FocusBoundsShape {
     Sphere(Sphere),
     /// Limit the camera's focus to a cuboid centered on `focus_bounds_origin`.
     Cuboid(Cuboid),
+}
+
+/// The shape to restrict the camera's focus inside.
+#[derive(Clone, PartialEq, Debug, Reflect, Copy)]
+pub enum ButtonZoomAxis {
+    /// Zoom by moving the mouse along the x-axis.
+    X,
+    /// Zoom by moving the mouse along the y-axis.
+    Y,
+    /// Zoom by moving the mouse along either the x-axis or the y-axis.
+    XY,
 }
 
 impl From<Sphere> for FocusBoundsShape {
@@ -420,6 +439,9 @@ fn active_viewport_data(
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !pinch_events.is_empty()
             || !scroll_events.is_empty()
+            || !pan_orbit
+                .button_zoom
+                .is_some_and(|btn| mouse_input.just_pressed(btn))
             || (touches.iter_just_pressed().count() > 0
                 && touches.iter_just_pressed().count() == touches.iter().count());
 
