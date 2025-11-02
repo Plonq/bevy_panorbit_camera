@@ -1,4 +1,8 @@
-## 0.28.0
+## 0.32.0
+
+- Zoom with mouse button + motion (#129)
+
+## 0.31.0
 
 - Update `bevy_egui` to 0.38 (#126)
 
