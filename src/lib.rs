@@ -439,7 +439,7 @@ fn active_viewport_data(
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !pinch_events.is_empty()
             || !scroll_events.is_empty()
-            || !pan_orbit
+            || pan_orbit
                 .button_zoom
                 .is_some_and(|btn| mouse_input.just_pressed(btn))
             || (touches.iter_just_pressed().count() > 0
