@@ -1,3 +1,7 @@
+## 0.33.0
+
+- Add `reversed_button_zoom` option (#130)
+
 ## 0.32.0
 
 - Zoom with mouse button + motion (#129)
