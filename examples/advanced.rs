@@ -75,6 +75,8 @@ fn setup(
             button_zoom: Some(MouseButton::Right),
             // Optionally configure button zoom to use left-right mouse movement
             // button_zoom_axis: ButtonZoomAxis::X,
+            // Optionally reverse the button-based zoom independently to `reversed_zoom`
+            // button_zoom_reverse: true,
             // Reverse the zoom direction
             reversed_zoom: true,
             // Use alternate touch controls
