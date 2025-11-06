@@ -54,11 +54,14 @@ pub fn mouse_key_tracker(
 
     // If zoom button set, apply zoom based on mouse movement
     let mouse_zoom = if button_zoom_pressed(pan_orbit, &mouse_input) {
-        let delta = match pan_orbit.button_zoom_axis {
+        let mut delta = match pan_orbit.button_zoom_axis {
             ButtonZoomAxis::X => mouse_delta.x,
             ButtonZoomAxis::Y => -mouse_delta.y,
             ButtonZoomAxis::XY => mouse_delta.x + -mouse_delta.y,
         };
+        if pan_orbit.reversed_button_zoom {
+            delta *= -1.0;
+        }
         delta * 0.03
     } else {
         0.0

@@ -249,9 +249,13 @@ pub struct PanOrbitCamera {
     /// operations when using a trackpad with the `BlenderLike` behavior mode.
     /// Defaults to `1.0`.
     pub trackpad_sensitivity: f32,
-    /// Whether to reverse the zoom direction.
+    /// Whether to reverse the zoom direction. This applies to the button-based zoom `button_zoom`
+    /// as well. If you want button zoom to remain the same, set `button_zoom_reverse` to `true`.
     /// Defaults to `false`.
     pub reversed_zoom: bool,
+    /// Whether the zoom direction when using `button_zoom` is reversed.
+    /// Defaults to `false`.
+    pub reversed_button_zoom: bool,
     /// Whether the camera is currently upside down. Updated automatically.
     /// This is used to determine which way to orbit, because it's more intuitive to reverse the
     /// orbit direction when upside down.
@@ -301,6 +305,7 @@ impl Default for PanOrbitCamera {
             button_pan: MouseButton::Right,
             button_zoom: None,
             button_zoom_axis: ButtonZoomAxis::Y,
+            reversed_button_zoom: false,
             modifier_orbit: None,
             modifier_pan: None,
             touch_enabled: true,
