@@ -1,11 +1,7 @@
 //! Demonstrates how to supress input to the camera using a public resource
 
 use bevy::prelude::*;
-use bevy_panorbit_camera::{
-  PanOrbitCameraIgnoreInput,
-  PanOrbitCameraPlugin,
-  PanOrbitCamera
-};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraIgnoreInput, PanOrbitCameraPlugin};
 
 fn main() {
     App::new()
@@ -48,19 +44,10 @@ fn setup_3d(
     ));
 }
 
-fn interact_with_ui (
-    query: Query<
-        (
-            Entity,
-            &Button,
-            &Interaction,
-            &mut BackgroundColor,
-        ),
-        Changed<Interaction>,
-    >,
-    mut allow_input: ResMut<PanOrbitCameraIgnoreInput>
+fn interact_with_ui(
+    query: Query<(Entity, &Button, &Interaction, &mut BackgroundColor), Changed<Interaction>>,
+    mut allow_input: ResMut<PanOrbitCameraIgnoreInput>,
 ) {
-
     let mut ignore_input_now: Option<bool> = None;
     // guessing there's a "i know there's only one of these" type query syntax
     // but idk whta it is.
@@ -70,37 +57,40 @@ fn interact_with_ui (
     for (_id, _node, interaction, mut color) in query {
         match *interaction {
             Interaction::Hovered => {
-              // just hovering, make it blue and but dont control the camera.
-              ignore_input_now = Some(true);
-              *color = BackgroundColor(Color::srgba(0.5, 0.9, 1.0, 0.25));
+                // just hovering, make it blue and but dont control the camera.
+                ignore_input_now = Some(true);
+                *color = BackgroundColor(Color::srgba(0.5, 0.9, 1.0, 0.25));
             }
             Interaction::Pressed => {
-              // when pressing on the button, turn it orange and still don't
-              // give the camera any inputs.
-              ignore_input_now = Some(true);
-              *color = BackgroundColor(Color::srgba(0.8, 0.2, 0.15, 0.5));
+                // when pressing on the button, turn it orange and still don't
+                // give the camera any inputs.
+                ignore_input_now = Some(true);
+                *color = BackgroundColor(Color::srgba(0.8, 0.2, 0.15, 0.5));
             }
             Interaction::None => {
-              // mouse has exited ui: make it blue and now the camera works
-              ignore_input_now = Some(false);
-              *color = BackgroundColor(Color::srgba(0.15, 0.3, 0.6, 0.25));
+                // mouse has exited ui: make it blue and now the camera works
+                ignore_input_now = Some(false);
+                *color = BackgroundColor(Color::srgba(0.15, 0.3, 0.6, 0.25));
             }
         }
     }
 
     match ignore_input_now {
-      None => {},
-      Some(value) => {
-        allow_input.set_if_neq(PanOrbitCameraIgnoreInput(value));
-      }
+        None => {}
+        Some(value) => {
+            allow_input.set_if_neq(PanOrbitCameraIgnoreInput(value));
+        }
     };
 }
 
 fn setup_ui(mut commands: Commands) {
     // ui camera on top of the PanOrbitCamera
     commands.spawn((
-      Camera2d,
-      Camera { order: 1, ..default() }
+        Camera2d,
+        Camera {
+            order: 1,
+            ..default()
+        },
     ));
     // the ui is just a big box in the corner to steal input from the camera.
     commands.spawn((
