@@ -13,6 +13,7 @@ readme = "README.md"
 
 [features]
 bevy_egui = ["dep:bevy_egui"]
+toggle_input = []
 
 [dependencies]
 bevy = { version = "0.17", default-features = false, features = [
@@ -37,3 +38,7 @@ required-features = ["bevy_egui"]
 [[example]]
 name = "egui_multiple_windows"
 required-features = ["bevy_egui"]
+
+[[example]]
+name = "toggle_input"
+required-features = ["toggle_input"]
