@@ -1,4 +1,4 @@
-//! Demonstrates simplified ui toggling controlled by a public resource
+//! Demonstrates how to supress input to the camera using a public resource
 
 use bevy::prelude::*;
 use bevy_panorbit_camera::{
@@ -69,19 +69,19 @@ fn interact_with_ui (
     // could come up with
     for (_id, _node, interaction, mut color) in query {
         match *interaction {
-            Interaction::Pressed => {
-              // make it red when pushing on the button... we make it red and
-              // don't give the camera any inputs
-              ignore_input_now = Some(true);
-              *color = BackgroundColor(Color::srgba(0.8, 0.2, 0.15, 0.5));
-            }
             Interaction::Hovered => {
-              // just hovering, make it blue and but dont control the camera
+              // just hovering, make it blue and but dont control the camera.
               ignore_input_now = Some(true);
               *color = BackgroundColor(Color::srgba(0.5, 0.9, 1.0, 0.25));
             }
+            Interaction::Pressed => {
+              // when pressing on the button, turn it orange and still don't
+              // give the camera any inputs.
+              ignore_input_now = Some(true);
+              *color = BackgroundColor(Color::srgba(0.8, 0.2, 0.15, 0.5));
+            }
             Interaction::None => {
-              // mouse has exited ui: make it orange and now the camera works
+              // mouse has exited ui: make it blue and now the camera works
               ignore_input_now = Some(false);
               *color = BackgroundColor(Color::srgba(0.15, 0.3, 0.6, 0.25));
             }
@@ -97,12 +97,12 @@ fn interact_with_ui (
 }
 
 fn setup_ui(mut commands: Commands) {
-    // ui camera
+    // ui camera on top of the PanOrbitCamera
     commands.spawn((
       Camera2d,
       Camera { order: 1, ..default() }
     ));
-    // the ui itself: a big in the corner that will steal input from the camera.
+    // the ui is just a big box in the corner to steal input from the camera.
     commands.spawn((
         Node {
             width: percent(25.0),
