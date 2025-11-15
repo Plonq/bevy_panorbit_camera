@@ -9,11 +9,16 @@ use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
 use bevy::transform::TransformSystems;
 use bevy::window::{PrimaryWindow, WindowRef};
+
 #[cfg(feature = "bevy_egui")]
 use bevy_egui::EguiPreUpdateSet;
 
 #[cfg(feature = "bevy_egui")]
 pub use crate::egui::{EguiFocusIncludesHover, EguiWantsFocus};
+
+#[cfg(feature = "toggle_input")]
+pub use crate::toggle_input::PanOrbitCameraIgnoreInput;
+
 use crate::input::{button_zoom_just_pressed, mouse_key_tracker, MouseKeyTracker};
 pub use crate::touch::TouchControls;
 use crate::touch::{touch_tracker, TouchGestures, TouchTracker};
@@ -21,6 +26,10 @@ use crate::traits::OptionalClamp;
 
 #[cfg(feature = "bevy_egui")]
 mod egui;
+
+#[cfg(feature = "toggle_input")]
+mod toggle_input;
+
 mod input;
 mod touch;
 mod traits;
@@ -72,6 +81,11 @@ impl Plugin for PanOrbitCameraPlugin {
                         .after(EguiPreUpdateSet::InitContexts)
                         .before(PanOrbitCameraSystemSet),
                 );
+        }
+
+        #[cfg(feature = "toggle_input")]
+        {
+            app.init_resource::<PanOrbitCameraIgnoreInput>();
         }
     }
 }
@@ -434,6 +448,7 @@ fn active_viewport_data(
     other_windows: Query<&Window, Without<PrimaryWindow>>,
     orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
     #[cfg(feature = "bevy_egui")] egui_wants_focus: Res<EguiWantsFocus>,
+    #[cfg(feature = "toggle_input")] ignore_input: Res<PanOrbitCameraIgnoreInput>,
 ) {
     let mut new_resource = ActiveCameraData::default();
     let mut max_cam_order = 0;
@@ -455,6 +470,10 @@ fn active_viewport_data(
             #[cfg(feature = "bevy_egui")]
             {
                 should_get_input = !egui_wants_focus.prev && !egui_wants_focus.curr;
+            }
+            #[cfg(feature = "toggle_input")]
+            {
+                should_get_input = should_get_input && !ignore_input.0;
             }
             if should_get_input {
                 // First check if cursor is in the same window as this camera
