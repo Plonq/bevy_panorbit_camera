@@ -187,6 +187,11 @@ pub struct PanOrbitCamera {
     /// The sensitivity of the orbiting motion. A value of `0.0` disables orbiting.
     /// Defaults to `1.0`.
     pub orbit_sensitivity: f32,
+    /// How orbit sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
+    /// Will result in a linear decrease in orbit sensitivity as the camera approaches the lower limit.
+    /// has no effect if either limit is None
+    /// Defaults to None
+    pub orbit_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing.
@@ -204,6 +209,11 @@ pub struct PanOrbitCamera {
     /// A value of `0.0` disables zooming.
     /// Defaults to `1.0`.
     pub zoom_sensitivity: f32,
+    /// How sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
+    /// Will result in a linear decrease in zoom sensitivity as the camera approaches the lower limit.
+    /// has no effect if either limit is None
+    /// Defaults to None
+    pub zoom_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
     /// so there's a 1:1 mapping of input to camera position. A value of `1.0` is infinite
     /// smoothing.
@@ -296,10 +306,12 @@ impl Default for PanOrbitCamera {
             is_upside_down: false,
             allow_upside_down: false,
             orbit_sensitivity: 1.0,
+            orbit_sensitivity_scaling: None,
             orbit_smoothness: 0.1,
             pan_sensitivity: 1.0,
             pan_smoothness: 0.02,
             zoom_sensitivity: 1.0,
+            zoom_sensitivity_scaling: None,
             zoom_smoothness: 0.1,
             button_orbit: MouseButton::Left,
             button_pan: MouseButton::Right,
@@ -663,6 +675,20 @@ fn pan_orbit_camera(
         }
 
         let mut has_moved = false;
+
+        // Apply distance-based orbit damping if configured
+        if let (Some(scaling_factor), Some(upper)) = (
+            pan_orbit.orbit_sensitivity_scaling,
+            pan_orbit.zoom_upper_limit,
+        ) {
+            let lower = pan_orbit.zoom_lower_limit;
+            if lower <= pan_orbit.target_radius && pan_orbit.target_radius <= upper {
+                let scale =
+                    ((pan_orbit.target_radius - lower) / (upper - lower)).powf(scaling_factor);
+                orbit *= scale;
+            }
+        }
+
         if orbit.length_squared() > 0.0 {
             // Use window size for rotation otherwise the sensitivity
             // is far too high for small viewports
@@ -707,6 +733,20 @@ fn pan_orbit_camera(
                 has_moved = true;
             }
         }
+        // Apply distance-based zoom damping if configured
+        if let (Some(scaling_factor), Some(upper)) = (
+            pan_orbit.zoom_sensitivity_scaling,
+            pan_orbit.zoom_upper_limit,
+        ) {
+            let lower = pan_orbit.zoom_lower_limit;
+            if lower <= pan_orbit.target_radius && pan_orbit.target_radius <= upper {
+                let scale =
+                    ((pan_orbit.target_radius - lower) / (upper - lower)).powf(scaling_factor);
+                scroll_line *= scale;
+                scroll_pixel *= scale;
+            }
+        }
+
         if (scroll_line + scroll_pixel).abs() > 0.0 {
             // Calculate the impact of scrolling on the reference value
             let line_delta = -scroll_line * (pan_orbit.target_radius) * 0.2;
