@@ -187,9 +187,9 @@ pub struct PanOrbitCamera {
     /// The sensitivity of the orbiting motion. A value of `0.0` disables orbiting.
     /// Defaults to `1.0`.
     pub orbit_sensitivity: f32,
-    /// How orbit sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
-    /// Will result in a linear decrease in orbit sensitivity as the camera approaches the lower limit.
-    /// has no effect if either limit is None
+    /// How orbit sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. 
+    /// A value of 1.0 will result in a linear decrease in orbit sensitivity as the camera 
+    /// approaches the lower limit. Has no effect if either limit is None
     /// Defaults to None
     pub orbit_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the orbit motion. A value of `0.0` disables smoothing,
@@ -209,9 +209,9 @@ pub struct PanOrbitCamera {
     /// A value of `0.0` disables zooming.
     /// Defaults to `1.0`.
     pub zoom_sensitivity: f32,
-    /// How sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. A value of 1.0
-    /// Will result in a linear decrease in zoom sensitivity as the camera approaches the lower limit.
-    /// has no effect if either limit is None
+    /// How orbit sensitivity is scaled as you zoom from zoom_upper_limit to zoom_lower_limit. 
+    /// A value of 1.0 will result in a linear decrease in zoom sensitivity as the camera 
+    /// approaches the lower limit. Has no effect if either limit is None
     /// Defaults to None
     pub zoom_sensitivity_scaling: Option<f32>,
     /// How much smoothing is applied to the zoom motion. A value of `0.0` disables smoothing,
