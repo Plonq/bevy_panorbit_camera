@@ -22,7 +22,8 @@ pub fn calculate_from_translation_and_focus(
 /// Update `transform` based on yaw, pitch, and the camera's focus and radius, returns
 /// false if the update is rejected due to exceeding the x, y, and z camera_transform
 /// limits
-pub fn update_orbit_transform (
+#[allow(clippy::too_many_arguments)]
+pub fn update_orbit_transform(
     yaw: f32,
     pitch: f32,
     mut radius: f32,
@@ -30,15 +31,15 @@ pub fn update_orbit_transform (
     transform: &mut Transform,
     projection: &mut Projection,
     axis: [Vec3; 3],
-    x_max:Option<f32>,
-    x_min:Option<f32>,
-    y_max:Option<f32>,
-    y_min:Option<f32>,
-    z_max:Option<f32>,
-    z_min:Option<f32>,
+    x_max: Option<f32>,
+    x_min: Option<f32>,
+    y_max: Option<f32>,
+    y_min: Option<f32>,
+    z_max: Option<f32>,
+    z_min: Option<f32>,
 ) -> bool {
     let mut new_transform = Transform::IDENTITY;
-    
+
     if let Projection::Orthographic(ref mut p) = *projection {
         p.scale = radius;
         // (near + far) / 2.0 ensures that objects near `focus` are not clipped
@@ -48,26 +49,26 @@ pub fn update_orbit_transform (
     let pitch_rot = Quat::from_axis_angle(axis[0], -pitch);
     new_transform.rotation *= yaw_rot * pitch_rot;
     new_transform.translation += focus + new_transform.rotation * Vec3::new(0.0, 0.0, radius);
-    if (x_max!=None)&&(new_transform.translation.x>x_max.unwrap()) {
+    if (x_max.is_some()) && (new_transform.translation.x > x_max.unwrap()) {
         return false;
     }
-    if (x_min!=None)&&(new_transform.translation.x<x_min.unwrap()) {
+    if (x_min.is_some()) && (new_transform.translation.x < x_min.unwrap()) {
         return false;
     }
-    if (y_max!=None)&&(new_transform.translation.y>y_max.unwrap()) {
+    if (y_max.is_some()) && (new_transform.translation.y > y_max.unwrap()) {
         return false;
     }
-    if (y_min!=None)&&(new_transform.translation.y<y_min.unwrap()) {
+    if (y_min.is_some()) && (new_transform.translation.y < y_min.unwrap()) {
         return false;
     }
-    if (z_max!=None)&&(new_transform.translation.z>z_max.unwrap()) {
+    if (z_max.is_some()) && (new_transform.translation.z > z_max.unwrap()) {
         return false;
     }
-    if (z_min!=None)&&(new_transform.translation.z<z_min.unwrap()) {
+    if (z_min.is_some()) && (new_transform.translation.z < z_min.unwrap()) {
         return false;
     }
     *transform = new_transform;
-    return true;
+    true
 }
 
 pub fn approx_equal(a: f32, b: f32) -> bool {
