@@ -1,3 +1,7 @@
+## 0.33.1
+
+- Add `#[reflect(Component)]` on `PanOrbitCamera`
+
 ## 0.33.0
 
 - Add `reversed_button_zoom` option (#130)
