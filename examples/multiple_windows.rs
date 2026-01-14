@@ -53,10 +53,8 @@ fn setup(
     // second window camera
     commands.spawn((
         Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
-        Camera {
-            target: RenderTarget::Window(WindowRef::Entity(second_window)),
-            ..default()
-        },
+        Camera { ..default() },
+        RenderTarget::Window(WindowRef::Entity(second_window)),
         PanOrbitCamera::default(),
     ));
 }

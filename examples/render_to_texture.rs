@@ -107,9 +107,9 @@ fn setup(
                 // render before the "main pass" camera
                 clear_color: ClearColorConfig::Custom(Color::WHITE),
                 order: -1,
-                target: RenderTarget::Image(ImageRenderTarget::from(image_handle.clone())),
                 ..default()
             },
+            RenderTarget::Image(ImageRenderTarget::from(image_handle.clone())),
             Transform::from_translation(Vec3::new(0.0, 0.0, 15.0)).looking_at(Vec3::ZERO, Vec3::Y),
             PanOrbitCamera::default(),
             first_pass_layer,
