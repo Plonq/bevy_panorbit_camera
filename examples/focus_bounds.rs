@@ -51,5 +51,5 @@ fn setup(
 
 fn show_bounds(mut gizmos: Gizmos) {
     // Display focus bound shape
-    gizmos.cuboid(Transform::from_translation(Vec3::splat(1.0)), WHITE);
+    gizmos.cube(Transform::from_translation(Vec3::splat(1.0)), WHITE);
 }
