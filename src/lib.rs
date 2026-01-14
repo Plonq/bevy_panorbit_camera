@@ -433,14 +433,14 @@ fn active_viewport_data(
     touches: Res<Touches>,
     primary_windows: Query<&Window, With<PrimaryWindow>>,
     other_windows: Query<&Window, Without<PrimaryWindow>>,
-    orbit_cameras: Query<(Entity, &Camera, &PanOrbitCamera)>,
+    orbit_cameras: Query<(Entity, &Camera, &RenderTarget, &PanOrbitCamera)>,
     #[cfg(feature = "bevy_egui")] egui_wants_focus: Res<EguiWantsFocus>,
 ) {
     let mut new_resource = ActiveCameraData::default();
     let mut max_cam_order = 0;
 
     let mut has_input = false;
-    for (entity, camera, pan_orbit) in orbit_cameras.iter() {
+    for (entity, camera, target, pan_orbit) in orbit_cameras.iter() {
         let input_just_activated = input::orbit_just_pressed(pan_orbit, &mouse_input, &key_input)
             || input::pan_just_pressed(pan_orbit, &mouse_input, &key_input)
             || !pinch_events.is_empty()
@@ -459,10 +459,10 @@ fn active_viewport_data(
             }
             if should_get_input {
                 // First check if cursor is in the same window as this camera
-                if let RenderTarget::Window(win_ref) = camera.target {
+                if let RenderTarget::Window(win_ref) = target {
                     let Some(window) = (match win_ref {
                         WindowRef::Primary => primary_windows.single().ok(),
-                        WindowRef::Entity(entity) => other_windows.get(entity).ok(),
+                        WindowRef::Entity(entity) => other_windows.get(*entity).ok(),
                     }) else {
                         // Window does not exist - maybe it was closed and the camera not cleaned up
                         continue;
