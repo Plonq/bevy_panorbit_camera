@@ -15,17 +15,17 @@ readme = "README.md"
 bevy_egui = ["dep:bevy_egui"]
 
 [dependencies]
-bevy = { version = "0.17", default-features = false, features = [
+bevy = { version = "0.18", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_camera",
     "bevy_window",
 ] }
-bevy_egui = { version = "0.38", optional = true, default-features = false }
+bevy_egui = { version = "0.39", optional = true, default-features = false }
 
 [dev-dependencies]
-bevy = { version = "0.17" }
+bevy = { version = "0.18", default-features = false, features = ["3d"] }
 float-cmp = "0.10.0"
-bevy_egui = { version = "0.38", default-features = false, features = [
+bevy_egui = { version = "0.39", default-features = false, features = [
     "render",
     "default_fonts",
 ] }

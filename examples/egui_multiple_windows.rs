@@ -67,10 +67,8 @@ fn setup(
 
     // second window camera
     commands.spawn((
-        Camera {
-            target: RenderTarget::Window(WindowRef::Entity(second_window)),
-            ..default()
-        },
+        Camera { ..default() },
+        RenderTarget::Window(WindowRef::Entity(second_window)),
         Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
         PanOrbitCamera::default(),
         EguiMultipassSchedule::new(SecondWindowContextPass),
