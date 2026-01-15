@@ -68,7 +68,7 @@ all the possible configuration options.
 
 | bevy | bevy_panorbit_camera |
 |------|----------------------|
-| 0.18 | 0.24                 |
+| 0.18 | 0.34                 |
 | 0.17 | 0.29-0.33            |
 | 0.16 | 0.26-0.28            |
 | 0.15 | 0.21-0.25            |
