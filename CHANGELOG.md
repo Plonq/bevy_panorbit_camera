@@ -1,3 +1,7 @@
+## 0.34.0
+
+- Update to Bevy 0.18
+
 ## 0.33.1
 
 - Add `#[reflect(Component)]` on `PanOrbitCamera`
