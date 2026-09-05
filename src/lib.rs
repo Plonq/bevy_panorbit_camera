@@ -701,8 +701,8 @@ fn pan_orbit_camera(
                     Projection::Custom(_) => todo!(),
                 }
                 // Translate by local axes
-                let right = transform.rotation * pan_orbit.axis[0] * -pan.x;
-                let up = transform.rotation * pan_orbit.axis[1] * pan.y;
+                let right = transform.rotation * Vec3::X * -pan.x;
+                let up = transform.rotation * Vec3::Y * pan.y;
                 let translation = (right + up) * multiplier;
                 pan_orbit.target_focus += translation;
                 has_moved = true;
