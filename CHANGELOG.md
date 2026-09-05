@@ -1,3 +1,7 @@
+## 0.35.1
+
+- Fix pan using the wrong axis when camera is using different base axis
+
 ## 0.35.0
 
 - Update to Bevy 0.19
