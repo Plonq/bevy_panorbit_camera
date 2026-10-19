@@ -1,3 +1,7 @@
+## 0.36.0
+
+- Update to Bevy 0.20 and bevy_egui 0.43
+
 ## 0.35.1
 
 - Fix pan using the wrong axis when camera is using different base axis

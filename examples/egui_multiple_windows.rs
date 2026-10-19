@@ -6,8 +6,7 @@ use bevy::camera::RenderTarget;
 use bevy::window::WindowRef;
 use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 use bevy_egui::{
-    egui, EguiContext, EguiMultipassSchedule, EguiPlugin, EguiPrimaryContextPass,
-    PrimaryEguiContext,
+    egui, EguiContext, EguiPlugin, EguiPrimaryContextPass, EguiSchedule, PrimaryEguiContext,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
@@ -71,7 +70,7 @@ fn setup(
         RenderTarget::Window(WindowRef::Entity(second_window)),
         Transform::from_translation(Vec3::new(5.0, 1.5, 7.0)),
         PanOrbitCamera::default(),
-        EguiMultipassSchedule::new(SecondWindowContextPass),
+        EguiSchedule::new(SecondWindowContextPass),
     ));
 }
 

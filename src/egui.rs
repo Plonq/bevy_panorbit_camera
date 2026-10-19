@@ -40,9 +40,9 @@ pub fn check_egui_wants_focus(
     for mut context in contexts.iter_mut() {
         let context = context.get_mut();
         let mut context_wants_focus =
-            context.wants_pointer_input() || context.wants_keyboard_input();
+            context.egui_wants_pointer_input() || context.egui_wants_keyboard_input();
         if include_hover.0 {
-            context_wants_focus |= context.is_pointer_over_area();
+            context_wants_focus |= context.is_pointer_over_egui();
         }
         new_wants_focus |= context_wants_focus;
     }
