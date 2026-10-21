@@ -286,6 +286,18 @@ pub struct PanOrbitCamera {
     /// time without affecting the camera, for example in a game.
     /// Defaults to `false`.
     pub use_real_time: bool,
+    /// Adding maximum x bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_x_max: Option<f32>,
+    /// Adding minimum x bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_x_min: Option<f32>,
+    /// Adding maximum y bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_y_max: Option<f32>,
+    /// Adding minimum y bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_y_min: Option<f32>,
+    /// Adding maximum z bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_z_max: Option<f32>,
+    /// Adding minimum z bound for the camera transform.  Default value of None has no bound.
+    pub camera_transform_z_min: Option<f32>,
 }
 
 impl Default for PanOrbitCamera {
@@ -333,6 +345,12 @@ impl Default for PanOrbitCamera {
             force_update: false,
             axis: [Vec3::X, Vec3::Y, Vec3::Z],
             use_real_time: false,
+            camera_transform_x_max: None,
+            camera_transform_x_min: None,
+            camera_transform_y_max: None,
+            camera_transform_y_min: None,
+            camera_transform_z_max: None,
+            camera_transform_z_min: None,
         }
     }
 }
@@ -584,7 +602,7 @@ fn pan_orbit_camera(
             pan_orbit.target_radius = radius;
             pan_orbit.target_focus = focus;
 
-            util::update_orbit_transform(
+            let _ = util::update_orbit_transform(
                 yaw,
                 pitch,
                 radius,
@@ -592,6 +610,12 @@ fn pan_orbit_camera(
                 &mut transform,
                 &mut projection,
                 pan_orbit.axis,
+                pan_orbit.camera_transform_x_max,
+                pan_orbit.camera_transform_x_min,
+                pan_orbit.camera_transform_y_max,
+                pan_orbit.camera_transform_y_min,
+                pan_orbit.camera_transform_z_max,
+                pan_orbit.camera_transform_z_min,
             );
 
             pan_orbit.initialized = true;
@@ -783,7 +807,7 @@ fn pan_orbit_camera(
                     delta,
                 );
 
-                util::update_orbit_transform(
+                let updateflag = util::update_orbit_transform(
                     new_yaw,
                     new_pitch,
                     new_radius,
@@ -791,14 +815,22 @@ fn pan_orbit_camera(
                     &mut transform,
                     &mut projection,
                     pan_orbit.axis,
+                    pan_orbit.camera_transform_x_max,
+                    pan_orbit.camera_transform_x_min,
+                    pan_orbit.camera_transform_y_max,
+                    pan_orbit.camera_transform_y_min,
+                    pan_orbit.camera_transform_z_max,
+                    pan_orbit.camera_transform_x_min,
                 );
 
-                // Update the current values
-                pan_orbit.yaw = Some(new_yaw);
-                pan_orbit.pitch = Some(new_pitch);
-                pan_orbit.radius = Some(new_radius);
-                pan_orbit.focus = new_focus;
-                pan_orbit.force_update = false;
+                if updateflag {
+                    // Update the current values
+                    pan_orbit.yaw = Some(new_yaw);
+                    pan_orbit.pitch = Some(new_pitch);
+                    pan_orbit.radius = Some(new_radius);
+                    pan_orbit.focus = new_focus;
+                    pan_orbit.force_update = false;
+                }
             }
         }
     }
